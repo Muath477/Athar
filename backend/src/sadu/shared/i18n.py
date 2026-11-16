@@ -1,0 +1,99 @@
+"""User-facing backend messages in Arabic (default) and English."""
+
+from typing import Any
+
+MESSAGES: dict[str, dict[str, str]] = {
+    "problem.validation_failed.title": {"ar": "بيانات غير صالحة", "en": "Invalid request"},
+    "problem.validation_failed.detail": {
+        "ar": "راجع الحقول المذكورة وأعد المحاولة.",
+        "en": "Check the listed fields and try again.",
+    },
+    "problem.not_found.title": {"ar": "غير موجود", "en": "Not found"},
+    "problem.not_found.detail": {"ar": "العنصر المطلوب غير موجود.", "en": "The item does not exist."},
+    "problem.http_error.title": {"ar": "تعذر تنفيذ الطلب", "en": "Request failed"},
+    "problem.http_error.detail": {"ar": "تعذر تنفيذ الطلب.", "en": "The request could not be completed."},
+    "problem.internal_error.title": {"ar": "خطأ في الخادم", "en": "Server error"},
+    "problem.internal_error.detail": {
+        "ar": "حدث خطأ غير متوقع. أعد المحاولة لاحقًا.",
+        "en": "An unexpected error occurred. Try again later.",
+    },
+    "problem.upload_too_large.title": {"ar": "الصورة كبيرة جدًا", "en": "Photo is too large"},
+    "problem.upload_too_large.detail": {
+        "ar": "الحد الأقصى {max_mb} ميغابايت.",
+        "en": "Maximum size is {max_mb} MB.",
+    },
+    "problem.unsupported_image.title": {"ar": "نوع الصورة غير مدعوم", "en": "Unsupported image"},
+    "problem.unsupported_image.detail": {
+        "ar": "أرسل صورة بصيغة JPEG أو PNG.",
+        "en": "Send a JPEG or PNG photo.",
+    },
+    "problem.idempotency_key_missing.title": {"ar": "مفتاح التكرار مفقود", "en": "Idempotency key missing"},
+    "problem.idempotency_key_missing.detail": {
+        "ar": "أرسل الترويسة Idempotency-Key بقيمة UUID.",
+        "en": "Send an Idempotency-Key header with a UUID.",
+    },
+    "problem.idempotency_key_reused.title": {"ar": "مفتاح مستخدم", "en": "Idempotency key reused"},
+    "problem.idempotency_key_reused.detail": {
+        "ar": "استُخدم هذا المفتاح لطلب مختلف.",
+        "en": "This key was already used for a different request.",
+    },
+    "problem.rate_limited.title": {"ar": "طلبات كثيرة", "en": "Too many requests"},
+    "problem.rate_limited.detail": {
+        "ar": "انتظر {retry_after_s} ثانية ثم أعد المحاولة.",
+        "en": "Wait {retry_after_s} seconds and try again.",
+    },
+    "problem.not_authenticated.title": {"ar": "يلزم تسجيل الدخول", "en": "Login required"},
+    "problem.not_authenticated.detail": {"ar": "سجّل الدخول للمتابعة.", "en": "Log in to continue."},
+    "problem.invalid_credentials.title": {"ar": "بيانات الدخول غير صحيحة", "en": "Invalid credentials"},
+    "problem.invalid_credentials.detail": {
+        "ar": "البريد أو كلمة المرور غير صحيحة.",
+        "en": "Email or password is incorrect.",
+    },
+    "problem.account_locked.title": {"ar": "الحساب مقفل مؤقتًا", "en": "Account temporarily locked"},
+    "problem.account_locked.detail": {
+        "ar": "حاول بعد {minutes} دقيقة.",
+        "en": "Try again in {minutes} minutes.",
+    },
+    "problem.forbidden.title": {"ar": "غير مسموح", "en": "Forbidden"},
+    "problem.forbidden.detail": {"ar": "لا تملك صلاحية لهذا الإجراء.", "en": "You cannot do this."},
+    "problem.csrf_failed.title": {"ar": "طلب مرفوض", "en": "Request rejected"},
+    "problem.csrf_failed.detail": {"ar": "حدّث الصفحة وأعد المحاولة.", "en": "Reload the page and try again."},
+    "problem.observation_not_waiting.title": {"ar": "لا يوجد سؤال", "en": "No open question"},
+    "problem.observation_not_waiting.detail": {
+        "ar": "هذه المشاركة لا تنتظر إجابة.",
+        "en": "This observation is not waiting for an answer.",
+    },
+    "problem.finding_not_in_review.title": {"ar": "ليست بانتظار المراجعة", "en": "Not in review"},
+    "problem.finding_not_in_review.detail": {
+        "ar": "هذه الملاحظة لا تنتظر مراجعة.",
+        "en": "This finding is not waiting for review.",
+    },
+    "retake.blurry": {"ar": "الصورة غير واضحة. ثبّت الجوال وصوّر مرة أخرى.", "en": "The photo is blurry."},
+    "retake.too_dark": {"ar": "الصورة مظلمة جدًا. صوّر في إضاءة أفضل.", "en": "The photo is too dark."},
+    "retake.too_bright": {"ar": "الصورة ساطعة جدًا. تجنّب الشمس المباشرة.", "en": "The photo is too bright."},
+    "retake.wrong_angle": {
+        "ar": "الزاوية بعيدة عن الصورة المرجعية. طابق الإطار الشفاف وصوّر مرة أخرى.",
+        "en": "The angle differs from the reference. Match the overlay and retake.",
+    },
+    "retake.lighting": {
+        "ar": "قد يكون التغيير ظلًا. صوّر في وقت آخر من اليوم إن أمكن.",
+        "en": "The change may be a shadow. Retake at another time of day if you can.",
+    },
+    "retake.unclear_change": {
+        "ar": "التغيير غير واضح. اقترب قليلًا وصوّر مرة أخرى.",
+        "en": "The change is unclear. Move closer and retake.",
+    },
+    "question.which_facade": {"ar": "أي واجهة صوّرت؟", "en": "Which facade did you photograph?"},
+    "story.no_verified_source": {
+        "ar": "ليس لدي مصدر موثّق عن هذا المعلم بعد.",
+        "en": "I have no verified source for this landmark yet.",
+    },
+}
+
+
+def translate(key: str, lang: str = "ar", **params: Any) -> str:
+    entry = MESSAGES.get(key)
+    if entry is None:
+        return key
+    text = entry.get(lang) or entry["ar"]
+    return text.format(**params) if params else text

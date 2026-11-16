@@ -1,0 +1,119 @@
+[project]
+name = "sadu"
+version = "0.1.0"
+description = "Sadu: crowdsourced heritage condition monitoring with verified AI agents"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi==0.163.1",
+    "pydantic==2.14.3",
+    "pydantic-settings==2.16.3",
+    "uvicorn[standard]==0.54.0",
+    "python-multipart==0.0.34",
+    "sse-starlette==3.7.0",
+    "sqlalchemy==2.1.8",
+    "geoalchemy2==0.21.0",
+    "alembic==1.20.1",
+    "psycopg[binary,pool]==3.3.9",
+    "pgvector==0.5.1",
+    "langgraph==1.2.22",
+    "langchain-core==1.8.1",
+    "langgraph-checkpoint-postgres==3.2.1",
+    "anthropic==2.9.0",
+    "opencv-python-headless==5.0.0.93",
+    "scikit-image==0.26.0",
+    "numpy==2.5.5",
+    "pillow==13.0.0",
+    "boto3==1.44.3",
+    "structlog==26.1.0",
+    "argon2-cffi==25.1.0",
+    "httpx==0.28.1",
+    "azure-cognitiveservices-speech==1.53.1",
+    "langfuse==5.2.0",
+    "sentry-sdk==2.75.0",
+]
+
+[project.optional-dependencies]
+embeddings = ["FlagEmbedding==1.4.2"]
+segmentation = ["ultralytics==8.4.215"]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.5",
+    "mypy==2.4.1",
+    "import-linter==2.16",
+    "pip-audit==2.10.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sadu"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "SIM", "RUF", "PL"]
+ignore = ["PLR0913", "PLR2004"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004"]
+"eval/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+packages = ["sadu"]
+
+[[tool.mypy.overrides]]
+module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*", "langfuse.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+markers = ["integration: needs Postgres and object storage (docker compose)"]
+
+[tool.importlinter]
+root_package = "sadu"
+
+[[tool.importlinter.contracts]]
+name = "Domain layers import no framework or infrastructure"
+type = "forbidden"
+source_modules = ["sadu.modules.*.domain"]
+forbidden_modules = ["fastapi", "sqlalchemy", "anthropic", "boto3", "langgraph", "cv2"]
+
+[[tool.importlinter.contracts]]
+name = "Module layers point inward"
+type = "layers"
+containers = [
+    "sadu.modules.sites",
+    "sadu.modules.capture",
+    "sadu.modules.inspection",
+    "sadu.modules.verification",
+    "sadu.modules.stories",
+    "sadu.modules.missions",
+    "sadu.modules.passport",
+    "sadu.modules.admin",
+]
+layers = ["interface", "api", "infrastructure", "application", "domain"]
+exhaustive = false
+
+[[tool.importlinter.contracts]]
+name = "Module dependency graph from docs/03-architecture.md"
+type = "layers"
+layers = [
+    "sadu.modules.agents",
+    "sadu.modules.reports | sadu.modules.missions",
+    "sadu.modules.verification | sadu.modules.stories | sadu.modules.capture | sadu.modules.passport",
+    "sadu.modules.inspection",
+    "sadu.modules.sites",
+    "sadu.modules.admin",
+]
