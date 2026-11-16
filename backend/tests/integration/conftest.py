@@ -12,6 +12,7 @@ import pytest
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
+from sadu.modules.agents import api as agents
 from sadu.modules.sites import api as sites
 from sadu.shared.config import get_settings
 from tests.fakes import MemoryStore
@@ -56,7 +57,7 @@ class DemoSite:
 
 @pytest.fixture
 async def demo(session: AsyncSession, store: MemoryStore) -> DemoSite:
-    [slug] = await sites.import_region_pack(session, store, PACK_DIR)
+    [slug] = await agents.seed_region_pack(session, store, PACK_DIR)
     site = await sites.get_site_by_slug(session, slug)
     facades = {f.code: f for f in await sites.list_facades(session, site.id)}
     return DemoSite(site, facades)

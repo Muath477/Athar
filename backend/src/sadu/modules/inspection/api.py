@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 from uuid import UUID
 
 import structlog
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.inspection.application.judge import build_request, judge_regions
@@ -122,6 +123,16 @@ async def match_inliers(photo_jpeg: bytes, baseline_jpegs: list[bytes]) -> list[
     return await asyncio.to_thread(
         lambda: [cv.count_matches(photo, cv.decode_image(b)) for b in baseline_jpegs]
     )
+
+
+async def artifact_keys(session: AsyncSession, observation_ids: list[UUID]) -> list[str]:
+    """Aligned photos and heat maps derived from these observations, for deletion with them."""
+    rows = await session.execute(
+        select(InspectionRunRow.aligned_key, InspectionRunRow.diff_key).where(
+            InspectionRunRow.observation_id.in_(observation_ids)
+        )
+    )
+    return [key for pair in rows.all() for key in pair if key]
 
 
 def _run_cv(photo_jpeg: bytes, baseline_jpeg: bytes) -> _CvResult:

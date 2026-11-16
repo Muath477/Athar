@@ -8,7 +8,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.capture.infrastructure.image_processing import process_upload
@@ -154,6 +154,25 @@ async def unfinished_observation_ids(session: AsyncSession, older_than: timedelt
         )
     )
     return list(rows)
+
+
+async def release_passport_photos(session: AsyncSession, passport_id: UUID) -> dict[UUID, str]:
+    """Unlink the passport from every photo and return the non-evidence ones to delete.
+
+    Evidence photos had their retention extended by keep_as_evidence; they stay, de-linked.
+    """
+    cutoff = datetime.now(UTC) + PHOTO_RETENTION
+    rows = await session.scalars(select(ObservationRow).where(ObservationRow.passport_id == passport_id))
+    to_delete = {}
+    for row in rows:
+        row.passport_id = None
+        if row.delete_after <= cutoff:
+            to_delete[row.id] = row.object_key
+    return to_delete
+
+
+async def delete_observations(session: AsyncSession, observation_ids: list[UUID]) -> None:
+    await session.execute(delete(ObservationRow).where(ObservationRow.id.in_(observation_ids)))
 
 
 async def _row(session: AsyncSession, observation_id: UUID) -> ObservationRow:
