@@ -47,6 +47,5 @@ def _is_valid(steps: tuple[Step, ...], context: ObservationContext) -> bool:
         return False
     if (Step.MONITOR in steps) != (Step.VERIFY in steps):
         return False
-    if Step.MONITOR in steps and (Step.IDENTIFY not in steps or not may_monitor(context)):
-        return False
-    return True
+    monitors = Step.MONITOR in steps
+    return not monitors or (Step.IDENTIFY in steps and may_monitor(context))

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
+from cv2.typing import MatLike
 from numpy.typing import NDArray
 from skimage.metrics import structural_similarity
 
@@ -23,8 +24,9 @@ from sadu.modules.inspection.domain.models import (
 )
 from sadu.shared.vocabulary import RetakeReason
 
-type Image = NDArray[np.uint8]
-type Mask = NDArray[np.uint8]
+# OpenCV's stubs widen every array to MatLike; uint8 BGR is the convention, not a checked type.
+type Image = MatLike
+type Mask = MatLike
 
 QUALITY_SIDE_PX = 1024
 SIFT_FEATURES = 4000
@@ -116,9 +118,9 @@ def find_changes(
     area_mask = valid_mask if facade_mask is None else cv2.bitwise_and(valid_mask, facade_mask)
     change_map = _change_map(aligned_lab[..., 0], baseline_lab[..., 0]) * (area_mask > 0)
 
-    binary = (change_map >= limits.change_threshold).astype(np.uint8) * 255
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, _kernel(OPEN_KERNEL_PX))
-    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, _kernel(CLOSE_KERNEL_PX))
+    thresholded: Mask = (change_map >= limits.change_threshold).astype(np.uint8) * 255
+    opened = cv2.morphologyEx(thresholded, cv2.MORPH_OPEN, _kernel(OPEN_KERNEL_PX))
+    binary = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, _kernel(CLOSE_KERNEL_PX))
 
     area_px = max(int(np.count_nonzero(area_mask)), 1)
     count, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
@@ -148,8 +150,13 @@ def render_heatmap(baseline: Image, change_map: NDArray[np.float32], report: Dif
         box = region.box
         cv2.rectangle(overlay, (box.x, box.y), (box.x + box.width, box.y + box.height), (255, 255, 255), 2)
         cv2.putText(
-            overlay, str(region.region_id), (box.x + 4, box.y + 22),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2,
+            overlay,
+            str(region.region_id),
+            (box.x + 4, box.y + 22),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (255, 255, 255),
+            2,
         )
     return overlay
 
@@ -168,8 +175,8 @@ def encode_jpeg(image: Image, quality: int = 85) -> bytes:
     return buffer.tobytes()
 
 
-def _estimate_homography(photo: Image, baseline: Image) -> tuple[NDArray[np.float64] | None, int, int]:
-    sift = cv2.SIFT_create(nfeatures=SIFT_FEATURES)
+def _estimate_homography(photo: Image, baseline: Image) -> tuple[MatLike | None, int, int]:
+    sift = cv2.SIFT.create(nfeatures=SIFT_FEATURES)
     photo_keypoints, photo_descriptors = sift.detectAndCompute(_equalized_gray(photo), None)
     base_keypoints, base_descriptors = sift.detectAndCompute(_equalized_gray(baseline), None)
     if photo_descriptors is None or base_descriptors is None or len(base_keypoints) < 4:
@@ -180,8 +187,8 @@ def _estimate_homography(photo: Image, baseline: Image) -> tuple[NDArray[np.floa
     if len(good) < 4:
         return None, 0, len(good)
 
-    source = np.float32([photo_keypoints[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-    target = np.float32([base_keypoints[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+    source = np.array([photo_keypoints[m.queryIdx].pt for m in good], dtype=np.float32).reshape(-1, 1, 2)
+    target = np.array([base_keypoints[m.trainIdx].pt for m in good], dtype=np.float32).reshape(-1, 1, 2)
     homography, inlier_mask = cv2.findHomography(source, target, cv2.USAC_MAGSAC, RANSAC_REPROJECTION_PX)
     if homography is None:
         return None, 0, len(good)
@@ -191,8 +198,10 @@ def _estimate_homography(photo: Image, baseline: Image) -> tuple[NDArray[np.floa
 def _change_map(aligned_l: Image, baseline_l: Image) -> NDArray[np.float32]:
     """Half structural dissimilarity, half new-edge strength; sharp new edges (cracks, paint)
     score high while soft shadows mostly move brightness, not gradients."""
-    _, ssim_map = structural_similarity(aligned_l, baseline_l, win_size=SSIM_WINDOW, full=True, data_range=255)
-    dissimilarity = np.clip(1.0 - ssim_map, 0.0, 1.0)
+    _, ssim_map = structural_similarity(
+        aligned_l, baseline_l, win_size=SSIM_WINDOW, full=True, data_range=255
+    )
+    dissimilarity: NDArray[np.float64] = np.clip(1.0 - ssim_map, 0.0, 1.0)
     gradient_delta = np.abs(_gradient_magnitude(aligned_l) - _gradient_magnitude(baseline_l))
     gradient_delta /= max(float(np.percentile(gradient_delta, 99.5)), 1e-6)
     return (0.5 * dissimilarity + 0.5 * np.clip(gradient_delta, 0.0, 1.0)).astype(np.float32)
@@ -237,7 +246,10 @@ def _fit_long_side(image: Image, side: int) -> Image:
     scale = side / max(height, width)
     if scale >= 1:
         return image
-    return np.asarray(cv2.resize(image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA), dtype=np.uint8)
+    return np.asarray(
+        cv2.resize(image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA),
+        dtype=np.uint8,
+    )
 
 
 def _kernel(size: int) -> Mask:

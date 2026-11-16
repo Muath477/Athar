@@ -1,0 +1,132 @@
+{
+  "code": "demo",
+  "name_ar": "حزمة تجريبية",
+  "name_en": "Demo pack",
+  "version": "1",
+  "sites": [
+    {
+      "slug": "demo-house",
+      "name_ar": "بيت طيني تجريبي",
+      "name_en": "Demo mud-brick house",
+      "building_type": "mud_brick_house",
+      "location": [
+        46.6753,
+        24.7136
+      ],
+      "boundary": [
+        [
+          46.675,
+          24.7133
+        ],
+        [
+          46.6756,
+          24.7133
+        ],
+        [
+          46.6756,
+          24.7139
+        ],
+        [
+          46.675,
+          24.7139
+        ],
+        [
+          46.675,
+          24.7133
+        ]
+      ],
+      "facade_map_file": "facade_map.json",
+      "baselines": [
+        {
+          "facade_code": "north",
+          "file": "baselines/north.jpg",
+          "corners_px": [
+            [
+              0,
+              640
+            ],
+            [
+              960,
+              640
+            ],
+            [
+              960,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "facade_code": "east",
+          "file": "baselines/east.jpg",
+          "corners_px": [
+            [
+              0,
+              640
+            ],
+            [
+              960,
+              640
+            ],
+            [
+              960,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "facade_code": "south",
+          "file": "baselines/south.jpg",
+          "corners_px": [
+            [
+              0,
+              640
+            ],
+            [
+              960,
+              640
+            ],
+            [
+              960,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "facade_code": "west",
+          "file": "baselines/west.jpg",
+          "corners_px": [
+            [
+              0,
+              640
+            ],
+            [
+              960,
+              640
+            ],
+            [
+              960,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        }
+      ],
+      "sources_file": "sources.json"
+    }
+  ]
+}

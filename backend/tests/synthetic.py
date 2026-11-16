@@ -30,10 +30,16 @@ def photograph(wall: Image, *, tilt_px: int = 40, brightness: float = 1.0) -> Im
     height, width = wall.shape[:2]
     source = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
     target = np.float32(
-        [[tilt_px, tilt_px // 2], [width - tilt_px // 3, 0], [width, height], [tilt_px // 2, height - tilt_px // 3]]
+        [
+            [tilt_px, tilt_px // 2],
+            [width - tilt_px // 3, 0],
+            [width, height],
+            [tilt_px // 2, height - tilt_px // 3],
+        ]
     )
-    view = cv2.warpPerspective(wall, cv2.getPerspectiveTransform(source, target), (width, height),
-                               borderMode=cv2.BORDER_REFLECT)
+    view = cv2.warpPerspective(
+        wall, cv2.getPerspectiveTransform(source, target), (width, height), borderMode=cv2.BORDER_REFLECT
+    )
     return np.clip(view.astype(np.float32) * brightness, 0, 255).astype(np.uint8)
 
 

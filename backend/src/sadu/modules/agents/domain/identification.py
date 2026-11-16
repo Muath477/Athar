@@ -34,9 +34,7 @@ class Identification:
     options: tuple[UUID, ...] = ()
 
 
-def identify_facade(
-    candidates: list[FacadeCandidate], heading_accuracy_deg: float | None
-) -> Identification:
+def identify_facade(candidates: list[FacadeCandidate], heading_accuracy_deg: float | None) -> Identification:
     if not candidates:
         return Identification(None, IdentificationMethod.NONE, ask_visitor=False)
 
@@ -77,9 +75,7 @@ def _trusted_heading_ranking(
 def _visitor_options(
     candidates: list[FacadeCandidate], heading_accuracy_deg: float | None
 ) -> list[FacadeCandidate]:
-    heading_usable = (
-        heading_accuracy_deg is not None and heading_accuracy_deg <= MAX_USABLE_HEADING_ERROR_DEG
-    )
+    heading_usable = heading_accuracy_deg is not None and heading_accuracy_deg <= MAX_USABLE_HEADING_ERROR_DEG
 
     def rank(candidate: FacadeCandidate) -> tuple[float, int]:
         heading = candidate.heading_score if heading_usable and candidate.heading_score else 0.0

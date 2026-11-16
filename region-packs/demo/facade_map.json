@@ -1,0 +1,167 @@
+{
+  "site_slug": "demo-house",
+  "units": "meters",
+  "up_axis": "Y",
+  "facades": [
+    {
+      "code": "north",
+      "name_ar": "الواجهة الشمالية",
+      "name_en": "North facade",
+      "outward_azimuth_deg": 0.0,
+      "corners": [
+        [
+          5,
+          0,
+          -4
+        ],
+        [
+          -5,
+          0,
+          -4
+        ],
+        [
+          -5,
+          6.0,
+          -4
+        ],
+        [
+          5,
+          6.0,
+          -4
+        ]
+      ],
+      "default_camera": {
+        "position": [
+          0.0,
+          4.0,
+          -18.0
+        ],
+        "target": [
+          0.0,
+          3.0,
+          -4.0
+        ]
+      }
+    },
+    {
+      "code": "east",
+      "name_ar": "الواجهة الشرقية",
+      "name_en": "East facade",
+      "outward_azimuth_deg": 90.0,
+      "corners": [
+        [
+          5,
+          0,
+          4
+        ],
+        [
+          5,
+          0,
+          -4
+        ],
+        [
+          5,
+          6.0,
+          -4
+        ],
+        [
+          5,
+          6.0,
+          4
+        ]
+      ],
+      "default_camera": {
+        "position": [
+          19.0,
+          4.0,
+          0.0
+        ],
+        "target": [
+          5.0,
+          3.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "code": "south",
+      "name_ar": "الواجهة الجنوبية",
+      "name_en": "South facade",
+      "outward_azimuth_deg": 180.0,
+      "corners": [
+        [
+          -5,
+          0,
+          4
+        ],
+        [
+          5,
+          0,
+          4
+        ],
+        [
+          5,
+          6.0,
+          4
+        ],
+        [
+          -5,
+          6.0,
+          4
+        ]
+      ],
+      "default_camera": {
+        "position": [
+          0.0,
+          4.0,
+          18.0
+        ],
+        "target": [
+          0.0,
+          3.0,
+          4.0
+        ]
+      }
+    },
+    {
+      "code": "west",
+      "name_ar": "الواجهة الغربية",
+      "name_en": "West facade",
+      "outward_azimuth_deg": 270.0,
+      "corners": [
+        [
+          -5,
+          0,
+          -4
+        ],
+        [
+          -5,
+          0,
+          4
+        ],
+        [
+          -5,
+          6.0,
+          4
+        ],
+        [
+          -5,
+          6.0,
+          -4
+        ]
+      ],
+      "default_camera": {
+        "position": [
+          -19.0,
+          4.0,
+          0.0
+        ],
+        "target": [
+          -5.0,
+          3.0,
+          0.0
+        ]
+      }
+    }
+  ]
+}

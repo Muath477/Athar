@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from sadu.shared.vocabulary import RetakeReason
+from sadu.shared.vocabulary import DamageType, ModelConfidence, RetakeReason, Severity
 
 
 @dataclass(frozen=True)
@@ -77,3 +77,16 @@ class DifferenceReport:
     @property
     def has_change(self) -> bool:
         return bool(self.regions)
+
+
+@dataclass(frozen=True)
+class RegionJudgment:
+    region_id: int
+    change_present: bool
+    damage_type: DamageType
+    visible_in_baseline: bool
+    lighting_or_shadow: bool
+    severity: Severity
+    confidence: ModelConfidence
+    likely_cause: str
+    rationale_ar: str

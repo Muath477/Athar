@@ -18,9 +18,7 @@ def gap(days: int) -> MissionCandidate:
 
 
 def confirm(severity: Severity) -> MissionCandidate:
-    return MissionCandidate(
-        f"confirm-{severity}", uuid4(), MissionReason.CONFIRM_FINDING, uuid4(), severity
-    )
+    return MissionCandidate(f"confirm-{severity}", uuid4(), MissionReason.CONFIRM_FINDING, uuid4(), severity)
 
 
 def test_findings_outrank_gaps_and_urgent_comes_first() -> None:

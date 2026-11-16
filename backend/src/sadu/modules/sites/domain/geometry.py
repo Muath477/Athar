@@ -68,3 +68,14 @@ def _norm(a: Vec3) -> float:
 
 def _cross(a: Vec3, b: Vec3) -> Vec3:
     return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def image_point_to_uv(homography: list[list[float]], x: float, y: float) -> tuple[float, float]:
+    """Apply a baseline-pixel -> facade-UV homography to one point."""
+    h = homography
+    w = h[2][0] * x + h[2][1] * y + h[2][2]
+    if w == 0:
+        raise ValueError("Point maps to infinity under this homography")
+    u = (h[0][0] * x + h[0][1] * y + h[0][2]) / w
+    v = (h[1][0] * x + h[1][1] * y + h[1][2]) / w
+    return (_clamp01(u), _clamp01(v))

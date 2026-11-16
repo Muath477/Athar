@@ -8,7 +8,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from numpy.typing import NDArray
+from cv2.typing import MatLike
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from sadu.shared.config import get_settings
@@ -51,7 +51,7 @@ def process_upload(raw: bytes) -> ProcessedPhoto:
     return ProcessedPhoto(buffer.tobytes(), width, height, faces)
 
 
-def blur_faces(bgr: NDArray[np.uint8]) -> int:
+def blur_faces(bgr: MatLike) -> int:
     """Blur every detected face in place and return how many were found."""
     height, width = bgr.shape[:2]
     detector = _face_detector()

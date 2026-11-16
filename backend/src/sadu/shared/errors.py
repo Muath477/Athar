@@ -81,9 +81,7 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(SaduError)
     async def handle_sadu_error(request: Request, exc: SaduError) -> JSONResponse:
         headers = {"Retry-After": str(exc.retry_after_s)} if isinstance(exc, TooManyRequests) else None
-        return problem_response(
-            request, status=exc.status, code=exc.code, params=exc.params, headers=headers
-        )
+        return problem_response(request, status=exc.status, code=exc.code, params=exc.params, headers=headers)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -91,9 +89,7 @@ def install_error_handlers(app: FastAPI) -> None:
             {"field": ".".join(str(part) for part in err["loc"][1:]), "message": err["msg"]}
             for err in exc.errors()
         ]
-        return problem_response(
-            request, status=422, code="validation_failed", field_errors=field_errors
-        )
+        return problem_response(request, status=422, code="validation_failed", field_errors=field_errors)
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http(request: Request, exc: StarletteHTTPException) -> JSONResponse:

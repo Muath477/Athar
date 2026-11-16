@@ -68,7 +68,9 @@ def _s3_client(settings: Settings, endpoint_url: str):  # type: ignore[no-untype
         aws_access_key_id=settings.s3_access_key_id,
         aws_secret_access_key=settings.s3_secret_access_key.get_secret_value(),
         region_name=settings.s3_region,
-        config=Config(signature_version="s3v4", connect_timeout=5, read_timeout=10, retries={"max_attempts": 2}),
+        config=Config(
+            signature_version="s3v4", connect_timeout=5, read_timeout=10, retries={"max_attempts": 2}
+        ),
     )
 
 

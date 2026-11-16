@@ -81,9 +81,7 @@ def decide(signals: RegionSignals) -> Verdict:
     return Verdict(ConfidenceLabel.LIKELY, Action.PUBLISH, severity, reasons=("single_source",))
 
 
-def severity_with_floor(
-    damage_type: DamageType, model_severity: Severity, area_fraction: float
-) -> Severity:
+def severity_with_floor(damage_type: DamageType, model_severity: Severity, area_fraction: float) -> Severity:
     if damage_type is DamageType.PARTIAL_COLLAPSE:
         return Severity.URGENT
     if damage_type is DamageType.BASAL_EROSION and area_fraction >= BASAL_EROSION_URGENT_AREA:

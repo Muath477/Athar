@@ -10,7 +10,7 @@ dependencies = [
     "uvicorn[standard]==0.54.0",
     "python-multipart==0.0.34",
     "sse-starlette==3.7.0",
-    "sqlalchemy==2.1.8",
+    "sqlalchemy[asyncio]==2.1.8",
     "geoalchemy2==0.21.0",
     "alembic==1.20.1",
     "psycopg[binary,pool]==3.3.9",
@@ -27,7 +27,6 @@ dependencies = [
     "structlog==26.1.0",
     "argon2-cffi==25.1.0",
     "httpx==0.28.1",
-    "azure-cognitiveservices-speech==1.53.1",
     "langfuse==5.2.0",
     "sentry-sdk==2.75.0",
 ]
@@ -53,17 +52,26 @@ build-backend = "hatchling.build"
 packages = ["src/sadu"]
 
 [tool.ruff]
-line-length = 100
+line-length = 110
 target-version = "py313"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "S", "SIM", "RUF", "PL"]
-ignore = ["PLR0913", "PLR2004"]
+# PLR0911: rule tables read best as one early return per rule. N818: Refused/Unavailable read better.
+ignore = ["PLR0911", "PLR0913", "PLR2004", "N818"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "sadu.modules.inspection.domain.models.QualityThresholds",
+    "sadu.modules.inspection.domain.models.AlignmentThresholds",
+    "sadu.modules.inspection.domain.models.DifferenceThresholds",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "PLR2004"]
 "eval/**" = ["S101"]
+"alembic/versions/**" = ["E501"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -76,6 +84,11 @@ packages = ["sadu"]
 module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*", "langfuse.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# scikit-image ships no type hints for structural_similarity.
+module = ["sadu.modules.inspection.infrastructure.opencv_pipeline"]
+disallow_untyped_calls = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
@@ -83,6 +96,7 @@ markers = ["integration: needs Postgres and object storage (docker compose)"]
 
 [tool.importlinter]
 root_package = "sadu"
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "Domain layers import no framework or infrastructure"
