@@ -13,7 +13,7 @@ Times are Riyadh time (UTC+3). The bootcamp session schedule is not known yet (T
 | 3D | Blender cleanup, facade corners, GLB export, compression | UX + DS | GLB <= 15 MB opens in the gltf viewer; `facade_map.json` validates against the schema |
 | Sources | Collect official sources about the building and any reviewed oral account (with narrator consent) | UX | `sources/` with title, URL or narrator, license; nothing written from memory |
 | Repo | Create repo (name TBD), branch protection, CI skeleton, issue board | Dev | CI runs lint on an empty project |
-| Environments | API keys (Anthropic, Azure Speech, Langfuse, Sentry) in a shared secret store; VM created; DNS name | Dev | `.env` exists on the VM only; `.env.example` committed |
+| Environments | API keys (Anthropic, Azure Speech, Sentry) in a shared secret store; VM created; DNS name | Dev | `.env` exists on the VM only; `.env.example` committed |
 | Contracts | facade_map, Finding, SSE events, Story schemas frozen (from 03-architecture) | Tech lead | Merged in `docs/` and as Pydantic/TS types |
 
 ## Phase 1 · Round 1 build (Nov 18-20)
@@ -31,7 +31,7 @@ Times are Riyadh time (UTC+3). The bootcamp session schedule is not known yet (T
 | 16-18 | TTS adapter + audio cache; passport entries | Facade identification accuracy metric in harness | Passport page; retake and question screens | Prepare demo photos (scripted set) | Audio plays; visitor can answer a facade question and the run resumes |
 | 19-21 | Orchestrator planning with Haiku + fallback; mission dispatch job | Hallucination test set (20 story questions) | Coverage view + missions API + nearby missions in PWA | Demo script draft v1 | Mission appears on the phone near the site (simulated location) |
 | **Nov 20** 09-11 | Demo mode cache (by content hash); failure drills (LLM down) | Eval run 1: all metrics printed | Deploy to VM behind Caddy; HTTPS camera test on phones | Recorded backup take 1 | Full flow works on the public URL |
-| 11-13 | Langfuse traces + cost counter checks | Fix the top 3 error causes from eval | Security headers, CSP, CORS, rate limits; CI scans green | Pitch deck v1 | CI green incl. security scans; eval prints all metrics |
+| 11-13 | `llm_calls` cost counter checks | Fix the top 3 error causes from eval | Security headers, CSP, CORS, rate limits; CI scans green | Pitch deck v1 | CI green incl. security scans; eval prints all metrics |
 | 14-16 | Prompt fixes from eval; freeze prompts | Eval run 2; write results table | E2E Playwright happy path; bug fixes | Demo rehearsal 1 (timed) | E2E passes in CI; rehearsal under 3 minutes |
 | 16-18 | Bug fixes from rehearsal | Prepare evaluation slide (numbers + false-positive rate, honest) | Bug fixes; backups configured | Recorded backup take 2 (final) | Two clean runs without manual fixes |
 | 19-21 | Code freeze, tag `round1` | README evaluation section | README run instructions | Submission text | Tag pushed; all Nov 21 checklist items ticked or listed as known gaps |
@@ -82,5 +82,5 @@ Times are Riyadh time (UTC+3). The bootcamp session schedule is not known yet (T
 - [ ] Official sources (with links) collected for the building, or "none found" recorded
 - [ ] Repository created, CI skeleton running, branch protection on
 - [ ] VM created, DNS name pointing to it
-- [ ] Anthropic, Azure Speech, Langfuse and Sentry keys created with spending limits, stored outside git
+- [ ] Anthropic, Azure Speech and Sentry keys created with spending limits, stored outside git
 - [ ] Data contracts (facade map, Finding, SSE events, Story) agreed by all four

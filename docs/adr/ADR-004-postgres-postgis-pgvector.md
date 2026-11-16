@@ -9,7 +9,7 @@ We need relational data (sites, findings, reviews), spatial queries (GPS to site
 
 ## Decision
 
-PostgreSQL 18 with PostGIS 3.7 and pgvector 0.8.x in one database. Local image built `FROM postgis/postgis:18-3.7` adding the pgvector package for PG 18 (exact apt package name to verify at build time; fallback: build pgvector from source in the Dockerfile). SQLAlchemy 2.1 + GeoAlchemy2 + Alembic; psycopg 3 driver.
+PostgreSQL 18 with PostGIS 3.7 and pgvector 0.8.x in one database. Local image built `FROM postgis/postgis:18-3.7` with the compiled pgvector extension copied from `pgvector/pgvector:0.8.7-pg18-trixie`, which uses the same Debian release and PostgreSQL major ([ADR-016](ADR-016-build-time-changes.md)). SQLAlchemy 2.1 + GeoAlchemy2 + Alembic; psycopg 3 driver.
 
 ## Alternatives considered
 

@@ -10,7 +10,7 @@ Written 2026-11-16. Image tags and package versions come from [04-stack.md](04-s
 |---|---|---|---|---|
 | `sadu-api` | `python:3.13-slim` | 1) `builder`: install build deps, `uv`/pip install into a venv from the lockfile, download YuNet ONNX and BGE-M3 weights; 2) `runtime`: copy venv + model files + `src/`, install only runtime libs (libgl not needed with headless OpenCV; Pango only if WeasyPrint is enabled) | `sadu` (uid 10001), read-only root FS, `/tmp` as tmpfs | `GET /healthz` every 15 s |
 | `sadu-web` | `node:24-alpine` | 1) `deps`: `npm ci`; 2) `build`: `next build` with `output: "standalone"`; 3) `runtime`: copy `.next/standalone`, `.next/static`, `public` | `node` | `wget -qO- http://localhost:3000/api/health` |
-| `sadu-db` | `postgis/postgis:18-3.7` + pgvector for PG 18 | single stage adding the extension package (name verified at build) | `postgres` | `pg_isready` |
+| `sadu-db` | `postgis/postgis:18-3.7` + pgvector for PG 18 | pgvector extension files copied from `pgvector/pgvector:0.8.7-pg18-trixie` | `postgres` | `pg_isready` |
 | storage | SeaweedFS (pinned tag) | n/a | non-root where supported | S3 endpoint check |
 | `caddy` (demo VM only) | `caddy:2.11.9-alpine` | n/a | default | n/a |
 
@@ -44,9 +44,6 @@ AZURE_SPEECH_KEY=
 AZURE_SPEECH_REGION=
 SADU_TTS_VOICE=ar-SA-HamedNeural
 # observability
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_HOST=
 SENTRY_DSN_API=
 NEXT_PUBLIC_SENTRY_DSN=
 # features
@@ -58,11 +55,11 @@ SADU_ENABLE_YOLO=false
 
 | Signal | Tool | What is captured |
 |---|---|---|
-| LLM traces | Langfuse | One trace per observation run; spans per node (plan, identify, monitor, verify, guide) and per LLM call with model, latency, token counts, cost, structured output, rule reasons. Images are referenced by object key only. Trace ID stored on `llm_calls`. |
+| LLM calls | `llm_calls` table | One row per model call: agent, model, observation id, latency, token counts, cost. Rule reasons are stored on each finding. Images are never logged. |
 | Errors | Sentry (API + web) | Exceptions with release version, request ID, route; `send_default_pii=False`; before-send hook strips query strings and headers. Source maps uploaded for the web build. |
 | Logs | structlog JSON to stdout, collected by Docker | `request_id`, `observation_id`, module, event, duration. No tokens, emails, coordinates or image data. |
 | Cost per photo | `llm_calls` table + `GET /admin/costs` | Sum of cost per observation, mean and p95 per day, by agent and model. Alert (log + Sentry message) when the daily total passes `SADU_DAILY_LLM_BUDGET_USD`; uploads then switch to story-only mode. |
-| Latency | API middleware histogram in logs; per-node durations in Langfuse | Upload-to-pin time per observation for the D2 driver. |
+| Latency | API middleware histogram in logs; per-call latency in `llm_calls` | Upload-to-pin time per observation for the D2 driver. |
 
 ## 3. Testing
 

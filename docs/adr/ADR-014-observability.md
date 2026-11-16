@@ -1,6 +1,6 @@
 # ADR-014: Langfuse for LLM traces, Sentry for errors, structlog for logs
 
-- Status: Accepted (pending team review)
+- Status: Partly superseded by [ADR-016](ADR-016-build-time-changes.md): Langfuse is not used in Round 1
 - Date: 2026-11-16
 
 ## Context

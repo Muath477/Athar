@@ -57,14 +57,14 @@ Versions checked on **2026-11-16** against the PyPI and npm registries and Docke
 | 3D compression | @gltf-transform/cli | 4.5.1 | Draco + KTX2 | Blender exporters | none |
 | Splats (optional) | @sparkjsdev/spark | 2.4.0 | Only if the scan is a splat | mesh only | Extra code path |
 | National map (R2) | MapLibre GL JS | 6.18.0 | No token | Leaflet | Needs a tile source (TBD) |
-| Arabic TTS | Azure AI Speech, `ar-SA-HamedNeural` / `ar-SA-ZariyahNeural` | SDK 1.53.1 | Saudi voices confirmed in docs ([ADR-010](adr/ADR-010-tts.md)) | Google TTS | Azure key and region |
+| Arabic TTS | Azure AI Speech, `ar-SA-HamedNeural` / `ar-SA-ZariyahNeural` | REST API ([ADR-016](adr/ADR-016-build-time-changes.md)) | Saudi voices confirmed in docs ([ADR-010](adr/ADR-010-tts.md)) | Google TTS | Azure key and region |
 
 ## Quality, security, operations
 
 | Need | Choice | Pin |
 |---|---|---|
 | Tests | pytest; Playwright | 9.2.0 / @playwright/test 1.65.1 |
-| LLM tracing | Langfuse (cloud) | 5.2.0 |
+| LLM tracing | `llm_calls` table (Langfuse dropped, [ADR-016](adr/ADR-016-build-time-changes.md)) | none |
 | Errors | Sentry | sentry-sdk 2.75.0; @sentry/nextjs 11.13.0 |
 | Security scans | gitleaks, pip-audit, npm audit, Trivy, Semgrep | pip-audit 2.10.1, semgrep 1.185.0; gitleaks and Trivy GitHub Actions pinned by commit SHA at setup (TBD) |
 | Diagrams check | @mermaid-js/mermaid-cli | 12.2.0 |

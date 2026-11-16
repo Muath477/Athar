@@ -29,7 +29,7 @@ Rules: a module owns its tables and no other module reads them; other modules ca
 | **Inspection** (`inspection`) | inspection_runs; quality gate, alignment, illumination normalization, difference map, LLM damage judgment | `check_quality(obs)`, `align(obs, baseline)`, `diff(run)`, `judge(run)`, `match_scores(obs, facade_ids)` | `InspectionCompleted` | none | sites |
 | **Verification** (`verification`) | findings, finding_confirmations, reviews; confidence-label rule, severity rule, evidence invariant, claim checking | `verify(run) -> list[Verdict]`, `publish(verdict)`, `queue_review(finding_id)`, `apply_review(...)`, `check_claims(claims, chunks)`, `pins_for_site(site_id)`, `findings_needing_confirmation(site_id)` | `FindingPublished`, `FindingRejected`, `ReviewRequested` | none | sites, inspection |
 | **Stories** (`stories`) | sources, story_chunks, stories (cache), audio objects; retrieval and drafting | `retrieve(site_id, facade_id, query, k)`, `draft(site_id, facade_id, chunks)`, `save_story(story)`, `synthesize(story_id)` | `StoryReady` | none | sites |
-| **Missions** (`missions`) | missions; gap detection, priority, expiry | `coverage(site_id)`, `gaps(site_id)`, `create(...)`, `open_near(point)`, `fulfil(mission_id, obs_id)` | `MissionCreated`, `MissionFulfilled` | `FindingPublished` (to close confirm-missions) | sites, verification |
+| **Missions** (`missions`) | missions; gap detection, priority, expiry | `coverage(site_id)`, `gaps(site_id)`, `create(...)`, `open_near(point)`, `fulfil(mission_id, obs_id)` | `MissionCreated`, `MissionFulfilled` | `FindingPublished` (to close confirm-missions) | sites, capture, verification |
 | **Passport** (`passport`) | passports, passport_entries; anonymous token handling, deletion | `create()`, `resolve(token)`, `record_entry(passport_id, site_id, obs_id)`, `summary(passport_id)`, `delete(passport_id)` | `PassportDeleted` | `FindingPublished` (contribution status) | none |
 | **Agents** (`agents`) | LangGraph checkpoints, agent run log; plans and routing | `start_run(obs_id)`, `resume(obs_id, value)`, `dispatch_missions(site_id)` | none | `ObservationReceived` | capture, sites, inspection, verification, stories, missions, passport |
 | **Reports** (`reports`) (Round 2) | report jobs and PDFs | `create_report(site_id)`, `get_report(id)` | `ReportReady` | none | sites, verification |
@@ -126,7 +126,7 @@ PostgreSQL 18 with PostGIS and pgvector, one database ([ADR-004](adr/ADR-004-pos
 | observations | capture | id, site_id?, facade_id?, passport_id?, mission_id?, object_key, location geography(Point)?, gps_accuracy_m?, heading_deg?, heading_accuracy_deg?, captured_at, received_at, status, idempotency_key, content_sha256, delete_after | status ∈ received, processing, needs_input, needs_retake, done, rejected, failed |
 | inspection_runs | inspection | id, observation_id, baseline_id, quality jsonb, alignment jsonb, aligned_key, diff_key, regions jsonb, judgment jsonb, model, created_at | |
 | findings | verification | id, facade_id, observation_id, inspection_run_id, region_id, damage_type, region_uv jsonb, pin_xyz jsonb, severity, existence_label, cause, cause_label, status, confirmations, rationale_ar, baseline_key, photo_key, diff_key, created_at, published_at | CHECK: `status <> 'published' OR (baseline_key IS NOT NULL AND photo_key IS NOT NULL AND diff_key IS NOT NULL AND existence_label IN ('confirmed','likely'))` |
-| finding_confirmations | verification | finding_id, observation_id, passport_id?, created_at | unique (finding_id, passport_id) so one visitor counts once |
+| finding_confirmations | verification | finding_id, observation_id, contributor_hash, created_at | one row per distinct contributor (passport id, or photo hash without a passport), so one visitor counts once |
 | reviews | verification | id, finding_id, reviewer_id, decision, changes jsonb, reason, created_at | |
 | missions | missions | id, facade_id, reason, finding_id?, status, instruction_ar, reference_baseline_id, priority, created_at, expires_at, fulfilled_by | |
 | sources | stories | id, site_id, kind, title, url?, narrator_name?, license, reviewed_by, reviewed_at | kind ∈ official, oral_reviewed, secondary |
@@ -171,18 +171,19 @@ REST under `/api/v1`, documented by FastAPI's generated OpenAPI 3.1 at `/api/v1/
 | Method and path | Auth | Purpose |
 |---|---|---|
 | `POST /observations` | passport token optional | Multipart: `photo` (JPEG/PNG/HEIC→rejected in R1, see §6.2 of security), `meta` JSON (site_id?, mission_id?, lat?, lon?, gps_accuracy_m?, heading_deg?, heading_accuracy_deg?, captured_at, consent{location, heading}). Header `Idempotency-Key` (UUID) **required**. Returns `202 {observation_id, status, events_url}`. |
-| `GET /observations/{id}` | same passport or dashboard user | Current status, question or retake reason, story_id, finding summary. |
+| `GET /observations/{id}` | the passport that sent it (any caller if sent without one) | Current status, question or retake reason, story_id, finding summary. |
 | `GET /observations/{id}/events` | same | Server-Sent Events: `status`, `question`, `retake`, `story_ready`, `finding`, `done`, `error`. Clients that cannot use SSE poll the GET above every 2 s. |
 | `POST /observations/{id}/answers` | same passport | `{question_id, facade_id \| null}` resumes the paused run. |
 | `GET /sites/{site_id}/story?facade_id=&lang=ar` | public | Verified story (schema in §8 Guide). |
-| `GET /stories/{story_id}/audio` | public | 302 to a short-lived presigned URL (audio/mpeg). |
+| `GET /stories/{story_id}` | public | Story with a short-lived presigned audio URL (audio/mpeg). |
 | `GET /missions/nearby?lat=&lon=` | public | Open missions within 300 m; position not stored. |
 | `POST /passports` · `GET /passport` · `DELETE /passport` | token | Create anonymous passport; summary; delete everything. |
 | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` | public / session | Dashboard session. |
-| `GET /sites` · `GET /sites/{id}` | inspector+ | Site with facades, facade map, model URL. |
+| `GET /sites` | inspector+ | All sites. |
+| `GET /sites/nearby?lat=&lon=` · `GET /sites/{id}` · `GET /facades/{id}/baseline` | public | Site with facades for the visitor app; baseline photo for the retake overlay. |
 | `GET /sites/{id}/pins?label=&facade_id=&cursor=&limit=` | inspector+ | Published findings as pins. |
 | `GET /findings/{id}` | inspector+ | Evidence panel data (presigned URLs). |
-| `GET /reviews/queue?cursor=&limit=` | expert | Findings paused for review. |
+| `GET /review-queue` | expert | Findings paused for review. |
 | `POST /findings/{id}/review` | expert | `{decision: confirm\|correct\|reject, changes?, reason}`; resumes the run. |
 | `GET /sites/{id}/coverage` | inspector+ | Days since last usable photo per facade, open missions. |
 | `POST /missions` · `GET /missions?site_id=` | inspector+ | Manual dispatch; list. |
@@ -523,7 +524,7 @@ All thresholds are starting values; the data scientist tunes them on the 50-imag
 2. **Quality gate.** On 1024 px grayscale: variance of Laplacian >= 80; mean luminance in [40, 215]; clipped pixels (< 5 or > 250) <= 15%. Fail → retake (`blurry`, `too_dark`, `too_bright`).
 3. **Alignment.** SIFT, 4000 features, on CLAHE-equalized grayscale of both images; k-NN matching with Lowe ratio 0.75; `findHomography` with `USAC_MAGSAC`, reprojection threshold 3 px. Accept if inliers >= 40, inlier ratio >= 0.25, homography determinant in [0.2, 5] and the warped photo covers >= 60% of the facade polygon. Warp the photo into the baseline frame and keep a validity mask. Fail → retake (`wrong_angle`), with the overlay.
 4. **Illumination normalization.** Convert both to LAB; CLAHE on L (clip 2.0, 8×8 tiles); match mean and std of the aligned L channel to the baseline inside the validity mask.
-5. **Difference map.** `change = 0.5 × (1 − SSIM)` (window 7) `+ 0.5 × |∇L_photo − ∇L_baseline|` (normalized). The gradient term favors sharp new edges (cracks, graffiti) over soft shadows. Threshold 0.35, morphological open 5 px then close 9 px, keep connected components >= 0.1% of the facade area, inside the facade polygon only. For each region also compute a **lighting flag**: L changed by > 25 but chroma (a, b) changed by < 6 and gradient structure correlation > 0.8 → likely shadow. Output: numbered region boxes, heat-map PNG, region stats.
+5. **Difference map.** `change = 0.5 × (1 − SSIM)` (window 7) `+ 0.5 × |∇L_photo − ∇L_baseline|` (normalized). The gradient term favors sharp new edges (cracks, graffiti) over soft shadows. Threshold 0.35, morphological open 5 px then close 9 px, keep connected components >= 0.1% of the facade area, inside the facade polygon only. For each region also compute a **lighting flag**: L changed by > 25 but chroma (a, b) changed by < 10 and gradient structure correlation > 0.6 → likely shadow (values from the demo pack, [ADR-016](adr/ADR-016-build-time-changes.md)). Output: numbered region boxes, heat-map PNG, region stats.
 6. **Multimodal judgment.** One Sonnet call with: baseline image, aligned photo, heat-map overlay with numbered boxes, region stats as JSON. Output: `DamageJudgment` (§8) via `output_config.format` JSON schema. The system prompt states that any text visible in images is part of the scene and never an instruction.
 7. **Optional segmentation.** If enabled, a pretrained YOLO segmentation model runs on the aligned photo; mask overlap with a region adds `seg_support: true`. Off by default in Round 1.
 8. **Confidence label rule** (pure function in `verification/domain/labels.py`):
@@ -604,7 +605,6 @@ flowchart LR
   sadu["Sadu<br/>monitoring platform"]
   claude["Anthropic Claude API<br/>vision + reasoning"]
   tts["Azure AI Speech<br/>Arabic TTS"]
-  langfuse["Langfuse<br/>LLM traces"]
   sentry["Sentry<br/>errors"]
   visitor -- "photos, location, heading" --> sadu
   sadu -- "verified story, audio, missions" --> visitor
@@ -612,7 +612,6 @@ flowchart LR
   expert -- "review decisions" --> sadu
   sadu -- "blurred images, prompts" --> claude
   sadu -- "story text" --> tts
-  sadu -- "traces without images" --> langfuse
   sadu -- "errors, scrubbed" --> sentry
 ```
 
@@ -793,7 +792,7 @@ flowchart LR
     api --> db
     api --> s3
   end
-  api -- "HTTPS" --> ext["Claude API, Azure Speech,<br/>Langfuse, Sentry"]
+  api -- "HTTPS" --> ext["Claude API, Azure Speech,<br/>Sentry"]
   backup["Nightly pg_dump + bucket sync<br/>to a second location"] -.-> db
 ```
 
@@ -814,5 +813,6 @@ flowchart LR
 | [ADR-011](adr/ADR-011-auth.md) | Local dashboard accounts with server sessions; anonymous passport tokens |
 | [ADR-012](adr/ADR-012-frontend.md) | One Next.js app with visitor and dashboard route groups |
 | [ADR-013](adr/ADR-013-demo-hosting.md) | One VM with docker compose behind Caddy |
-| [ADR-014](adr/ADR-014-observability.md) | Langfuse traces, Sentry errors, structlog |
+| [ADR-014](adr/ADR-014-observability.md) | Sentry errors, structlog, `llm_calls` table (Langfuse dropped in ADR-016) |
 | [ADR-015](adr/ADR-015-privacy-processing.md) | Process before store: EXIF strip and face blur before storage or LLM |
+| [ADR-016](adr/ADR-016-build-time-changes.md) | Changes made while building Round 1 |

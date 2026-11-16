@@ -1,6 +1,6 @@
 # ADR-010: Azure AI Speech with a Saudi Arabic neural voice, cached
 
-- Status: Accepted (pending team review)
+- Status: Accepted, amended by [ADR-016](ADR-016-build-time-changes.md): REST instead of the SDK
 - Date: 2026-11-16
 
 ## Context

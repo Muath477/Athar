@@ -25,4 +25,4 @@ Pipeline in 03-architecture §9: quality gate → SIFT + MAGSAC homography align
 
 ## Versions
 
-opencv-python-headless 5.0.0.93, scikit-image 0.26.0, numpy 2.5.5, ultralytics 8.4.215 (optional) (PyPI, 2026-11-16). YuNet model: `face_detection_yunet_2023mar.onnx` from opencv_zoo (OpenCV 5.0 docs via Context7). Tuned thresholds: TBD after Nov 18.
+opencv-python-headless 5.0.0.93, scikit-image 0.26.0, numpy 2.5.5, ultralytics 8.4.215 (optional) (PyPI, 2026-11-16). YuNet model: `face_detection_yunet_2023mar.onnx` from opencv_zoo (OpenCV 5.0 docs via Context7). Lighting-flag thresholds changed after the demo-pack evaluation, see [ADR-016](ADR-016-build-time-changes.md); thresholds on real photos: TBD after Nov 18.
