@@ -13,8 +13,9 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sadu.modules.agents.application.graph import Dependencies, RunState, build_graph
-from sadu.modules.agents.infrastructure.recording_llm import current_observation
+from sadu.modules.agents.application.graph import RunState, build_graph
+from sadu.modules.agents.application.guide import Dependencies
+from sadu.modules.agents.infrastructure.recording_llm import RecordingLLM, current_observation
 from sadu.modules.capture import api as capture
 from sadu.modules.capture.api import ObservationStatus
 from sadu.modules.inspection import api as inspection
@@ -26,7 +27,7 @@ from sadu.shared.errors import Conflict
 from sadu.shared.ports.embeddings import EmbeddingPort
 from sadu.shared.storage import ObjectStore
 
-__all__ = ["AgentRunner", "Dependencies"]
+__all__ = ["AgentRunner", "Dependencies", "RecordingLLM"]
 
 log = structlog.get_logger()
 
@@ -45,6 +46,10 @@ class AgentRunner:
         self._graph = build_graph(deps).compile(checkpointer=checkpointer)
         self._slots = asyncio.Semaphore(max_concurrent)
         self._tasks: set[asyncio.Task[None]] = set()
+
+    @property
+    def deps(self) -> Dependencies:
+        return self._deps
 
     def start(self, observation_id: UUID) -> None:
         """Run in the background; the visitor follows progress through the observation status."""

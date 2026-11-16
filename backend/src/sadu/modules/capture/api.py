@@ -11,12 +11,14 @@ from uuid import UUID
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sadu.modules.capture.infrastructure.image_processing import process_upload
+from sadu.modules.capture.infrastructure.image_processing import MAX_UPLOAD_BYTES, process_upload
 from sadu.modules.capture.infrastructure.orm import ObservationRow
 from sadu.shared.errors import Conflict, NotFound
 from sadu.shared.storage import ObjectStore, new_object_key
 
 PHOTO_RETENTION = timedelta(days=30)
+
+__all__ = ["MAX_UPLOAD_BYTES"]
 
 
 class ObservationStatus(StrEnum):

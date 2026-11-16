@@ -218,6 +218,15 @@ async def review_queue(session: AsyncSession) -> list[FindingView]:
     return [_view(r) for r in rows]
 
 
+async def pending_for_observation(session: AsyncSession, observation_id: UUID) -> list[UUID]:
+    rows = await session.scalars(
+        select(FindingRow.id).where(
+            FindingRow.observation_id == observation_id, FindingRow.status == FindingStatus.PENDING_REVIEW
+        )
+    )
+    return list(rows)
+
+
 async def needing_confirmation(session: AsyncSession, facade_ids: list[UUID]) -> list[FindingView]:
     rows = await session.scalars(
         select(FindingRow).where(

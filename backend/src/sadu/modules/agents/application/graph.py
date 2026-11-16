@@ -6,18 +6,16 @@ Each node opens its own transaction, so the visitor sees status changes as they 
 crash loses at most one step; the checkpointer resumes the run from the last finished node.
 """
 
-from collections.abc import Callable
-from contextlib import AbstractAsyncContextManager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from typing import Any, TypedDict
 from uuid import UUID
 
 import structlog
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.agents.application.evidence import evidence_keys, judged_regions, unjudged_regions
+from sadu.modules.agents.application.guide import Dependencies, verified_story
 from sadu.modules.agents.application.orchestrator import plan_steps
 from sadu.modules.agents.domain.identification import FacadeCandidate, identify_facade
 from sadu.modules.agents.domain.planning import ObservationContext, Step
@@ -28,28 +26,11 @@ from sadu.modules.missions import api as missions
 from sadu.modules.passport import api as passport
 from sadu.modules.sites import api as sites
 from sadu.modules.sites.domain.geometry import heading_score
-from sadu.modules.stories import api as stories
 from sadu.modules.verification import api as verification
 from sadu.modules.verification.domain.labels import Action
-from sadu.shared.ports.embeddings import EmbeddingPort
-from sadu.shared.ports.llm import LLMPort, LLMRefused, LLMUnavailable
-from sadu.shared.ports.speech import SpeechUnavailable, TextToSpeechPort
-from sadu.shared.storage import ObjectStore
 from sadu.shared.vocabulary import DamageType, ModelConfidence, Severity
 
 log = structlog.get_logger()
-
-type UnitOfWork = Callable[[], AbstractAsyncContextManager[AsyncSession]]
-
-
-@dataclass(frozen=True)
-class Dependencies:
-    unit_of_work: UnitOfWork
-    store: ObjectStore
-    llm: LLMPort
-    tts: TextToSpeechPort
-    embedder: EmbeddingPort | None = None
-    voice: str = stories.DEFAULT_VOICE
 
 
 class RunState(TypedDict, total=False):
@@ -307,7 +288,7 @@ class _Nodes:
             await capture.set_status(
                 session, observation_id, ObservationStatus.PROCESSING, {"stage": "guiding"}
             )
-        story = await self._story(site_id, facade_id)
+        story = await verified_story(self.deps, site_id, facade_id)
 
         async with self.deps.unit_of_work() as session:
             observation = await capture.get_observation(session, observation_id)
@@ -336,53 +317,6 @@ class _Nodes:
         """Park the run until an expert has decided every finding it sent for review."""
         interrupt({"finding_ids": state["pending_review"]})
         return {"pending_review": []}
-
-    async def _story(self, site_id: UUID, facade_id: UUID | None) -> stories.StoryView | None:
-        async with self.deps.unit_of_work() as session:
-            story = await stories.cached_story(session, site_id, facade_id)
-            if story is None:
-                story = await self._new_story(session, site_id, facade_id)
-            if story is not None and story.audio_key is None:
-                try:
-                    await stories.add_audio(
-                        session, self.deps.store, self.deps.tts, story.id, self.deps.voice
-                    )
-                except SpeechUnavailable as error:
-                    log.info("story_audio_skipped", reason=str(error))
-        return story
-
-    async def _new_story(
-        self, session: AsyncSession, site_id: UUID, facade_id: UUID | None
-    ) -> stories.StoryView | None:
-        site = await sites.get_site(session, site_id)
-        place = site.name_ar
-        if facade_id:
-            place = f"{place}، {(await sites.get_facade(session, facade_id)).name_ar}"
-        query = await stories.embed_query(self.deps.embedder, place)
-        chunks = await stories.retrieve_chunks(session, site_id, facade_id, query_embedding=query)
-        if not chunks:
-            return None
-        try:
-            drafts = await stories.draft_claims(
-                self.deps.llm, place_name=place, passages=[(c.chunk_id, c.text) for c in chunks]
-            )
-        except (LLMUnavailable, LLMRefused) as error:
-            log.warning("story_draft_failed", error=str(error))
-            return None
-        verdicts = await verification.check_claims(
-            self.deps.llm,
-            [verification.Claim(d.claim_id, d.text, d.chunk_id) for d in drafts],
-            [
-                verification.Chunk(c.chunk_id, c.source_id, verification.SourceKind(c.source_kind), c.text)
-                for c in chunks
-            ],
-        )
-        kept = [
-            (d, v.label.value, v.source_id) for d, v in zip(drafts, verdicts, strict=True) if v.publishable
-        ]
-        if not kept:
-            return None
-        return await stories.save_story(session, site_id=site_id, facade_id=facade_id, lang="ar", claims=kept)
 
     async def _attach_location(self, state: RunState) -> None:
         facade_id = state.get("facade_id")

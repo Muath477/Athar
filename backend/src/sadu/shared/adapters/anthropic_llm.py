@@ -29,16 +29,19 @@ MODELS_WITH_FALLBACK = {"claude-sonnet-5-5"}
 class AnthropicLLM:
     def __init__(self, settings: Settings) -> None:
         api_key = settings.anthropic_api_key.get_secret_value() if settings.anthropic_api_key else None
-        self._client = anthropic.AsyncAnthropic(api_key=api_key, max_retries=2)
+        self._client = anthropic.AsyncAnthropic(api_key=api_key, max_retries=2) if api_key else None
         self._models = {ModelRole.MAIN: settings.sadu_model_main, ModelRole.FAST: settings.sadu_model_fast}
 
     async def complete_structured(self, request: StructuredRequest) -> StructuredResult:
+        client = self._client
+        if client is None:
+            raise LLMUnavailable(f"{request.agent}: no API key configured")
         model = self._models[request.role]
         started = time.monotonic()
         try:
             response = await call_with_policy(
                 f"llm.{request.agent}",
-                lambda: self._send(model, request),
+                lambda: self._send(client, model, request),
                 timeout_s=request.timeout_s,
             )
         except anthropic.APIError as error:
@@ -62,7 +65,7 @@ class AnthropicLLM:
             latency_ms=int((time.monotonic() - started) * 1000),
         )
 
-    async def _send(self, model: str, request: StructuredRequest) -> Any:
+    async def _send(self, client: anthropic.AsyncAnthropic, model: str, request: StructuredRequest) -> Any:
         params: dict[str, Any] = {
             "model": model,
             "max_tokens": request.max_tokens,
@@ -74,10 +77,10 @@ class AnthropicLLM:
             },
         }
         if model in MODELS_WITH_FALLBACK:
-            return await self._client.beta.messages.create(
+            return await client.beta.messages.create(
                 **params, betas=[SERVER_SIDE_FALLBACK_BETA], fallbacks="default"
             )
-        return await self._client.messages.create(**params)
+        return await client.messages.create(**params)
 
 
 def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:

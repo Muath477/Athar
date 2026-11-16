@@ -110,6 +110,13 @@ async def cached_story(
     return _view(row, cached=True) if row else None
 
 
+async def get_story(session: AsyncSession, story_id: UUID) -> StoryView:
+    row = await session.get(StoryRow, story_id)
+    if row is None:
+        raise NotFound("not_found")
+    return _view(row, cached=True)
+
+
 async def save_story(
     session: AsyncSession,
     *,

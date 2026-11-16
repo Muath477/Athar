@@ -72,6 +72,8 @@ extend-immutable-calls = [
 "tests/**" = ["S101", "PLR2004"]
 "eval/**" = ["S101"]
 "alembic/versions/**" = ["E501"]
+# FastAPI injects handler parameters by name; their count is set by the route, not by callers.
+"src/sadu/modules/*/interface/*.py" = ["PLR0917"]
 
 [tool.mypy]
 python_version = "3.13"

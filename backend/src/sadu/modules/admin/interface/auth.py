@@ -1,0 +1,37 @@
+"""Dashboard authentication: session cookie, role checks and CSRF for unsafe methods."""
+
+from collections.abc import Awaitable, Callable
+from typing import Annotated
+
+from fastapi import Depends, Request
+
+from sadu.modules.admin import api as admin
+from sadu.modules.admin.api import Role, UserView
+from sadu.shared.errors import Forbidden, Unauthorized
+from sadu.shared.web import Session
+
+SESSION_COOKIE = "sadu_session"
+CSRF_HEADER = "X-CSRF-Token"
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+def require_role(role: Role) -> Callable[[Request, Session], Awaitable[UserView]]:
+    async def dependency(request: Request, session: Session) -> UserView:
+        token = request.cookies.get(SESSION_COOKIE)
+        if not token:
+            raise Unauthorized("not_authenticated")
+        auth = await admin.authenticate(session, token)
+        if request.method not in SAFE_METHODS and request.headers.get(CSRF_HEADER) != auth.csrf_token:
+            raise Forbidden("csrf_failed")
+        if not auth.user.role.allows(role):
+            raise Forbidden("forbidden")
+        request.state.user_id = auth.user.id
+        return auth.user
+
+    dependency.__name__ = f"require_{role.value}"
+    return dependency
+
+
+Inspector = Annotated[UserView, Depends(require_role(Role.INSPECTOR))]
+Expert = Annotated[UserView, Depends(require_role(Role.EXPERT))]
+Admin = Annotated[UserView, Depends(require_role(Role.ADMIN))]
