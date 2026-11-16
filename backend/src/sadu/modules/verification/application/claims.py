@@ -1,5 +1,3 @@
-"""Entailment check of story claims against their cited chunks, using the fast model."""
-
 import json
 from typing import Any
 
@@ -41,7 +39,6 @@ CHECK_SCHEMA: dict[str, Any] = {
 
 
 async def check_claims(llm: LLMPort, claims: list[Claim], chunks: list[Chunk]) -> list[ClaimVerdict]:
-    """Return one verdict per claim, in order. A claim without a known cited chunk is unsupported."""
     by_id = {c.chunk_id: c for c in chunks}
     cited = [(claim, by_id[claim.chunk_id]) for claim in claims if claim.chunk_id in by_id]
     if not cited:

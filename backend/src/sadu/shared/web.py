@@ -1,5 +1,3 @@
-"""Request plumbing shared by every router: app state, sessions, rate limits, headers."""
-
 import time
 from collections import defaultdict, deque
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -20,8 +18,6 @@ API_PREFIX = "/api/v1"
 
 
 class RateLimiter:
-    """Sliding-window counters in memory. Enough for the single API process of Round 1."""
-
     def __init__(self) -> None:
         self._hits: dict[str, deque[float]] = defaultdict(deque)
 
@@ -40,7 +36,6 @@ class AppState:
     settings: Settings
     unit_of_work: UnitOfWork
     store: ObjectStore
-    # The agent runner lives in the agents module; typed loosely so shared code does not import it.
     runner: Any
     rate_limiter: RateLimiter = field(default_factory=RateLimiter)
 
@@ -51,7 +46,6 @@ def app_state(request: Request) -> AppState:
 
 
 async def db_session(state: Annotated[AppState, Depends(app_state)]) -> AsyncIterator[AsyncSession]:
-    """One transaction per request; committed when the handler returns without error."""
     async with state.unit_of_work() as session:
         yield session
 
@@ -60,8 +54,7 @@ State = Annotated[AppState, Depends(app_state)]
 Session = Annotated[AsyncSession, Depends(db_session)]
 
 
-def public() -> None:
-    """Marks a route as intentionally open; the route audit test requires every route to declare access."""
+def public() -> None: ...
 
 
 def limit_per_ip(name: str, limit: int, window_s: int) -> Callable[[Request, AppState], None]:
@@ -72,7 +65,6 @@ def limit_per_ip(name: str, limit: int, window_s: int) -> Callable[[Request, App
 
 
 def client_ip(request: Request) -> str:
-    # Caddy is the only proxy and sets X-Forwarded-For; uvicorn's proxy_headers resolves it.
     return request.client.host if request.client else "unknown"
 
 

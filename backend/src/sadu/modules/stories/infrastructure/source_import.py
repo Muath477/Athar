@@ -1,5 +1,3 @@
-"""Load reviewed sources for a site from a region pack's sources file."""
-
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -41,7 +39,6 @@ async def import_sources(
     sources_path: Path,
     embedder: EmbeddingPort | None = None,
 ) -> int:
-    """Replace the site's sources and drop its cached stories. Returns the number of chunks."""
     raw = sources_path.read_text(encoding="utf-8")
     spec = SourcesFile.model_validate_json(raw)
     await session.execute(delete(SourceRow).where(SourceRow.site_id == site_id))

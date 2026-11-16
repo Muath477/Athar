@@ -1,5 +1,3 @@
-"""Facade planes and pin placement (docs/03-architecture.md §10)."""
-
 import math
 from dataclasses import dataclass
 
@@ -19,7 +17,6 @@ class FacadePlane:
 
     @classmethod
     def from_corners(cls, corners: list[Vec3]) -> "FacadePlane":
-        """Corners in order: bottom-left, bottom-right, top-right, top-left."""
         if len(corners) != 4:
             raise ValueError(f"A facade needs 4 corners, got {len(corners)}")
         bottom_left, bottom_right, _, top_left = corners
@@ -33,7 +30,6 @@ class FacadePlane:
         return cls(bottom_left, u_axis, v_axis, _scale(normal, 1 / _norm(normal)), width, height)
 
     def uv_to_xyz(self, u: float, v: float) -> Vec3:
-        """Map facade UV (0..1 left to right, 0..1 bottom to top) to a point just off the wall."""
         u, v = _clamp01(u), _clamp01(v)
         point = _add(self.origin, _scale(self.u_axis, u * self.width_m))
         point = _add(point, _scale(self.v_axis, v * self.height_m))
@@ -41,7 +37,6 @@ class FacadePlane:
 
 
 def heading_score(camera_heading_deg: float, outward_azimuth_deg: float) -> float:
-    """1.0 when the camera faces the facade head-on, -1.0 when it faces away."""
     facing_direction = (outward_azimuth_deg + 180.0) % 360.0
     return math.cos(math.radians(camera_heading_deg - facing_direction))
 
@@ -71,7 +66,6 @@ def _cross(a: Vec3, b: Vec3) -> Vec3:
 
 
 def image_point_to_uv(homography: list[list[float]], x: float, y: float) -> tuple[float, float]:
-    """Apply a baseline-pixel -> facade-UV homography to one point."""
     h = homography
     w = h[2][0] * x + h[2][1] * y + h[2][2]
     if w == 0:

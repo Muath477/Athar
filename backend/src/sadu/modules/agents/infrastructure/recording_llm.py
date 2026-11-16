@@ -1,5 +1,3 @@
-"""Wraps the LLM port to log every call's cost and to stop live calls past the daily budget."""
-
 import time
 from contextvars import ContextVar
 from uuid import UUID

@@ -1,5 +1,3 @@
-"""Public facade of the Verification module: the gate between detection and the dashboard."""
-
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -21,7 +19,7 @@ __all__ = ["Chunk", "Claim", "ClaimLabel", "ClaimVerdict", "SourceKind", "check_
 CORROBORATION_WINDOW = timedelta(days=30)
 MIN_CORROBORATION_IOU = 0.2
 
-type BoxUV = tuple[float, float, float, float]  # u0, v0, u1, v1
+type BoxUV = tuple[float, float, float, float]
 
 
 class FindingStatus(StrEnum):
@@ -38,8 +36,6 @@ class ReviewDecision(StrEnum):
 
 @dataclass(frozen=True)
 class RegionEvidence:
-    """What Verification needs about one region; built by the agent from the inspection."""
-
     region_id: int
     region_uv: BoxUV
     pin_xyz: tuple[float, float, float]
@@ -99,13 +95,11 @@ async def record_regions(
     evidence: EvidenceKeys,
     regions: list[RegionEvidence],
 ) -> list[RecordedVerdict]:
-    """Apply the label rule to each region and store what may be stored."""
     recorded = []
     for region in regions:
         existing = await _corroborated_finding(session, facade_id, region)
         contributors = await _contributors(session, existing.id) if existing else set()
         is_new_contributor = contributor not in contributors
-        # Independent sources: distinct contributors who photographed this damage, this photo included.
         signals = _signals(region, len(contributors | {contributor}))
         verdict = decide(signals)
         finding_id = None
@@ -137,7 +131,6 @@ async def record_unjudged_regions(
     evidence: EvidenceKeys,
     regions: list[tuple[int, BoxUV, tuple[float, float, float]]],
 ) -> list[UUID]:
-    """When the model is unavailable, changes go to an expert with their evidence, never to the map."""
     ids = []
     for region_id, region_uv, pin_xyz in regions:
         finding = FindingRow(
@@ -311,7 +304,7 @@ def _new_finding(
 
 def _apply_verdict(finding: FindingRow, verdict: Verdict) -> None:
     if finding.status == FindingStatus.PUBLISHED and verdict.action is Action.REVIEW:
-        return  # An already published finding is not pulled back for review by a second photo.
+        return
     finding.existence_label = verdict.label
     finding.severity = verdict.severity or finding.severity
     finding.reasons = list(verdict.reasons)

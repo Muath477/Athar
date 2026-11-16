@@ -1,5 +1,3 @@
-"""Orchestrator: the fast model proposes a plan; the domain invariants decide whether it stands."""
-
 import json
 from typing import Any
 

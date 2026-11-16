@@ -1,5 +1,3 @@
-"""Public facade of the Sites & Region Packs module."""
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any

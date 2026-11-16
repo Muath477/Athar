@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Colors from mud brick, palm wood and the red and black of Sadu weaving. */
 @theme {
   --color-sand: #efe4d2;
   --color-clay: #b3804f;
@@ -23,7 +22,6 @@ body {
   min-block-size: 100dvh;
 }
 
-/* A woven band of triangles, in the spirit of a Sadu border. */
 .sadu-band {
   block-size: 14px;
   background:

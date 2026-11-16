@@ -1,5 +1,3 @@
-"""Turn one inspection into what the Verifier needs, in facade coordinates."""
-
 from sadu.modules.inspection.api import InspectionOutcome
 from sadu.modules.inspection.domain.models import BoxPx
 from sadu.modules.sites.api import BaselineView, FacadeView
@@ -9,7 +7,6 @@ from sadu.modules.verification.api import BoxUV, EvidenceKeys, RegionEvidence
 def evidence_keys(outcome: InspectionOutcome, photo_key: str) -> EvidenceKeys | None:
     if outcome.baseline_key is None or outcome.diff_key is None:
         return None
-    # The aligned photo is the evidence image: it overlays the baseline pixel for pixel.
     return EvidenceKeys(outcome.baseline_key, outcome.aligned_key or photo_key, outcome.diff_key)
 
 
@@ -53,7 +50,6 @@ def unjudged_regions(
 
 
 def box_to_uv(box: BoxPx, baseline: BaselineView) -> BoxUV:
-    """Pixel box (y down) to facade UV box (v up), as (u0, v0, u1, v1) with u0 < u1 and v0 < v1."""
     corners = [baseline.to_uv(x, y) for x in (box.x, box.x + box.width) for y in (box.y, box.y + box.height)]
     us, vs = [c[0] for c in corners], [c[1] for c in corners]
     return (min(us), min(vs), max(us), max(vs))

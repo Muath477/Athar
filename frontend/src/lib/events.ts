@@ -3,10 +3,6 @@ import { eventsUrl, type ObservationState, passportToken, request } from "@/lib/
 const POLL_MS = 2000;
 const FINAL = new Set(["done", "needs_retake", "failed"]);
 
-/**
- * Follows an observation until it finishes. Reads the server-sent event stream with fetch,
- * because EventSource cannot send the passport header; falls back to polling if the stream breaks.
- */
 export function followObservation(observationId: string, onState: (state: ObservationState) => void): () => void {
   const controller = new AbortController();
   let stopped = false;

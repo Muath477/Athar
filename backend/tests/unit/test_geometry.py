@@ -2,7 +2,6 @@ import pytest
 
 from sadu.modules.sites.domain.geometry import PIN_OFFSET_M, FacadePlane, heading_score
 
-# A 10 m wide, 4 m high wall in the X-Y plane, seen from +Z.
 SOUTH_WALL = [(0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (10.0, 4.0, 0.0), (0.0, 4.0, 0.0)]
 
 

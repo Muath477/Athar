@@ -1,5 +1,3 @@
-"""Public facade of the Agents module: start, resume and recover observation runs."""
-
 import asyncio
 import json
 from datetime import timedelta
@@ -37,8 +35,6 @@ type RunInput = RunState | Command[Any] | None
 
 
 class AgentRunner:
-    """Runs at most `max_concurrent` observations at once; the rest wait their turn."""
-
     def __init__(
         self, deps: Dependencies, checkpointer: BaseCheckpointSaver[Any], max_concurrent: int
     ) -> None:
@@ -52,7 +48,6 @@ class AgentRunner:
         return self._deps
 
     def start(self, observation_id: UUID) -> None:
-        """Run in the background; the visitor follows progress through the observation status."""
         self._spawn(observation_id, {"observation_id": str(observation_id)})
 
     async def answer(self, session: AsyncSession, observation_id: UUID, facade_id: UUID | None) -> None:
@@ -62,13 +57,11 @@ class AgentRunner:
         self._spawn(observation_id, Command(resume=str(facade_id) if facade_id else None))
 
     async def review_finished(self, observation_id: UUID) -> None:
-        """Resume a run parked in await_review. A run that is not parked there is left alone."""
         state = await self._graph.aget_state(_config(observation_id))
         if "await_review" in state.next:
             self._spawn(observation_id, Command(resume="reviewed"))
 
     async def recover(self) -> None:
-        """Startup sweep: resume runs a restart interrupted, so no photo is left processing."""
         async with self._deps.unit_of_work() as session:
             stale = await capture.unfinished_observation_ids(session, STALE_RUN_AGE)
         for observation_id in stale:
@@ -77,7 +70,6 @@ class AgentRunner:
         log.info("runs_recovered", count=len(stale))
 
     async def wait(self) -> None:
-        """Wait for every background run; used by tests and on shutdown."""
         while self._tasks:
             await asyncio.gather(*list(self._tasks), return_exceptions=True)
 
@@ -104,7 +96,6 @@ class AgentRunner:
 async def seed_region_pack(
     session: AsyncSession, store: ObjectStore, pack_dir: Path, embedder: EmbeddingPort | None = None
 ) -> list[str]:
-    """Import a pack's sites, then each site's reviewed sources. Returns the site slugs."""
     slugs = await sites.import_region_pack(session, store, pack_dir)
     spec = json.loads((pack_dir / "pack.json").read_text(encoding="utf-8"))
     for site_spec in spec["sites"]:
@@ -123,7 +114,6 @@ async def seed_region_pack(
 
 
 async def dispatch_missions(session: AsyncSession) -> int:
-    """Orchestrator's proactive pass: open missions for coverage gaps and unconfirmed findings."""
     opened = 0
     for site in await sites.list_sites(session):
         opened += len(await missions.plan_missions(session, site.id))
@@ -131,7 +121,6 @@ async def dispatch_missions(session: AsyncSession) -> int:
 
 
 async def forget_visitor(session: AsyncSession, store: ObjectStore, passport_id: UUID) -> None:
-    """PDPL erasure across modules: the passport, its stamps, and its photos unless they are evidence."""
     photos = await capture.release_passport_photos(session, passport_id)
     keys = [*photos.values(), *await inspection.artifact_keys(session, list(photos))]
     await capture.delete_observations(session, list(photos))

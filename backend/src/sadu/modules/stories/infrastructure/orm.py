@@ -42,7 +42,6 @@ class StoryChunkRow(UuidPk, Base):
     facade_id: Mapped[UUID | None] = mapped_column(ForeignKey("facades.id", ondelete="SET NULL"))
     text_ar: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIMENSIONS))
-    # 'simple' config: Postgres has no Arabic stemmer, so match on whole words.
     tsv: Mapped[Any] = mapped_column(TSVECTOR, Computed("to_tsvector('simple', text_ar)", persisted=True))
 
 

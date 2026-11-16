@@ -19,7 +19,6 @@ type Props = {
   onSelect: (findingId: string) => void;
 };
 
-/** The site as its facade planes from the facade map, with one pin per published finding. */
 export function SiteModel({ facades, findings, selectedId, onSelect }: Props) {
   return (
     <Canvas camera={{ position: [14, 9, 14], fov: 45 }} className="rounded-xl bg-[#d9c7aa]">
@@ -58,7 +57,6 @@ export function SiteModel({ facades, findings, selectedId, onSelect }: Props) {
 
 function FacadePlane({ corners }: { corners: number[][] }) {
   const geometry = useMemo(() => {
-    // Corners are bottom-left, bottom-right, top-right, top-left: two triangles make the wall.
     const positions = new Float32Array(corners.flat());
     const shape = new THREE.BufferGeometry();
     shape.setAttribute("position", new THREE.BufferAttribute(positions, 3));

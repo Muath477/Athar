@@ -1,5 +1,3 @@
-"""In-process typed event bus. Handlers run after the publishing transaction commits."""
-
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -55,7 +53,6 @@ class EventBus:
             try:
                 await handler(event)
             except Exception:
-                # One failing subscriber must not break the publisher or the others.
                 log.exception("event_handler_failed", event=type(event).__name__)
 
 

@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
+from cv2.typing import MatLike
 
+from sadu.modules.inspection.domain.models import DifferenceReport
 from sadu.modules.inspection.infrastructure.opencv_pipeline import (
     align_to_baseline,
     assess_quality,
@@ -11,12 +13,13 @@ from sadu.shared.vocabulary import RetakeReason
 from tests.synthetic import mud_wall, photograph, unrelated_scene, with_crack, with_soft_shadow
 
 BASELINE = mud_wall()
-CRACK_BOX = (420, 120, 455, 420)  # x0, y0, x1, y1 of the drawn crack
+CRACK_BOX = (420, 120, 455, 420)
 
 
-def changes_between(baseline, photo):  # type: ignore[no-untyped-def]
+def changes_between(baseline: MatLike, photo: MatLike) -> DifferenceReport:
     alignment = align_to_baseline(photo, baseline)
     assert alignment.report.ok, alignment.report
+    assert alignment.warped is not None and alignment.valid_mask is not None
     aligned_lab, baseline_lab = normalize_lighting(alignment.warped, baseline, alignment.valid_mask)
     report, _ = find_changes(aligned_lab, baseline_lab, alignment.valid_mask)
     return report

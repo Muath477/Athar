@@ -1,5 +1,4 @@
 #!/bin/sh
-# Writes the S3 identity file from environment variables so no credentials live in the repo.
 set -eu
 cat > /tmp/s3.json <<JSON
 {"identities": [{"name": "sadu-api",

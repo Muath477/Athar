@@ -1,5 +1,3 @@
-"""User-facing backend messages in Arabic (default) and English."""
-
 from typing import Any
 
 MESSAGES: dict[str, dict[str, str]] = {

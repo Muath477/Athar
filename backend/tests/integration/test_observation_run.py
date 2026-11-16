@@ -1,5 +1,3 @@
-"""End-to-end observation runs through the agent graph, with a scripted model and real CV."""
-
 import json
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime

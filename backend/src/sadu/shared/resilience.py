@@ -14,11 +14,6 @@ async def call_with_policy[T](
     retries: int = 0,
     backoff_s: float = 0.5,
 ) -> T:
-    """Run `call` with a per-attempt timeout and exponential backoff between attempts.
-
-    Re-raises the last error so the caller decides on the fallback; a fallback hidden
-    here would make demo failures look like successes.
-    """
     attempt = 0
     while True:
         try:

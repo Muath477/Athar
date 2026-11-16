@@ -1,9 +1,3 @@
-"""Integration tests run against the Postgres from docker compose, migrated to head.
-
-Each test runs inside one outer transaction that is rolled back, so tests never see each
-other's rows and the database stays clean.
-"""
-
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -50,7 +44,6 @@ async def session() -> AsyncIterator[AsyncSession]:
 
 @pytest.fixture
 async def committed_unit_of_work() -> AsyncIterator[UnitOfWork]:
-    """Real commits through separate sessions, as in production; every table is emptied afterwards."""
     url = get_settings().database_url
     if not url.rsplit("/", 1)[-1].endswith("_test"):
         pytest.skip("committed tests run only against a database whose name ends in _test")

@@ -52,11 +52,9 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 
 @asynccontextmanager
 async def unit_of_work() -> AsyncIterator[AsyncSession]:
-    """One transaction: commits on success, rolls back on any exception."""
     async with get_session_factory()() as session, session.begin():
         yield session
 
 
 def plain_postgres_url() -> str:
-    """libpq URL for psycopg and the LangGraph checkpointer (no SQLAlchemy driver prefix)."""
     return get_settings().database_url.replace("postgresql+psycopg://", "postgresql://")

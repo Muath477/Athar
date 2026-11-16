@@ -1,8 +1,3 @@
-"""Load a region pack folder into the database and object storage.
-
-A pack is data only (docs/03-architecture.md, region packs): adding one never needs code.
-"""
-
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -21,7 +16,6 @@ from sadu.shared.storage import ObjectStore
 
 log = structlog.get_logger()
 
-# Baseline corners are clicked bottom-left, bottom-right, top-right, top-left; UV has v pointing up.
 UV_CORNERS = np.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=np.float32)
 
 
@@ -83,7 +77,6 @@ class PackSpec(Strict):
 
 
 async def import_pack(session: AsyncSession, store: ObjectStore, pack_dir: Path) -> list[str]:
-    """Replace the pack's sites with the folder's contents. Returns the imported site slugs."""
     spec = PackSpec.model_validate_json((pack_dir / "pack.json").read_text(encoding="utf-8"))
     pack = await _upsert_pack(session, spec)
     slugs = []

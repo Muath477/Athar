@@ -1,19 +1,17 @@
-"""Synthetic mud-brick walls for CV tests, so tests need no real site photos."""
-
 import cv2
 import numpy as np
 from numpy.typing import NDArray
 
 type Image = NDArray[np.uint8]
 
-WALL_SIZE = (640, 960)  # height, width
+WALL_SIZE = (640, 960)
 
 
 def mud_wall(seed: int = 7) -> Image:
     rng = np.random.default_rng(seed)
     height, width = WALL_SIZE
     base = np.zeros((height, width, 3), dtype=np.float32)
-    base[:] = (95, 140, 180)  # BGR sandy brown
+    base[:] = (95, 140, 180)
     base += rng.normal(0, 12, (height, width, 1))
     for _ in range(400):
         center = (int(rng.integers(0, width)), int(rng.integers(0, height)))
@@ -26,7 +24,6 @@ def mud_wall(seed: int = 7) -> Image:
 
 
 def photograph(wall: Image, *, tilt_px: int = 40, brightness: float = 1.0) -> Image:
-    """A visitor's view of the wall: perspective tilt and different exposure."""
     height, width = wall.shape[:2]
     source = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
     target = np.float32(

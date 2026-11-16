@@ -1,5 +1,3 @@
-"""Public facade of the Passport module: anonymous visitor tokens and site stamps."""
-
 import hashlib
 import secrets
 from dataclasses import dataclass
@@ -30,7 +28,6 @@ class PassportSummary:
 
 
 async def create(session: AsyncSession) -> tuple[UUID, str]:
-    """Return (passport_id, token). Only the token's hash is stored; the visitor keeps the token."""
     token = secrets.token_urlsafe(TOKEN_BYTES)
     row = PassportRow(token_hash=_hash(token))
     session.add(row)
@@ -49,7 +46,6 @@ async def resolve(session: AsyncSession, token: str) -> UUID:
 async def record_entry(
     session: AsyncSession, passport_id: UUID, site_id: UUID, observation_id: UUID | None
 ) -> bool:
-    """Stamp the site once per passport. Returns False when it was already stamped."""
     existing = await session.scalar(
         select(PassportEntryRow.id).where(
             PassportEntryRow.passport_id == passport_id, PassportEntryRow.site_id == site_id
@@ -77,7 +73,6 @@ async def summary(session: AsyncSession, passport_id: UUID) -> PassportSummary:
 
 
 async def delete_passport(session: AsyncSession, passport_id: UUID) -> None:
-    """PDPL erasure of the passport and its stamps. agents.forget_visitor handles the photos."""
     await session.execute(delete(PassportRow).where(PassportRow.id == passport_id))
 
 

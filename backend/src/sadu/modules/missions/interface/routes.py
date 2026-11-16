@@ -60,7 +60,6 @@ async def nearby_missions(
     lat: Annotated[float, Query(ge=-90, le=90)],
     lon: Annotated[float, Query(ge=-180, le=180)],
 ) -> list[MissionOut]:
-    """The position answers this request only; it is not stored or logged."""
     found: list[MissionOut] = []
     for site in await sites.find_sites_near(session, lat, lon, radius_m=300):
         found.extend(mission_out(m) for m in await missions.list_missions(session, site_id=site.id))

@@ -1,4 +1,5 @@
 from dataclasses import replace
+from typing import Any
 
 import pytest
 
@@ -43,9 +44,9 @@ def test_single_clear_change_is_published_as_likely() -> None:
     ],
 )
 def test_unusable_or_doubtful_evidence_asks_for_another_photo(
-    change: dict[str, object], expected_reason: RetakeReason
+    change: dict[str, Any], expected_reason: RetakeReason
 ) -> None:
-    verdict = decide(replace(CLEAR_CRACK, **change))  # type: ignore[arg-type]
+    verdict = decide(replace(CLEAR_CRACK, **change))
     assert verdict.label is ConfidenceLabel.UNKNOWN
     assert verdict.action is Action.RETAKE
     assert verdict.retake_reason is expected_reason
@@ -56,8 +57,8 @@ def test_unusable_or_doubtful_evidence_asks_for_another_photo(
     "change",
     [{"change_present": False}, {"damage_type": DamageType.NONE}, {"visible_in_baseline": True}],
 )
-def test_no_new_change_is_discarded(change: dict[str, object]) -> None:
-    verdict = decide(replace(CLEAR_CRACK, **change))  # type: ignore[arg-type]
+def test_no_new_change_is_discarded(change: dict[str, Any]) -> None:
+    verdict = decide(replace(CLEAR_CRACK, **change))
     assert verdict.action is Action.DISCARD
     assert not verdict.reaches_dashboard
 
@@ -87,8 +88,8 @@ def test_expert_confirmation_publishes_urgent_findings_directly() -> None:
     "change",
     [{"model_severity": Severity.URGENT}, {"model_confidence": ModelConfidence.MEDIUM}],
 )
-def test_urgent_or_medium_confidence_single_source_goes_to_expert(change: dict[str, object]) -> None:
-    verdict = decide(replace(CLEAR_CRACK, **change))  # type: ignore[arg-type]
+def test_urgent_or_medium_confidence_single_source_goes_to_expert(change: dict[str, Any]) -> None:
+    verdict = decide(replace(CLEAR_CRACK, **change))
     assert verdict.label is ConfidenceLabel.LIKELY
     assert verdict.action is Action.REVIEW
 

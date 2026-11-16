@@ -1,5 +1,3 @@
-"""Visitor identity: the anonymous passport token in the X-Passport-Token header."""
-
 from typing import Annotated
 from uuid import UUID
 

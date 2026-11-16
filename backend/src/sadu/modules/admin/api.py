@@ -1,5 +1,3 @@
-"""Public facade of the Admin module: dashboard users, sessions, audit log and model costs."""
-
 import hashlib
 import secrets
 from dataclasses import dataclass
@@ -21,7 +19,6 @@ MAX_FAILED_LOGINS = 5
 LOCKOUT = timedelta(minutes=15)
 
 _hasher = PasswordHasher()
-# Verified against when the email is unknown, so both paths cost one Argon2 verification.
 _DUMMY_HASH = _hasher.hash(secrets.token_hex(16))
 
 

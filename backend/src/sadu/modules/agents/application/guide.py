@@ -1,5 +1,3 @@
-"""Guide: serve the cached verified story, or draft one, verify every claim and cache it."""
-
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -31,7 +29,6 @@ class Dependencies:
 async def verified_story(
     deps: Dependencies, site_id: UUID, facade_id: UUID | None
 ) -> stories.StoryView | None:
-    """None means no verified source supports a story yet; the visitor is told so."""
     async with deps.unit_of_work() as session:
         story = await stories.cached_story(session, site_id, facade_id)
         if story is None:

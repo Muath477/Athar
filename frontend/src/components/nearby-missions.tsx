@@ -15,7 +15,6 @@ export function NearbyMissions() {
     setError(null);
     try {
       const position = await currentPosition();
-      // The position is sent for this answer only; the server does not store it.
       setMissions(await request<Mission[]>(`/missions/nearby?lat=${position.lat}&lon=${position.lon}`));
     } catch {
       setError("لم نتمكن من معرفة موقعك. يمكنك التصوير دون مهمة.");

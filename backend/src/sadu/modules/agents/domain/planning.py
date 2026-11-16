@@ -1,5 +1,3 @@
-"""Orchestrator plan invariants (docs/03-architecture.md §8, Orchestrator)."""
-
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -24,12 +22,10 @@ class ObservationContext:
 
 
 def may_monitor(context: ObservationContext) -> bool:
-    """Monitoring needs to know where the photo was taken and consent to use it for that."""
     return context.has_site and (context.has_location or context.on_mission)
 
 
 def accept_plan(proposed: list[str], context: ObservationContext) -> tuple[Step, ...]:
-    """Return the proposed plan if it is valid, otherwise the safe default for this context."""
     fallback = DEFAULT_PLAN if may_monitor(context) else STORY_ONLY_PLAN
     try:
         steps = tuple(Step(name) for name in proposed)

@@ -1,12 +1,3 @@
-"""Offline evaluation of the computer-vision stages on the demo region pack.
-
-Runs every labelled test photo through identification, quality, alignment and change
-detection, then prints per-photo results and the summary metrics. No model calls and no
-database: the damage judgment by the model is covered by the recorded-answer tests.
-
-    uv run python -m eval.run
-"""
-
 import sys
 import time
 from dataclasses import dataclass
@@ -23,7 +14,7 @@ BASELINES = ("north", "east", "south", "west")
 @dataclass(frozen=True)
 class Case:
     photo: str
-    facade: str | None  # None: the photo shows none of the facades
+    facade: str | None
     real_damage: bool
     lighting_only: bool = False
 
@@ -82,7 +73,6 @@ def evaluate(case: Case, baselines: dict[str, cv.Image]) -> Outcome:
 
 
 def _identify(photo: cv.Image, baselines: dict[str, cv.Image]) -> str | None:
-    """Pick the facade with the most feature matches, as the Identifier agent does."""
     counts = {name: cv.count_matches(photo, image) for name, image in baselines.items()}
     best = max(counts, key=lambda name: counts[name])
     return best if counts[best] >= AlignmentThresholds().min_inliers else None

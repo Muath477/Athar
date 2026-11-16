@@ -1,5 +1,3 @@
-"""Public facade of the Missions module: ask visitors to photograph specific facades."""
-
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -52,7 +50,6 @@ class MissionView:
 async def plan_missions(
     session: AsyncSession, site_id: UUID, now: datetime | None = None
 ) -> list[MissionView]:
-    """Open the highest-priority missions the site has room for."""
     now = now or datetime.now(UTC)
     await expire_missions(session, now)
     facades = await sites.list_facades(session, site_id)
@@ -98,7 +95,6 @@ async def plan_missions(
 async def create_mission(
     session: AsyncSession, facade_id: UUID, reason: MissionReason, finding_id: UUID | None = None
 ) -> MissionView:
-    """Manual dispatch from the dashboard. One open mission per facade."""
     facade = await sites.get_facade(session, facade_id)
     if any(m.facade_id == facade_id for m in await list_missions(session, site_id=facade.site_id)):
         raise Conflict("mission_already_open")
@@ -131,7 +127,6 @@ async def get_mission(session: AsyncSession, mission_id: UUID) -> MissionView:
 
 
 async def fulfill(session: AsyncSession, mission_id: UUID, observation_id: UUID) -> None:
-    """Called once the mission's photo produced a usable inspection."""
     row = await session.get(MissionRow, mission_id)
     if row is None or row.status != MissionStatus.OPEN:
         return

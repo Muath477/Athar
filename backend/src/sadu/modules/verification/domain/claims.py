@@ -1,5 +1,3 @@
-"""Story claim labels (docs/03-architecture.md §8, Verifier)."""
-
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -56,7 +54,6 @@ def unsupported_verdict(claim: Claim) -> ClaimVerdict:
 
 
 def verbatim_fallback(claims: list[Claim], chunks: list[Chunk]) -> list[ClaimVerdict]:
-    """Without the checker, keep only claims quoted word for word from an official chunk."""
     by_id = {c.chunk_id: c for c in chunks}
     verdicts = []
     for claim in claims:

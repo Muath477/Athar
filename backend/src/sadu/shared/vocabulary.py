@@ -1,5 +1,3 @@
-"""Shared kernel: the words every module uses for damage and trust."""
-
 from enum import StrEnum
 
 
@@ -33,8 +31,6 @@ _SEVERITY_ORDER = (Severity.WATCH, Severity.MODERATE, Severity.URGENT)
 
 
 class ConfidenceLabel(StrEnum):
-    """Labels shown to inspectors and visitors (docs/00-scope.md, confidence labels)."""
-
     CONFIRMED = "confirmed"
     LIKELY = "likely"
     ORAL_ACCOUNT = "oral_account"

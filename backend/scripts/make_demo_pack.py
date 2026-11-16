@@ -1,10 +1,3 @@
-"""Generate the synthetic demo region pack: a 10 m x 8 m x 6 m mud-brick box with four facades.
-
-Everything here is synthetic. Real sites replace this pack with surveyed corners, real
-baseline photos and reviewed sources (see region-packs/README.md).
-Run from backend/: uv run python -m scripts.make_demo_pack
-"""
-
 import json
 from pathlib import Path
 
@@ -15,7 +8,6 @@ PACK_DIR = Path(__file__).resolve().parents[2] / "region-packs" / "demo"
 SLUG = "demo-house"
 HEIGHT_M = 6.0
 
-# (code, Arabic name, English name, outward azimuth, corners BL, BR, TR, TL at ground level, seed)
 FACADES = [
     ("north", "الواجهة الشمالية", "North facade", 0.0, (5, -4), (-5, -4), 11),
     ("east", "الواجهة الشرقية", "East facade", 90.0, (5, 4), (5, -4), 12),
@@ -29,7 +21,6 @@ def facade_entry(code: str, names: tuple[str, str], azimuth: float, left: tuple,
     (lx, lz), (rx, rz) = left, right
     corners = [[lx, 0, lz], [rx, 0, rz], [rx, HEIGHT_M, rz], [lx, HEIGHT_M, lz]]
     center = [(lx + rx) / 2, HEIGHT_M / 2, (lz + rz) / 2]
-    # Outward direction in model space: x east, -z north.
     outward = {0.0: (0, -1), 90.0: (1, 0), 180.0: (0, 1), 270.0: (-1, 0)}[azimuth]
     position = [center[0] + outward[0] * CAMERA_DISTANCE_M, 4.0, center[2] + outward[1] * CAMERA_DISTANCE_M]
     return {
@@ -85,7 +76,6 @@ def main() -> None:
                     "name_ar": "بيت طيني تجريبي",
                     "name_en": "Demo mud-brick house",
                     "building_type": "mud_brick_house",
-                    # Placeholder point in Riyadh for the demo; not a heritage site.
                     "location": [46.6753, 24.7136],
                     "boundary": [
                         [46.6750, 24.7133],

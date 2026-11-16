@@ -19,7 +19,6 @@ export type Heading = { degrees: number; accuracy: number | null };
 type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number; webkitCompassAccuracy?: number };
 type OrientationPermission = { requestPermission?: () => Promise<"granted" | "denied"> };
 
-/** Starts listening to the compass; returns a function that stops it. iOS asks the user first. */
 export async function watchHeading(onHeading: (heading: Heading) => void): Promise<() => void> {
   const permission = (DeviceOrientationEvent as unknown as OrientationPermission).requestPermission;
   if (permission && (await permission()) !== "granted") throw new Error("heading_denied");
@@ -29,7 +28,6 @@ export async function watchHeading(onHeading: (heading: Heading) => void): Promi
     if (typeof e.webkitCompassHeading === "number") {
       onHeading({ degrees: e.webkitCompassHeading, accuracy: e.webkitCompassAccuracy ?? null });
     } else if (e.absolute && typeof e.alpha === "number") {
-      // alpha grows counter-clockwise from north; compass headings grow clockwise.
       onHeading({ degrees: (360 - e.alpha) % 360, accuracy: null });
     }
   };

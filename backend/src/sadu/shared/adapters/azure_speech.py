@@ -1,5 +1,3 @@
-"""Azure AI Speech text to speech over its REST API (no native SDK in the image)."""
-
 from xml.sax.saxutils import escape, quoteattr
 
 import httpx
@@ -41,7 +39,5 @@ class AzureSpeech:
 
 
 class NoSpeech:
-    """Used when no Azure key is configured: stories are served as text only."""
-
     async def synthesize(self, text: str, voice: str) -> bytes:
         raise SpeechUnavailable("text to speech is not configured")

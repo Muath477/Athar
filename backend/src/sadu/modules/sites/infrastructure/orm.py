@@ -55,5 +55,4 @@ class BaselinePhotoRow(UuidPk, Base):
     is_primary: Mapped[bool] = mapped_column(default=False)
     width: Mapped[int] = mapped_column(Integer)
     height: Mapped[int] = mapped_column(Integer)
-    # 3x3 homography from baseline pixels to facade UV (u right, v up, both 0..1).
     h_img_to_uv: Mapped[list[list[float]]] = mapped_column(JSONB)

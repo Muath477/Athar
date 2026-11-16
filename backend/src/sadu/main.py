@@ -1,5 +1,3 @@
-"""ASGI entry point: `uvicorn sadu.main:app`."""
-
 import asyncio
 import contextlib
 from collections.abc import AsyncIterator
@@ -13,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlalchemy import text
 
-import sadu.shared.orm_registry  # noqa: F401  (registers every table)
+import sadu.shared.orm_registry
 from sadu.modules.admin.interface.routes import router as admin_router
 from sadu.modules.agents import api as agents
 from sadu.modules.agents.interface.routes import router as agents_router
@@ -120,7 +118,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def build_llm(settings: Settings) -> LLMPort:
     llm: LLMPort = agents.RecordingLLM(AnthropicLLM(settings), settings.sadu_daily_llm_budget_usd)
-    # Every live answer is recorded; in demo mode recordings are served first (D3).
     return CachedLLM(llm, Path(settings.sadu_demo_cache_dir), prefer_cache=settings.sadu_demo_mode)
 
 

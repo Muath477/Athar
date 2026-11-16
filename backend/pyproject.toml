@@ -57,7 +57,6 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "S", "SIM", "RUF", "PL"]
-# PLR0911: rule tables read best as one early return per rule. N818: Refused/Unavailable read better.
 ignore = ["PLR0911", "PLR0913", "PLR2004", "N818"]
 
 [tool.ruff.lint.flake8-bugbear]
@@ -71,7 +70,9 @@ extend-immutable-calls = [
 "tests/**" = ["S101", "PLR2004"]
 "eval/**" = ["S101"]
 "alembic/versions/**" = ["E501"]
-# FastAPI injects handler parameters by name; their count is set by the route, not by callers.
+"tests/conftest.py" = ["F401"]
+"src/sadu/main.py" = ["F401"]
+"src/sadu/cli.py" = ["F401"]
 "src/sadu/modules/*/interface/*.py" = ["PLR0917"]
 
 [tool.mypy]
@@ -86,7 +87,6 @@ module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbeddi
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-# scikit-image ships no type hints for structural_similarity.
 module = ["sadu.modules.inspection.infrastructure.opencv_pipeline"]
 disallow_untyped_calls = false
 

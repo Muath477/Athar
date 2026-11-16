@@ -40,7 +40,6 @@ export function EvidencePanel({ finding, onClose }: { finding: Finding; onClose?
         {images.map((image) =>
           image.url ? (
             <figure key={image.title} className="flex flex-col gap-1">
-              {/* eslint-disable-next-line @next/next/no-img-element -- short-lived presigned evidence URLs */}
               <img src={image.url} alt={image.title} className="rounded-lg" />
               <figcaption className="text-xs">{image.title}</figcaption>
             </figure>

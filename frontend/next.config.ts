@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-// In development the API runs on its own port; in production Caddy routes /api to it directly.
 const apiOrigin = process.env.SADU_API_ORIGIN ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {

@@ -1,5 +1,3 @@
-"""Public facade of the Capture module: observation intake and status."""
-
 import asyncio
 import hashlib
 from dataclasses import dataclass
@@ -64,7 +62,6 @@ class ObservationView:
 async def create_observation(
     session: AsyncSession, store: ObjectStore, *, raw_photo: bytes, meta: CaptureMeta, idempotency_key: str
 ) -> tuple[ObservationView, bool]:
-    """Store a processed photo and return (observation, created). Replays return created=False."""
     request_hash = _request_hash(raw_photo, meta)
     existing = await session.scalar(
         select(ObservationRow).where(ObservationRow.idempotency_key == idempotency_key)
@@ -124,7 +121,6 @@ async def set_status(
 async def attach_location_result(
     session: AsyncSession, observation_id: UUID, *, site_id: UUID | None, facade_id: UUID | None
 ) -> None:
-    """Record where the photo belongs and drop the raw GPS fix (PDPL minimization)."""
     row = await _row(session, observation_id)
     row.site_id = site_id
     row.facade_id = facade_id
@@ -159,10 +155,6 @@ async def unfinished_observation_ids(session: AsyncSession, older_than: timedelt
 
 
 async def release_passport_photos(session: AsyncSession, passport_id: UUID) -> dict[UUID, str]:
-    """Unlink the passport from every photo and return the non-evidence ones to delete.
-
-    Evidence photos had their retention extended by keep_as_evidence; they stay, de-linked.
-    """
     cutoff = datetime.now(UTC) + PHOTO_RETENTION
     rows = await session.scalars(select(ObservationRow).where(ObservationRow.passport_id == passport_id))
     to_delete = {}

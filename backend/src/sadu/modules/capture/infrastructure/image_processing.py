@@ -1,6 +1,3 @@
-"""Process-before-store (ADR-015): nothing below leaves memory until EXIF is gone and faces
-are blurred."""
-
 import io
 from dataclasses import dataclass
 from functools import lru_cache
@@ -34,7 +31,6 @@ class ProcessedPhoto:
 
 
 def process_upload(raw: bytes) -> ProcessedPhoto:
-    """Validate, orient, strip metadata, resize and blur faces. Raises SaduError on bad input."""
     if len(raw) > MAX_UPLOAD_BYTES:
         raise SaduError("upload_too_large", status=413, max_mb=MAX_UPLOAD_BYTES // (1024 * 1024))
     image = _decode_validated(raw)
@@ -43,7 +39,6 @@ def process_upload(raw: bytes) -> ProcessedPhoto:
 
     bgr = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
     faces = blur_faces(bgr)
-    # Re-encoding from pixels writes a JPEG with no EXIF, XMP or ICC data.
     ok, buffer = cv2.imencode(".jpg", bgr, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
     if not ok:
         raise SaduError("unsupported_image", status=415)
@@ -52,7 +47,6 @@ def process_upload(raw: bytes) -> ProcessedPhoto:
 
 
 def blur_faces(bgr: MatLike) -> int:
-    """Blur every detected face in place and return how many were found."""
     height, width = bgr.shape[:2]
     detector = _face_detector()
     detector.setInputSize((width, height))

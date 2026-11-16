@@ -1,5 +1,3 @@
-"""Public facade of the Stories module: sources, retrieval, drafting and the story cache."""
-
 import hashlib
 from dataclasses import dataclass
 from typing import Any
@@ -69,7 +67,6 @@ async def retrieve_chunks(
     query_embedding: list[float] | None = None,
     k: int = MAX_CHUNKS,
 ) -> list[ChunkView]:
-    """Chunks about this facade or the whole site. Facade-specific first, or by vector distance."""
     statement = (
         select(StoryChunkRow, SourceRow.kind)
         .join(SourceRow, SourceRow.id == StoryChunkRow.source_id)
@@ -125,7 +122,6 @@ async def save_story(
     lang: str,
     claims: list[tuple[DraftClaim, str, str | None]],
 ) -> StoryView:
-    """Store verified claims: (draft claim, label, source_id). Unverified claims must not be passed."""
     source_ids = {UUID(source_id) for _, _, source_id in claims if source_id}
     sources = {
         str(row.id): row
@@ -165,7 +161,6 @@ async def add_audio(
     story_id: UUID,
     voice: str = DEFAULT_VOICE,
 ) -> str:
-    """Synthesize and store the story audio. Raises SpeechUnavailable; the caller serves text only."""
     row = await session.get(StoryRow, story_id)
     if row is None:
         raise NotFound("not_found")
@@ -178,7 +173,6 @@ async def add_audio(
 
 
 async def sources_version(session: AsyncSession, site_id: UUID) -> str:
-    """Changes whenever the site's sources are re-imported, so stale stories stop matching."""
     ids = await session.scalars(
         select(SourceRow.id).where(SourceRow.site_id == site_id).order_by(SourceRow.id)
     )

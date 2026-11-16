@@ -1,12 +1,10 @@
-"""Operator commands: `python -m sadu.cli seed` and `python -m sadu.cli create-user`."""
-
 import argparse
 import asyncio
 import getpass
 import os
 from pathlib import Path
 
-import sadu.shared.orm_registry  # noqa: F401  (registers every table)
+import sadu.shared.orm_registry
 from sadu.modules.admin import api as admin
 from sadu.modules.agents import api as agents
 from sadu.shared.config import get_settings
@@ -24,7 +22,6 @@ async def seed(pack: str) -> None:
 
 
 async def create_user(email: str, role: str) -> None:
-    # SADU_NEW_USER_PASSWORD lets scripts create the demo accounts without a prompt.
     password = os.environ.get("SADU_NEW_USER_PASSWORD") or getpass.getpass("Password: ")
     if len(password) < 12:
         raise SystemExit("Password must be at least 12 characters")

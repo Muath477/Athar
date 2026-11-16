@@ -1,4 +1,3 @@
-// Typed client for the Sadu API. Every call goes to the same origin under /api/v1.
 
 const BASE = "/api/v1";
 const PASSPORT_KEY = "sadu.passport";
@@ -159,7 +158,6 @@ export function baselineUrl(facadeId: string): string {
   return `${BASE}/facades/${facadeId}/baseline`;
 }
 
-// localStorage can be missing or blocked (private mode); the app still works without it.
 function readStorage(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -172,7 +170,6 @@ function writeStorage(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
   } catch {
-    // Without storage the passport lasts for this page only.
   }
 }
 
@@ -180,6 +177,5 @@ function removeStorage(key: string): void {
   try {
     window.localStorage.removeItem(key);
   } catch {
-    // Nothing stored, nothing to remove.
   }
 }

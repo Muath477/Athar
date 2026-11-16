@@ -1,5 +1,3 @@
-"""Which monitoring missions to open (docs/03-architecture.md §8, Orchestrator)."""
-
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -27,7 +25,6 @@ class MissionCandidate:
 
 
 def coverage_gap_days(last_photo_at: datetime | None, now: datetime) -> int | None:
-    """Days without a usable photo, or None when the facade is covered."""
     if last_photo_at is None:
         return COVERAGE_MAX_AGE.days * 2
     age = now - last_photo_at
@@ -35,7 +32,6 @@ def coverage_gap_days(last_photo_at: datetime | None, now: datetime) -> int | No
 
 
 def rank_candidates(candidates: list[MissionCandidate]) -> list[MissionCandidate]:
-    """Unconfirmed findings outrank coverage gaps; worse findings and older gaps come first."""
     return sorted(candidates, key=_priority_key)
 
 

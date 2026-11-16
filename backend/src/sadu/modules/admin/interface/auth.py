@@ -1,5 +1,3 @@
-"""Dashboard authentication: session cookie, role checks and CSRF for unsafe methods."""
-
 from collections.abc import Awaitable, Callable
 from typing import Annotated
 

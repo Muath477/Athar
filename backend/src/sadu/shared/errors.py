@@ -1,5 +1,3 @@
-"""RFC 9457 problem responses. Every error the API returns goes through here."""
-
 from typing import Any
 
 import structlog
@@ -17,8 +15,6 @@ log = structlog.get_logger()
 
 
 class SaduError(Exception):
-    """A failure the client can act on. `code` is stable; `title` is a translation key."""
-
     status = 400
 
     def __init__(self, code: str, *, status: int | None = None, **params: Any) -> None:

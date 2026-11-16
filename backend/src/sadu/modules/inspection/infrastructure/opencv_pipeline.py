@@ -1,9 +1,3 @@
-"""Quality gate, alignment, illumination normalization and difference map (docs §9, steps 2-5).
-
-All images are BGR uint8 arrays. Functions are synchronous and CPU-bound; callers run them
-in a worker thread.
-"""
-
 from dataclasses import dataclass
 
 import cv2
@@ -24,7 +18,6 @@ from sadu.modules.inspection.domain.models import (
 )
 from sadu.shared.vocabulary import RetakeReason
 
-# OpenCV's stubs widen every array to MatLike; uint8 BGR is the convention, not a checked type.
 type Image = MatLike
 type Mask = MatLike
 
@@ -61,7 +54,6 @@ class Alignment:
 
 
 def count_matches(photo: Image, baseline: Image) -> int:
-    """RANSAC inliers between two images; used by the Identifier to rank facades."""
     homography, inliers, _ = _estimate_homography(photo, baseline)
     return inliers if homography is not None else 0
 
@@ -91,7 +83,6 @@ def align_to_baseline(
 
 
 def normalize_lighting(aligned: Image, baseline: Image, mask: Mask) -> tuple[Image, Image]:
-    """CLAHE on both L channels, then match the aligned photo's L mean and spread to the baseline."""
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     aligned_lab = cv2.cvtColor(aligned, cv2.COLOR_BGR2LAB)
     baseline_lab = cv2.cvtColor(baseline, cv2.COLOR_BGR2LAB)
@@ -114,7 +105,6 @@ def find_changes(
     facade_mask: Mask | None = None,
     limits: DifferenceThresholds = DifferenceThresholds(),
 ) -> tuple[DifferenceReport, NDArray[np.float32]]:
-    """Return change regions and the change map (0..1) used for the heat-map image."""
     area_mask = valid_mask if facade_mask is None else cv2.bitwise_and(valid_mask, facade_mask)
     change_map = _change_map(aligned_lab[..., 0], baseline_lab[..., 0]) * (area_mask > 0)
 
@@ -143,7 +133,6 @@ def find_changes(
 
 
 def render_heatmap(baseline: Image, change_map: NDArray[np.float32], report: DifferenceReport) -> Image:
-    """Baseline with the change map blended in red and numbered region boxes for the LLM."""
     heat = cv2.applyColorMap((change_map * 255).astype(np.uint8), cv2.COLORMAP_JET)
     overlay = cv2.addWeighted(baseline, 0.6, heat, 0.4, 0)
     for region in report.regions:
@@ -196,8 +185,6 @@ def _estimate_homography(photo: Image, baseline: Image) -> tuple[MatLike | None,
 
 
 def _change_map(aligned_l: Image, baseline_l: Image) -> NDArray[np.float32]:
-    """Half structural dissimilarity, half new-edge strength; sharp new edges (cracks, paint)
-    score high while soft shadows mostly move brightness, not gradients."""
     _, ssim_map = structural_similarity(
         aligned_l, baseline_l, win_size=SSIM_WINDOW, full=True, data_range=255
     )

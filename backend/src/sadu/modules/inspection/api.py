@@ -1,5 +1,3 @@
-"""Public facade of the Inspection module: compare one photo with one facade baseline."""
-
 import asyncio
 from dataclasses import asdict, dataclass, field
 from uuid import UUID
@@ -118,7 +116,6 @@ async def inspect(
 
 
 async def match_inliers(photo_jpeg: bytes, baseline_jpegs: list[bytes]) -> list[int]:
-    """Feature-match inlier counts of the photo against each baseline, in the same order."""
     photo = cv.decode_image(photo_jpeg)
     return await asyncio.to_thread(
         lambda: [cv.count_matches(photo, cv.decode_image(b)) for b in baseline_jpegs]
@@ -126,7 +123,6 @@ async def match_inliers(photo_jpeg: bytes, baseline_jpegs: list[bytes]) -> list[
 
 
 async def artifact_keys(session: AsyncSession, observation_ids: list[UUID]) -> list[str]:
-    """Aligned photos and heat maps derived from these observations, for deletion with them."""
     rows = await session.execute(
         select(InspectionRunRow.aligned_key, InspectionRunRow.diff_key).where(
             InspectionRunRow.observation_id.in_(observation_ids)

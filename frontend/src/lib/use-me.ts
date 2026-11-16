@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError, type Me, rememberCsrf, request } from "@/lib/api";
 
-/** The signed-in dashboard user; sends anyone else to the login page. */
 export function useMe(): Me | null {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);

@@ -56,7 +56,6 @@ def finding_out(finding: verification.FindingView, store: ObjectStore | None = N
         region_uv=finding.region_uv,
         pin_xyz=finding.pin_xyz,
         cause=finding.cause,
-        # A cause is the model's reading until an expert sets it.
         cause_label="interpretation",
         rationale_ar=finding.rationale_ar,
         created_at=finding.created_at,

@@ -4,8 +4,6 @@ from typing import Any, Protocol
 
 
 class ModelRole(StrEnum):
-    """Which model tier a call needs; the adapter maps roles to concrete model IDs."""
-
     MAIN = "main"
     FAST = "fast"
 
@@ -40,8 +38,7 @@ class StructuredResult:
     latency_ms: int
 
 
-class LLMRefused(Exception):
-    """The model declined; callers route the case to a human instead of retrying."""
+class LLMRefused(Exception): ...
 
 
 class LLMUnavailable(Exception):

@@ -63,7 +63,6 @@ async def nearby_sites(
     lat: Annotated[float, Query(ge=-90, le=90)],
     lon: Annotated[float, Query(ge=-180, le=180)],
 ) -> list[SiteOut]:
-    """For the visitor app: the position is used for this answer only and not stored."""
     return [await site_out(session, state, s) for s in await sites.find_sites_near(session, lat, lon)]
 
 
@@ -79,6 +78,5 @@ async def get_site(site_id: UUID, session: Session, state: State) -> SiteOut:
 
 @router.get("/facades/{facade_id}/baseline", dependencies=[Depends(public)])
 async def baseline_image(facade_id: UUID, session: Session, state: State) -> RedirectResponse:
-    """The reference photo the visitor lines the camera up with."""
     baseline = await sites.primary_baseline(session, facade_id)
     return RedirectResponse(state.store.presigned_url(baseline.object_key), status_code=307)

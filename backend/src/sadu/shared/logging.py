@@ -38,7 +38,6 @@ async def request_id_middleware(
 
 
 def _accepted_request_id(incoming: str | None) -> str:
-    """Reuse a caller's ID only if it is short and plain, so it cannot inject into logs."""
     if incoming and len(incoming) <= _MAX_REQUEST_ID_LENGTH and incoming.replace("-", "").isalnum():
         return incoming
     return uuid.uuid4().hex

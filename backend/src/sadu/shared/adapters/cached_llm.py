@@ -1,5 +1,3 @@
-"""Demo resilience (D3): replay recorded LLM answers when the network or API fails."""
-
 import hashlib
 import json
 from dataclasses import asdict
@@ -13,12 +11,6 @@ log = structlog.get_logger()
 
 
 class CachedLLM:
-    """Records every successful answer; serves the recording when the live call fails.
-
-    The key covers the prompt, schema and image bytes, so a different photo never gets
-    another photo's answer.
-    """
-
     def __init__(self, live: LLMPort, cache_dir: Path, *, prefer_cache: bool) -> None:
         self._live = live
         self._cache_dir = cache_dir

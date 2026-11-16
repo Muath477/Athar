@@ -1,5 +1,3 @@
-"""Story drafting from retrieved chunks only (docs/03-architecture.md §8, Guide)."""
-
 import json
 from dataclasses import dataclass
 from typing import Any
@@ -41,7 +39,6 @@ class DraftClaim:
 
 
 async def draft_claims(llm: LLMPort, *, place_name: str, passages: list[tuple[str, str]]) -> list[DraftClaim]:
-    """`passages` are (chunk_id, text). Raises LLMUnavailable or LLMRefused for the caller's fallback."""
     numbered = [{"chunk_id": chunk_id, "text": text} for chunk_id, text in passages]
     request = StructuredRequest(
         agent="guide",

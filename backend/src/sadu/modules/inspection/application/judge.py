@@ -1,5 +1,3 @@
-"""Multimodal damage judgment (docs/03-architecture.md §9 step 6)."""
-
 import json
 from typing import Any
 
@@ -101,7 +99,6 @@ async def judge_regions(
     known_ids = {r.region_id for r in regions}
     judgments = {}
     for item in result.data.get("regions", []):
-        # The model may only describe regions the difference map produced (evidence by construction).
         if item["region_id"] not in known_ids:
             continue
         judgments[item["region_id"]] = RegionJudgment(

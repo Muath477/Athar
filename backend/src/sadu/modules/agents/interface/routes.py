@@ -1,5 +1,3 @@
-"""Routes that start or resume agent runs, or that span several modules."""
-
 import asyncio
 import json
 from collections.abc import AsyncIterator
@@ -112,7 +110,6 @@ async def submit_observation(
     meta: Annotated[str, Form(max_length=4000)],
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=64)],
 ) -> ObservationAccepted:
-    """Accept a photo; processing continues in the background and is followed through /events."""
     if passport_id is not None:
         state.rate_limiter.check(f"upload-passport:{passport_id}", 10, 60)
         state.rate_limiter.check(f"upload-passport-day:{passport_id}", 60, 86400)
@@ -121,7 +118,6 @@ async def submit_observation(
     except ValidationError as error:
         raise SaduError("validation_failed", status=422) from error
     raw = await photo.read(MAX_UPLOAD_BYTES + 1)
-    # Location and heading are kept only with the visitor's consent (PDPL minimization).
     capture_meta = CaptureMeta(
         captured_at=parsed.captured_at,
         site_id=parsed.site_id,
@@ -160,7 +156,6 @@ async def get_observation(
 async def observation_events(
     observation_id: UUID, state: State, passport_id: OptionalPassport
 ) -> EventSourceResponse:
-    """Server-sent status changes until the run finishes. Clients without SSE poll the GET above."""
     async with state.unit_of_work() as session:
         await _owned_observation(session, observation_id, passport_id)
 
@@ -281,7 +276,6 @@ async def delete_passport(
 async def _owned_observation(
     session: Session, observation_id: UUID, passport_id: UUID | None
 ) -> capture.ObservationView:
-    """A photo sent with a passport is visible only with that passport; an anonymous one by its id."""
     observation = await capture.get_observation(session, observation_id)
     if observation.passport_id is not None and observation.passport_id != passport_id:
         raise Forbidden("forbidden")

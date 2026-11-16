@@ -12,7 +12,6 @@ async def test_pack_import_creates_site_facades_and_baselines(session, store, de
     assert set(demo.facades) == {"north", "east", "south", "west"}
     baseline = await sites.primary_baseline(session, demo.facades["north"].id)
     assert baseline.object_key in store.objects
-    # The clicked corners map to the UV corners: top-left pixel is u=0, v=1.
     assert baseline.to_uv(0, 0) == pytest.approx((0.0, 1.0), abs=1e-6)
     assert baseline.to_uv(baseline.width, baseline.height) == pytest.approx((1.0, 0.0), abs=1e-6)
 

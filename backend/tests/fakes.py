@@ -1,5 +1,3 @@
-"""Test doubles for the outbound ports."""
-
 from collections.abc import Callable
 from typing import Any
 
@@ -9,8 +7,6 @@ type Responder = Callable[[StructuredRequest], dict[str, Any]]
 
 
 class FakeLLM:
-    """Answers each request with what the responder returns; records every request."""
-
     def __init__(self, responder: Responder | None = None) -> None:
         self.responder = responder
         self.requests: list[StructuredRequest] = []
@@ -23,8 +19,6 @@ class FakeLLM:
 
 
 class MemoryStore:
-    """ObjectStore kept in a dict."""
-
     def __init__(self) -> None:
         self.objects: dict[str, tuple[bytes, str]] = {}
 

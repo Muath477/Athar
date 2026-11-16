@@ -8,7 +8,6 @@ import { type Coverage, type Finding, request, type Site } from "@/lib/api";
 import { damageTypeAr, findingLabelAr, severityAr } from "@/lib/labels";
 import { useMe } from "@/lib/use-me";
 
-// WebGL needs the browser; the model is never rendered on the server.
 const SiteModel = dynamic(() => import("@/components/dashboard/site-model").then((m) => m.SiteModel), {
   ssr: false,
   loading: () => <div className="h-full animate-pulse rounded-xl bg-clay/20" />,

@@ -12,7 +12,6 @@ from sadu.shared.db import Base, Timestamped, UuidPk
 class FindingRow(UuidPk, Timestamped, Base):
     __tablename__ = "findings"
     __table_args__ = (
-        # D1 driver: nothing reaches the dashboard without its evidence and a publishable label.
         CheckConstraint(
             "status <> 'published' OR (baseline_key IS NOT NULL AND photo_key IS NOT NULL "
             "AND diff_key IS NOT NULL AND existence_label IN ('confirmed', 'likely'))",
@@ -56,7 +55,6 @@ class FindingConfirmationRow(Timestamped, Base):
     observation_id: Mapped[UUID] = mapped_column(
         ForeignKey("observations.id", ondelete="CASCADE"), primary_key=True
     )
-    # Passport ID or, for anonymous uploads, the photo hash: one contributor counts once.
     contributor_hash: Mapped[str] = mapped_column(String(64))
 
 

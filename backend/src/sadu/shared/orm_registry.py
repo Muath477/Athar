@@ -1,5 +1,3 @@
-"""Imports every module's ORM so `Base.metadata` is complete for Alembic and tests."""
-
 from sadu.modules.admin.infrastructure import orm as admin_orm
 from sadu.modules.capture.infrastructure import orm as capture_orm
 from sadu.modules.inspection.infrastructure import orm as inspection_orm

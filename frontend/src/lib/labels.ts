@@ -1,4 +1,3 @@
-// Arabic labels for values the API returns as codes.
 
 export const damageTypeAr: Record<string, string> = {
   crack: "تشقق",

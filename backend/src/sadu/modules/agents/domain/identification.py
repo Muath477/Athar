@@ -1,5 +1,3 @@
-"""Identifier decision rule (docs/03-architecture.md §8, Identifier)."""
-
 from dataclasses import dataclass
 from enum import StrEnum
 from uuid import UUID
@@ -8,7 +6,6 @@ MIN_INLIERS = 40
 INLIER_MARGIN = 1.5
 MAX_USABLE_HEADING_ERROR_DEG = 30.0
 MAX_TRUSTED_HEADING_ERROR_DEG = 20.0
-# cos(45°): the best facade must face the camera at least 45° better than the runner-up.
 MIN_HEADING_SCORE_MARGIN = 0.29
 
 
@@ -55,7 +52,6 @@ def identify_facade(candidates: list[FacadeCandidate], heading_accuracy_deg: flo
 def _trusted_heading_ranking(
     candidates: list[FacadeCandidate], heading_accuracy_deg: float | None
 ) -> list[FacadeCandidate]:
-    """Facades ranked by heading, or [] when the heading cannot decide on its own."""
     if heading_accuracy_deg is None or heading_accuracy_deg > MAX_TRUSTED_HEADING_ERROR_DEG:
         return []
     scored = sorted(

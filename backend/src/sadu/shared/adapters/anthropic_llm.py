@@ -1,5 +1,3 @@
-"""LLMPort adapter for the Claude API (ADR-003)."""
-
 import base64
 import json
 import time
@@ -17,7 +15,6 @@ from sadu.shared.ports.llm import (
 )
 from sadu.shared.resilience import call_with_policy
 
-# USD per million tokens (input, output), Anthropic first-party rates as of 2026-11-03.
 PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-haiku-5-5": (0.10, 0.50),

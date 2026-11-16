@@ -1,9 +1,3 @@
-"""The confidence-label rule from docs/03-architecture.md §9.
-
-This is the only place that decides whether a detected change may reach the dashboard.
-It is pure so every branch can be tested without images or a model.
-"""
-
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -28,8 +22,6 @@ class Action(StrEnum):
 
 @dataclass(frozen=True)
 class RegionSignals:
-    """Everything the rule needs about one difference region."""
-
     quality_ok: bool
     alignment_ok: bool
     change_present: bool

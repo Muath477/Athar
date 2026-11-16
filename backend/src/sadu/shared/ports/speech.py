@@ -6,6 +6,4 @@ class SpeechUnavailable(Exception):
 
 
 class TextToSpeechPort(Protocol):
-    async def synthesize(self, text: str, voice: str) -> bytes:
-        """Return MP3 audio for `text`."""
-        ...
+    async def synthesize(self, text: str, voice: str) -> bytes: ...

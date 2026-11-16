@@ -9,7 +9,6 @@ type Props = {
   onPhoto: (photo: Blob) => void;
 };
 
-/** Live camera with the reference photo as a faint overlay; falls back to the phone's camera app. */
 export function Camera({ overlayUrl, onPhoto }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [live, setLive] = useState<"starting" | "on" | "unavailable">("starting");
@@ -17,7 +16,6 @@ export function Camera({ overlayUrl, onPhoto }: Props) {
   useEffect(() => {
     let stream: MediaStream | null = null;
     let cancelled = false;
-    // mediaDevices is missing on plain-HTTP origins; the file input still works there.
     const media = navigator.mediaDevices
       ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } }, audio: false })
       : Promise.reject(new Error("camera_unavailable"));
@@ -54,7 +52,6 @@ export function Camera({ overlayUrl, onPhoto }: Props) {
         <div className="relative overflow-hidden rounded-xl bg-ink">
           <video ref={videoRef} autoPlay playsInline muted className="block w-full" />
           {overlayUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- presigned image, sized by the video
             <img src={overlayUrl} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35" />
           )}
         </div>

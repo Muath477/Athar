@@ -1,6 +1,6 @@
 import asyncio
 from functools import lru_cache
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 import boto3
@@ -23,7 +23,6 @@ class ObjectStore(Protocol):
 
 
 def new_object_key(prefix: str, extension: str) -> str:
-    """Random keys only: visitor file names never reach storage."""
     return f"{prefix}/{uuid4().hex}.{extension}"
 
 
@@ -61,7 +60,7 @@ class S3ObjectStore:
             await asyncio.to_thread(self._client.create_bucket, Bucket=self._bucket)
 
 
-def _s3_client(settings: Settings, endpoint_url: str):  # type: ignore[no-untyped-def]  # boto3 ships no types
+def _s3_client(settings: Settings, endpoint_url: str) -> Any:
     return boto3.client(
         "s3",
         endpoint_url=endpoint_url,

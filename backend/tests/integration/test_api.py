@@ -1,5 +1,3 @@
-"""HTTP tests against the real app wired to the test transaction, a memory store and a fake model."""
-
 import json
 
 import httpx
@@ -94,7 +92,6 @@ async def test_location_is_not_kept_without_consent(client):
     )
     await client.runner.wait()
     result = (await client.get(f"/observations/{accepted.json()['observation_id']}")).json()
-    # Without location the site is unknown, so nothing is monitored.
     assert result["detail"] == {"site_found": False}
 
 

@@ -1,11 +1,3 @@
-"""The observation run as a LangGraph state graph (docs/03-architecture.md §8).
-
-plan -> identify -> [ask_visitor] -> [monitor -> verify] -> guide -> [await_review]
-
-Each node opens its own transaction, so the visitor sees status changes as they happen and a
-crash loses at most one step; the checkpointer resumes the run from the last finished node.
-"""
-
 from dataclasses import asdict
 from typing import Any, TypedDict
 from uuid import UUID
@@ -314,7 +306,6 @@ class _Nodes:
         return {"story_id": str(story.id) if story else None}
 
     async def await_review(self, state: RunState) -> RunState:
-        """Park the run until an expert has decided every finding it sent for review."""
         interrupt({"finding_ids": state["pending_review"]})
         return {"pending_review": []}
 
@@ -330,7 +321,6 @@ class _Nodes:
 
 
 def _region_from_json(data: dict[str, Any]) -> verification.RegionEvidence:
-    """Checkpoints store plain JSON; restore tuples and enums, which the label rule compares by identity."""
     return verification.RegionEvidence(
         **{
             **data,
