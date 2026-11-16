@@ -7,3 +7,6 @@ FROM postgis/postgis:18-3.7
 COPY --from=pgvector /usr/lib/postgresql/18/lib/vector.so /usr/lib/postgresql/18/lib/
 COPY --from=pgvector /usr/share/postgresql/18/extension/vector* /usr/share/postgresql/18/extension/
 COPY init-extensions.sql /docker-entrypoint-initdb.d/20-sadu-extensions.sql
+
+# The entrypoint supports starting as postgres directly, so the container never runs as root.
+USER postgres

@@ -46,7 +46,7 @@ class DifferenceThresholds:
     min_region_fraction: float = 0.001
     lighting_min_luminance_shift: float = 25.0
     lighting_max_chroma_shift: float = 10.0
-    lighting_min_structure_correlation: float = 0.75
+    lighting_min_structure_correlation: float = 0.6
 
 
 @dataclass(frozen=True)

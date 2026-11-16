@@ -79,7 +79,7 @@ python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
 mypy_path = "src"
-packages = ["sadu"]
+packages = ["sadu", "eval"]
 
 [[tool.mypy.overrides]]
 module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*"]

@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      UV_VERSION: "0.11.32"
+      DATABASE_URL: postgresql+psycopg://sadu:dev@localhost:5432/sadu_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Start Postgres
+        working-directory: .
+        run: docker compose up -d --build --wait db
+      - name: Install dependencies
+        run: |
+          pip install "uv==${UV_VERSION}"
+          uv sync --frozen
+      - name: Download the face detection model
+        run: |
+          mkdir -p models
+          curl -fsSL -o models/face_detection_yunet_2023mar.onnx \
+            https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
+          echo "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4  models/face_detection_yunet_2023mar.onnx" | sha256sum -c -
+      - name: Lint and format
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy
+      - name: Module boundaries
+        run: uv run lint-imports
+      - name: Migrate the test database
+        run: |
+          docker compose -f ../docker-compose.yml exec -T db createdb -U sadu sadu_test
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Tests
+        run: uv run pytest -q
+      - name: Vision evaluation on the demo pack
+        run: uv run python -m eval.run
+      - name: Dependency audit
+        run: |
+          uv export --frozen --no-emit-project --format requirements-txt > "$RUNNER_TEMP/requirements.txt"
+          uv run pip-audit --strict --require-hashes --disable-pip -r "$RUNNER_TEMP/requirements.txt"
+
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --audit-level=high --omit=dev
+
+  security:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Secret scan
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 git /repo --redact --no-banner
+      - name: Static analysis
+        run: >
+          docker run --rm -v "$PWD:/src" semgrep/semgrep:1.185.0
+          semgrep scan --config p/python --config p/typescript --config p/dockerfile --error --metrics off
+      - name: Filesystem and IaC scan
+        run: >
+          docker run --rm -v "$PWD:/src" aquasec/trivy:0.76.2
+          fs --no-progress --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs /src/frontend/node_modules /src
+
+  docs:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Render every Mermaid diagram
+        run: |
+          mkdir -p /tmp/rendered && chmod 777 /tmp/rendered
+          for doc in $(grep -rl '```mermaid' docs); do
+            docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/data" -v /tmp/rendered:/out \
+              minlag/mermaid-cli:12.0.1 -i "/data/$doc" -o "/out/$(basename "$doc")"
+          done
