@@ -27,7 +27,6 @@ dependencies = [
     "structlog==26.1.0",
     "argon2-cffi==25.1.0",
     "httpx==0.28.1",
-    "langfuse==5.2.0",
     "sentry-sdk==2.75.0",
 ]
 
@@ -83,7 +82,7 @@ mypy_path = "src"
 packages = ["sadu"]
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*", "langfuse.*"]
+module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

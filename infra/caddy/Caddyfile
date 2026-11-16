@@ -1,0 +1,28 @@
+# TLS is automatic for the domain. The API, the web app and presigned file URLs each get a route.
+{$SADU_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		# Server-sent events must reach the visitor as they are written.
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+		-Server
+	}
+}
+
+# Presigned URLs are signed for this host, so the request must reach storage unchanged.
+files.{$SADU_DOMAIN} {
+	reverse_proxy storage:8333
+}

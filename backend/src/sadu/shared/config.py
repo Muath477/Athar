@@ -35,9 +35,6 @@ class Settings(BaseSettings):
     azure_speech_region: str | None = None
     sadu_tts_voice: str = "ar-SA-HamedNeural"
 
-    langfuse_public_key: str | None = None
-    langfuse_secret_key: SecretStr | None = None
-    langfuse_host: str | None = None
     sentry_dsn_api: str | None = None
 
     sadu_demo_mode: bool = False
