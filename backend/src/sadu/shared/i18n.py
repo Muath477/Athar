@@ -88,6 +88,31 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "أرفق صورة الجدار أو اختر مشاركة زائر.",
         "en": "Attach a wall photo or pick a visitor observation.",
     },
+    "problem.empty_message.title": {"ar": "الرسالة فارغة", "en": "Empty message"},
+    "problem.empty_message.detail": {
+        "ar": "اكتب سؤالك أو أرفق صورة أو ملف PDF.",
+        "en": "Write a question or attach a photo or PDF.",
+    },
+    "problem.too_many_attachments.title": {"ar": "مرفقات كثيرة", "en": "Too many attachments"},
+    "problem.too_many_attachments.detail": {
+        "ar": "أرفق {max_files} ملفات على الأكثر في الرسالة الواحدة.",
+        "en": "Attach at most {max_files} files per message.",
+    },
+    "problem.assistant_busy.title": {"ar": "المساعد يرد الآن", "en": "Assistant is replying"},
+    "problem.assistant_busy.detail": {
+        "ar": "انتظر حتى ينتهي الرد الحالي في هذه المحادثة.",
+        "en": "Wait for the current reply in this conversation to finish.",
+    },
+    "problem.nothing_to_answer.title": {"ar": "لا رسالة جديدة", "en": "Nothing to answer"},
+    "problem.nothing_to_answer.detail": {
+        "ar": "أرسل رسالة جديدة أولًا ثم اطلب الرد.",
+        "en": "Send a new message before asking for a reply.",
+    },
+    "problem.action_already_decided.title": {"ar": "حُسم الطلب", "en": "Already decided"},
+    "problem.action_already_decided.detail": {
+        "ar": "أُكد هذا الطلب أو أُلغي من قبل.",
+        "en": "This request was already confirmed or cancelled.",
+    },
     "retake.blurry": {"ar": "الصورة غير واضحة. ثبّت الجوال وصوّر مرة أخرى.", "en": "The photo is blurry."},
     "retake.too_dark": {"ar": "الصورة مظلمة جدًا. صوّر في إضاءة أفضل.", "en": "The photo is too dark."},
     "retake.too_bright": {"ar": "الصورة ساطعة جدًا. تجنّب الشمس المباشرة.", "en": "The photo is too bright."},

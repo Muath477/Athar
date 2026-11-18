@@ -16,6 +16,8 @@ import sadu.shared.orm_registry
 from sadu.modules.admin.interface.routes import router as admin_router
 from sadu.modules.agents import api as agents
 from sadu.modules.agents.interface.routes import router as agents_router
+from sadu.modules.assistant import api as assistant
+from sadu.modules.assistant.interface.routes import router as assistant_router
 from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.routes import router as maps_router
 from sadu.modules.missions.interface.routes import router as missions_router
@@ -66,6 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_error_handlers(app)
     for router in (
         agents_router,
+        assistant_router,
         sites_router,
         findings_router,
         maps_router,
@@ -106,6 +109,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await store.ensure_bucket()
     llm = build_llm(settings)
     app.state.damage_detector = mapping.build_detector(settings, llm)
+    app.state.assistant = assistant.build_assistant(
+        settings, llm=llm, detector=app.state.damage_detector, unit_of_work=unit_of_work, store=store
+    )
     app.state.scan_queue = watch.ScanQueue(
         unit_of_work,
         store,
