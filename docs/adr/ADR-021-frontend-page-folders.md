@@ -17,15 +17,17 @@ src/app/
   capture/                      _components/capture-flow.tsx, camera.tsx
   observation/                  _components/observation-progress.tsx, story-view.tsx
   passport/                     _components/passport-view.tsx
-  dashboard/                    _components/dashboard-view.tsx, site-model.tsx
+  dashboard/                    layout.tsx, _components/dashboard-nav.tsx, dashboard-view.tsx, site-model.tsx
   dashboard/login/              _components/login-form.tsx
   dashboard/review/             _components/review-queue.tsx
-  dashboard/maps/               _components/maps-index.tsx, accuracy-card.tsx
-  dashboard/maps/new/           _components/new-map-form.tsx, corner-picker.tsx
-  dashboard/maps/[mapId]/       _components/map-editor.tsx, damage-grid.tsx, cell-editor.tsx,
-                                damage-legend.tsx, map-changes.tsx, treatment-plan.tsx
+  dashboard/maps/               _components/maps-index.tsx, map-card.tsx, accuracy-card.tsx
+  dashboard/maps/new/           _components/new-map-form.tsx, stepper.tsx, corner-picker.tsx,
+                                analysis-progress.tsx
+  dashboard/maps/[mapId]/       _components/map-editor.tsx, map-toolbar.tsx, layer-controls.tsx,
+                                damage-grid.tsx, cell-inspector.tsx, damage-legend.tsx,
+                                map-changes.tsx, treatment-plan.tsx
 src/components/evidence-panel.tsx
-src/lib/                        api.ts, maps.ts, labels.ts, damage-palette.ts, ...
+src/lib/                        api.ts, maps.ts, labels.ts, damage-palette.ts, plural.ts, ...
 ```
 
 ## Consequences

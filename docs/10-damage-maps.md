@@ -106,7 +106,7 @@ Accepted response formats are listed in [ADR-018](adr/ADR-018-damage-detector-po
 
 1. Dashboard → مخططات تلف الجدران → مخطط جديد. Pick the wall, take the photo, drag the four corners.
 2. The map appears: coloured cells, legend with m² per type, summary sentence.
-3. As expert, click a wrong cell, change it, save, approve.
+3. As expert, pick a brush (damage type and severity), drag across the wrong cells, undo once with Ctrl+Z to show it, save, approve.
 4. Scroll to the treatment plan: steps, materials with quantities, tools, sources, and the draft warning.
 5. Open the maps page: model accuracy against the expert.
 
