@@ -4,6 +4,7 @@ export const damageTypeAr: Record<string, string> = {
   basal_erosion: "تآكل في أسفل الجدار",
   surface_erosion: "تآكل السطح",
   moisture: "رطوبة",
+  plaster_loss: "تساقط اللياسة",
   missing_element: "عنصر مفقود",
   partial_collapse: "انهيار جزئي",
   graffiti: "كتابة على الجدار",
@@ -39,4 +40,24 @@ export const retakeAr: Record<string, string> = {
   wrong_angle: "زاوية التصوير تختلف عن الصورة المرجعية. طابق الإطار وأعد التصوير.",
   lighting: "قد يكون ما ظهر ظلًا. صوّر في وقت آخر من اليوم.",
   unclear_change: "التغير غير واضح. اقترب قليلًا وأعد التصوير.",
+};
+
+export const confidenceAr: Record<string, string> = { low: "منخفضة", medium: "متوسطة", high: "عالية" };
+
+export const cellSourceAr: Record<string, string> = { model: "النموذج", expert: "المختص" };
+
+export const mapStatusAr: Record<string, string> = { draft: "مسودة", approved: "معتمد" };
+
+export const detectorStatusAr: Record<string, string> = {
+  ok: "حلّله النموذج",
+  failed: "تعذر التحليل الآلي، يلزم التحديد اليدوي",
+  manual: "تحديد يدوي",
+};
+
+export const changeKindAr: Record<string, string> = {
+  new: "تلف جديد",
+  worse: "ازداد سوءًا",
+  retyped: "تغيّر نوعه",
+  improved: "تحسّن",
+  resolved: "لم يعد ظاهرًا",
 };

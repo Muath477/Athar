@@ -3,9 +3,9 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "سدو",
+  title: "أثر",
   description: "صوّر واجهة المبنى التراثي، واسمع حكايته الموثقة، وساعد في حمايته.",
-  applicationName: "سدو",
+  applicationName: "أثر",
 };
 
 export const viewport: Viewport = {
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="sadu-band" aria-hidden />
         <header className="flex items-center justify-between px-4 py-3">
           <Link href="/" className="text-2xl font-bold text-sadu">
-            سدو
+            أثر
           </Link>
           <nav className="flex gap-4 text-sm">
             <Link href="/passport">جوازي</Link>

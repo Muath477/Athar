@@ -1,6 +1,6 @@
-# Sadu planning docs
+# Athar planning docs
 
-Sadu (سدو) weaves many visitors' photos into one living picture of each heritage site's condition. These documents plan the Round 1 MVP for the agentX Riyadh hackathon (team Athar). Written 2026-11-16.
+Athar (أثر) turns many visitors' photos into one living picture of each heritage site's condition. These documents plan the Round 1 MVP for the agentX Riyadh hackathon (team Athar). Written 2026-11-16.
 
 | Stage | File |
 |---|---|
@@ -13,6 +13,8 @@ Sadu (سدو) weaves many visitors' photos into one living picture of each herit
 | 6 · Security | [06-security/threat-model.md](06-security/threat-model.md) |
 | 7 · Infrastructure, monitoring, testing | [07-infra-and-testing.md](07-infra-and-testing.md) |
 | 9 · Verification evidence and demo script | [09-verification-and-demo.md](09-verification-and-demo.md) |
-| Decisions | [adr/](adr/) (ADR-001 to ADR-016) |
+| 10 · Wall damage maps (Diriyah challenge) | [10-damage-maps.md](10-damage-maps.md) |
+| 11 · UML and structure | [11-uml.md](11-uml.md) |
+| Decisions | [adr/](adr/) (ADR-001 to ADR-021) |
 
 CI renders every Mermaid diagram with mermaid-cli 12.0.1 on each push.

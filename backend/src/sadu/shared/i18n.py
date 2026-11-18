@@ -66,6 +66,28 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "هذه الملاحظة لا تنتظر مراجعة.",
         "en": "This finding is not waiting for review.",
     },
+    "problem.map_already_approved.title": {"ar": "المخطط معتمد", "en": "Map already approved"},
+    "problem.map_already_approved.detail": {
+        "ar": "لا يمكن تعديل مخطط معتمد. أنشئ مخططًا جديدًا للجدار.",
+        "en": "An approved map cannot be changed. Create a new map for the wall.",
+    },
+    "problem.photo_unusable.title": {"ar": "الصورة غير صالحة للتحليل", "en": "Photo cannot be analysed"},
+    "problem.photo_unusable.detail": {"ar": "{reason_ar}", "en": "{reason_en}"},
+    "problem.invalid_corners.title": {"ar": "زوايا الجدار غير صحيحة", "en": "Invalid wall corners"},
+    "problem.invalid_corners.detail": {
+        "ar": "حدد زوايا الجدار الأربع داخل الصورة بحيث تكوّن شكلًا رباعيًا غير متقاطع.",
+        "en": "Mark the four wall corners inside the photo so they form a simple quadrilateral.",
+    },
+    "problem.wall_size_required.title": {"ar": "مقاس الجدار مطلوب", "en": "Wall size required"},
+    "problem.wall_size_required.detail": {
+        "ar": "اختر واجهة مسجلة أو أدخل اسم الجدار وعرضه وارتفاعه بالمتر.",
+        "en": "Pick a registered facade or enter the wall name, width and height in metres.",
+    },
+    "problem.photo_required.title": {"ar": "الصورة مطلوبة", "en": "Photo required"},
+    "problem.photo_required.detail": {
+        "ar": "أرفق صورة الجدار أو اختر مشاركة زائر.",
+        "en": "Attach a wall photo or pick a visitor observation.",
+    },
     "retake.blurry": {"ar": "الصورة غير واضحة. ثبّت الجوال وصوّر مرة أخرى.", "en": "The photo is blurry."},
     "retake.too_dark": {"ar": "الصورة مظلمة جدًا. صوّر في إضاءة أفضل.", "en": "The photo is too dark."},
     "retake.too_bright": {"ar": "الصورة ساطعة جدًا. تجنّب الشمس المباشرة.", "en": "The photo is too bright."},
@@ -80,6 +102,10 @@ MESSAGES: dict[str, dict[str, str]] = {
     "retake.unclear_change": {
         "ar": "التغيير غير واضح. اقترب قليلًا وصوّر مرة أخرى.",
         "en": "The change is unclear. Move closer and retake.",
+    },
+    "retake.unusable_wall": {
+        "ar": "تعذر تحليل الجدار في هذه الصورة. صوّر الجدار كاملًا في إضاءة جيدة.",
+        "en": "The wall could not be analysed in this photo. Photograph the whole wall in good light.",
     },
     "question.which_facade": {"ar": "أي واجهة صوّرت؟", "en": "Which facade did you photograph?"},
     "story.no_verified_source": {

@@ -30,3 +30,15 @@ Written 2026-11-16. Links were found by web search on that date; claims about ea
 | Verified story with sources + Arabic audio | Push notifications for missions | |
 | Coverage gaps and mission dispatch | YOLO segmentation masks on the evidence panel | |
 | Sadu Passport (anonymous) | | |
+
+## Update 2026-11-18: wider comparison for the Diriyah challenge
+
+| Tool | What it does | What it lacks that Athar covers |
+|---|---|---|
+| [Scopito](https://www.g2.com/products/scopito/reviews) | Cloud platform to store, annotate and report inspection photos with AI fault detection; priced per asset or inspection, white-label option; built for power lines, solar, wind and buildings. | Not built for earthen heritage or Arabic; stops at annotation, no treatment or materials. |
+| [T2D2](https://enr.com/articles/56644-ai-driven-facade-inspection-system-deployed-for-historic-building-preservation) | AI facade inspection from drone photos and video, used on historic buildings. | Needs drone campaigns; early versions confused shadows of repaired cracks with open cracks, the same risk Athar faces on sunlit mud walls. |
+| [Iconem](https://www.archpaper.com/2019/04/iconem/) | 3D documentation of endangered sites with drones, photogrammetry and AI. | One-time expert campaigns, not continuous monitoring or treatment planning. |
+| Heritage Commission "بلاغ أثري" ([Okaz](https://www.okaz.com.sa/local/na/2258944)) | Official channel for reporting encroachment, digging and artefact trade, alongside field patrols. | Covers violations, not slow condition decay of walls; no image analysis. |
+| Research: [Kasbah of Algiers crowd-sensing CNN](https://data.mendeley.com/datasets/zwshr65gnc/2), [Fujian Tulou earthen crack detection](https://mdpi.com/2079-6412/15/10/1156), [ABECIS](https://arxiv.org/abs/2206.09742) | Phone or drone photos classified for crack, spall, efflorescence, mould; open-source crack segmentation. | Proof that the detection part works; none is a product with expert review and treatment plans. ABECIS reports that human verification on top of the model gives the most accurate result, which is Athar's design. |
+
+The interactive comparison, stress test and UML gallery are in the published page linked from the pull request. The UML source is [11-uml.md](11-uml.md).

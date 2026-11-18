@@ -18,3 +18,11 @@ eval/results/*.tmp
 *.log
 .DS_Store
 backend/uv.lock.bak
+
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.cursorrules
+.cursor/
+.claude/
+.github/copilot-instructions.md

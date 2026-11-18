@@ -1,5 +1,6 @@
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,6 +10,13 @@ class Environment(StrEnum):
     DEV = "dev"
     TEST = "test"
     PROD = "prod"
+
+
+class DetectorKind(StrEnum):
+    CLAUDE = "claude"
+    HTTP_DETECTION = "http_detection"
+    HTTP_CELL_CLASSIFICATION = "http_cell_classification"
+    NONE = "none"
 
 
 class Settings(BaseSettings):
@@ -43,6 +51,15 @@ class Settings(BaseSettings):
     sadu_yunet_model_path: str = "models/face_detection_yunet_2023mar.onnx"
     sadu_region_packs_dir: str = "../region-packs"
 
+    sadu_damage_detector: DetectorKind = DetectorKind.CLAUDE
+    sadu_detector_url: str | None = None
+    sadu_detector_token: SecretStr | None = None
+    sadu_detector_labels: str = ""
+    sadu_detector_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
+    sadu_detector_timeout_s: float = Field(default=30.0, gt=0)
+    sadu_map_rows: int = Field(default=8, ge=2, le=20)
+    sadu_treatment_catalog: str | None = None
+
     @model_validator(mode="after")
     def require_secrets_in_prod(self) -> "Settings":
         if self.sadu_env is not Environment.PROD:
@@ -64,6 +81,12 @@ class Settings(BaseSettings):
     @property
     def is_prod(self) -> bool:
         return self.sadu_env is Environment.PROD
+
+    @property
+    def treatment_catalog_path(self) -> Path:
+        if self.sadu_treatment_catalog:
+            return Path(self.sadu_treatment_catalog)
+        return Path(self.sadu_region_packs_dir) / "treatments" / "earthen-najdi.json"
 
 
 @lru_cache

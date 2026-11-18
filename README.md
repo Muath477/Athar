@@ -1,8 +1,10 @@
-# Sadu (سدو)
+# Athar (أثر)
 
-Sadu weaves many visitors' photos into one living picture of a heritage site's condition. A visitor photographs a mud-brick facade and gets a verified story of the place, read aloud in Arabic, plus a stamp in their Sadu Passport. Behind the scenes, agents compare the photo with the authority's baseline, look for new damage, and pin only evidence-backed findings on a 3D model of the site. Anything uncertain goes to an expert or back to the visitor as a retake request.
+Athar turns many visitors' photos into one living picture of a heritage site's condition. A visitor photographs a mud-brick facade and gets a verified story of the place, read aloud in Arabic, plus a stamp in their Athar Passport. Behind the scenes, agents compare the photo with the authority's baseline, look for new damage, and pin only evidence-backed findings on a 3D model of the site. Anything uncertain goes to an expert or back to the visitor as a retake request.
 
-Round 1 MVP for the agentX Riyadh hackathon, Culture & Heritage track (team Athar). Planning documents are in [docs/](docs/README.md).
+For conservation teams, Athar turns one photo of a mud wall into a damage map: the wall is straightened, split into a grid, and each cell is marked as crack, plaster loss, moisture, basal or surface erosion, partial collapse or graffiti, either by Claude or by a ready-made vision model. A specialist corrects cells and approves the map, and Athar produces a treatment plan with steps, materials scaled to the damaged area, tools and sources.
+
+Round 1 MVP for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate challenge "detecting and mapping damage to mud walls" (team Athar). Planning documents are in [docs/](docs/README.md); the wall map feature is described in [docs/10-damage-maps.md](docs/10-damage-maps.md).
 
 ## Run it
 
@@ -19,6 +21,7 @@ Then open:
 |---|---|
 | Visitor app | http://localhost:3000 |
 | Dashboard | http://localhost:3000/dashboard |
+| Wall damage maps | http://localhost:3000/dashboard/maps |
 | API docs | http://localhost:8000/api/docs |
 
 The `seed` service loads the demo region pack (`region-packs/demo`), a synthetic test building with four facades. It is not a heritage site. Create a dashboard account with:
@@ -38,6 +41,9 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Damage judgment, plan, story drafting, claim checks | Changes go to the expert queue unjudged; stories fall back to verbatim official text or none |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
+| `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification` or `none` | `claude` without a key, or a failing model: the map is saved empty for the expert to fill |
+| `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
+| `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
 | `SADU_DEMO_MODE` | `true` serves recorded model answers before calling the API | Live calls; recordings are still used if a call fails |
 | `SADU_DAILY_LLM_BUDGET_USD` | Daily spend cap, default 10 | Calls past the cap fail over to the fallbacks |
 | `SENTRY_DSN_API` | Error reports | Errors are only in the logs |
@@ -54,19 +60,31 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 
 Every step has a timeout, retries and a fallback, and status updates stream to the phone over server-sent events.
 
+## How a wall map is made
+
+1. An inspector picks a registered facade (or names a wall and gives its width and height), takes a photo and drags four handles to the wall corners.
+2. The photo goes through the same privacy step as visitor photos (EXIF stripped, faces blurred), then the wall is warped to a front-on view at its real aspect and split into a grid (8 rows; columns follow the wall's shape).
+3. The configured detector marks damaged cells. Claude gets the photo with the grid labels drawn on it; a ready model gets the plain photo (object detection) or one crop per cell (classification).
+4. An expert clicks cells to correct them and approves the map. The model's original answer is kept, so `GET /maps/accuracy` shows how often the model agrees with the expert.
+5. The treatment plan comes from `region-packs/treatments/earthen-najdi.json`, a draft catalog that a conservator must review. Each new map of the same wall lists what changed since the last approved one.
+
+To score a detector on labelled photos before the demo: `uv run python -m eval.score_maps <folder>` (format in [docs/10-damage-maps.md](docs/10-damage-maps.md)).
+
 ## Project layout
 
 ```
 backend/            FastAPI modular monolith (Python 3.13, uv)
   src/sadu/modules/ one folder per domain: sites, capture, inspection, verification,
-                    stories, missions, passport, agents, admin
+                    stories, missions, passport, agents, admin, mapping, treatments
   src/sadu/shared/  config, database, storage, ports and adapters (Claude, Azure, S3)
   alembic/          migrations
   tests/            unit and integration tests
   eval/             vision evaluation on the demo pack
-frontend/           Next.js 16 app: visitor PWA and dashboard, Arabic RTL
+frontend/           Next.js 16 app: visitor PWA and dashboard, Arabic RTL; each page keeps
+                    its own components in src/app/<page>/_components
 infra/              database image, storage start script, Caddyfile
 region-packs/demo/  synthetic demo building, baselines, test photos, sources
+region-packs/treatments/  treatment catalog for earthen walls (draft)
 docs/               plan, architecture, ADRs, threat model
 ```
 

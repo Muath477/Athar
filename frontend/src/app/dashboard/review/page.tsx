@@ -1,4 +1,4 @@
-import { ReviewQueue } from "@/components/dashboard/review-queue";
+import { ReviewQueue } from "./_components/review-queue";
 
 export default function ReviewPage() {
   return <ReviewQueue />;
