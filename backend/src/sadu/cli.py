@@ -27,8 +27,8 @@ async def seed(pack: str) -> None:
 
 async def create_user(email: str, role: str) -> None:
     password = os.environ.get("SADU_NEW_USER_PASSWORD") or getpass.getpass("Password: ")
-    if len(password) < 12:
-        raise SystemExit("Password must be at least 12 characters")
+    if len(password) < admin.MIN_PASSWORD_LENGTH:
+        raise SystemExit(f"Password must be at least {admin.MIN_PASSWORD_LENGTH} characters")
     async with unit_of_work() as session:
         user = await admin.create_user(session, email, password, admin.Role(role))
     print(f"Created {user.role} {user.email}")

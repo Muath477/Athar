@@ -29,7 +29,7 @@ async def test_each_role_gets_only_its_own_permissions(client, site_manager):
     roles = {r["role"]: r["permissions"] for r in (await client.get("/auth/roles")).json()}
     assert roles["inspector"] == ["assistant", "read", "survey"]
     assert roles["expert"] == ["assistant", "export", "read", "review", "survey"]
-    assert roles["authority"] == ["assistant", "export", "read"]
+    assert roles["authority"] == ["assistant", "export", "read", "read_audit"]
     assert roles["ml_engineer"] == ["export", "manage_models", "read"]
 
     [site] = (await client.get("/sites")).json()

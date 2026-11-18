@@ -18,11 +18,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ApiError, type Site, can, request, roleAr } from "@/lib/api";
+import { ApiError, type Site, can, conditionExportUrl, request, roleAr } from "@/lib/api";
 import { colorFor } from "@/lib/damage-palette";
 import { damageTypeAr } from "@/lib/labels";
 import { type SiteCondition, type WallCondition, getSiteCondition, setFieldPhotography } from "@/lib/maps";
@@ -159,6 +159,24 @@ export function SiteConditionView() {
           <Button type="button" onClick={() => window.print()}>
             اطبع التقرير الدوري
           </Button>
+          {can(me, "export") && (
+            <>
+              <a
+                href={conditionExportUrl(condition.site_id, "pdf")}
+                download
+                className={buttonVariants({ variant: "outline" })}
+              >
+                نزّل التقرير PDF
+              </a>
+              <a
+                href={conditionExportUrl(condition.site_id, "csv")}
+                download
+                className={buttonVariants({ variant: "outline" })}
+              >
+                نزّل الجدول CSV
+              </a>
+            </>
+          )}
         </div>
       </header>
 

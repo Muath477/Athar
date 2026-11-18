@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, LargeBinary, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, LargeBinary, String, false, true
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,8 +15,19 @@ class UserRow(UuidPk, Timestamped, Base):
     email: Mapped[str] = mapped_column(String(320), unique=True)
     password_hash: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(16))
+    display_name: Mapped[str] = mapped_column(String(120), default="", server_default="")
+    is_active: Mapped[bool] = mapped_column(default=True, server_default=true())
+    must_change_password: Mapped[bool] = mapped_column(default=False, server_default=false())
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UserSiteRow(Base):
+    __tablename__ = "user_sites"
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    site_id: Mapped[UUID] = mapped_column(ForeignKey("sites.id", ondelete="CASCADE"), primary_key=True)
 
 
 class SessionRow(Base):
@@ -32,8 +43,8 @@ class SessionRow(Base):
 class AuditLogRow(UuidPk, Base):
     __tablename__ = "audit_log"
 
-    actor_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    action: Mapped[str] = mapped_column(String(64))
+    actor_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    action: Mapped[str] = mapped_column(String(64), index=True)
     target_type: Mapped[str] = mapped_column(String(32))
     target_id: Mapped[str] = mapped_column(String(64))
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)

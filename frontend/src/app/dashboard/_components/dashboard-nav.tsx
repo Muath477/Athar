@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { type Permission, can, rememberCsrf, request, roleAr } from "@/lib/api";
+import { type Me, type Permission, can, rememberCsrf, request, roleAr } from "@/lib/api";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +19,17 @@ const SECTIONS: Section[] = [
   { href: "/dashboard/uploads", label: "رفع الصور", short: null, exact: false, permission: "survey" },
   { href: "/dashboard/devices", label: "الكاميرات والأجهزة", short: "الأجهزة", exact: false, permission: "read" },
   { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
+  { href: "/dashboard/users", label: "الحسابات والصلاحيات", short: "الحسابات", exact: false, permission: "administer" },
+  { href: "/dashboard/audit", label: "سجل التدقيق", short: "التدقيق", exact: false, permission: "read_audit" },
 ];
 
 export function DashboardNav() {
   const pathname = usePathname();
+  if (pathname.startsWith("/dashboard/login")) return null;
+  return <SignedInNav pathname={pathname} />;
+}
+
+function SignedInNav({ pathname }: { pathname: string }) {
   const me = useMe();
   const current = useRef<HTMLAnchorElement>(null);
   const sections = SECTIONS.filter((section) => !section.permission || can(me, section.permission));
@@ -31,11 +38,9 @@ export function DashboardNav() {
     current.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [pathname]);
 
-  if (pathname.startsWith("/dashboard/login")) return null;
-
   return (
     <div className="no-print flex flex-col">
-      <SignedInUser />
+      <SignedInUser me={me} />
       <nav aria-label="أقسام لوحة المتابعة" className="-mx-4 scroll-px-4 overflow-x-auto border-b border-line px-4">
         <ul className="flex min-w-max gap-1">
           {sections.map((section) => {
@@ -69,8 +74,7 @@ export function DashboardNav() {
   );
 }
 
-function SignedInUser() {
-  const me = useMe();
+function SignedInUser({ me }: { me: Me | null }) {
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +102,9 @@ function SignedInUser() {
       <p className="min-w-0 text-mud">
         <bdi className="inline-block max-w-56 truncate align-bottom text-ink">{me.email}</bdi> · {roleAr[me.role]}
       </p>
+      <Link href="/dashboard/password" className="inline-flex min-h-11 items-center text-mud underline underline-offset-4">
+        غيّر كلمة المرور
+      </Link>
       <Button type="button" variant="ghost" size="sm" onClick={signOut} disabled={leaving}>
         {leaving ? "نسجّل خروجك…" : "تسجيل الخروج"}
       </Button>

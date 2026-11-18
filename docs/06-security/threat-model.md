@@ -106,9 +106,22 @@ Entry points: `POST /observations` (files + metadata), `POST /observations/{id}/
 | **S**poofing | Someone posts alerts to look like Athar's. | The webhook URL comes from settings only and must be HTTPS. Payloads carry no secrets, only the site name, level, threats and a dashboard link that requires sign-in. |
 | **T**ampering | A map is approved with model guesses left in, or before anyone visits the wall. | Approval needs a recorded field inspection and no unreviewed low-confidence elements. Element shapes are validated against the glossary (geometry, point count, coordinates inside the wall, allowed classes). |
 | **R**epudiation | Disputed who changed a damage element or opened photography on a site. | Every element edit is in the map's correction log with editor and time, and audited as `map.edit_elements`. Permit changes are audited as `site.field_photography`. |
-| **I**nformation disclosure | A site manager or surveyor sees more than their role needs. | All staff can read, which matches the brief's shared site record. Write actions check explicit permissions. |
+| **I**nformation disclosure | A site manager or surveyor sees more than their role needs. | Accounts can be limited to chosen sites; out-of-scope sites and maps answer 404 (see §3.6). Write actions check explicit permissions. |
 | **D**enial of service | Huge element batches. | At most 200 edits per request and 200 points per element. |
 | **E**levation of privilege | A site manager edits maps, or a surveyor grants a photography permit. | The permission matrix in `admin/api.py` gives `review` only to experts and admins, and `manage_site` only to site managers and admins. Tests cover the 403s. |
+
+### 3.6 Accounts, site scope, audit trail and retention
+
+Details in [roles.md](roles.md).
+
+| Threat | Example | Mitigation |
+|---|---|---|
+| **S**poofing | A former employee keeps using an open session, or an account keeps the temporary password the admin chose. | Deactivation deletes every session and blocks sign-in; a password reset also ends all sessions. Admin-created and reset passwords are temporary: every permission-checked route refuses the account until the user sets their own. |
+| **T**ampering | Someone edits the audit trail to hide an approval. | No endpoint writes to `audit_log` except the server-side `audit()` call; the authority's access is read-only. |
+| **R**epudiation | Disputed who created an account, changed a role or deleted visitor photos. | `user.*`, `retention.purge` and `notice.*` audit rows with actor (or the system), target and details; viewable and exportable by the authority. |
+| **I**nformation disclosure | A surveyor scoped to one site probes map or site ids of another authority's site. | Scope is checked on the server per record and answers 404 like a missing record. CSV cells starting with `=`, `+`, `-` or `@` are quoted so exports cannot carry spreadsheet formulas. Expired visitor photos are purged on schedule. |
+| **D**enial of service | Large audit exports or repeated purge runs. | Audit pages are capped at 200 rows and CSV at 10,000; condition PDFs share the 30-per-hour report limit; purge runs handle 1,000 photos at a time. |
+| **E**levation of privilege | An admin demotes themselves or a non-admin calls user management. | `administer` guards every `/admin/users` route; admins cannot change their own role or deactivate themselves; tests cover the 403s and the 409. |
 
 ## 4. Controls mapped to OWASP Top 10 (2021) and ASVS L1
 

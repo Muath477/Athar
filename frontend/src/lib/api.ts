@@ -107,17 +107,23 @@ export type Permission =
   | "export"
   | "assistant"
   | "manage_models"
+  | "read_audit"
   | "administer";
+
+export type Role = "inspector" | "site_manager" | "expert" | "authority" | "ml_engineer" | "admin";
 
 export type Me = {
   id: string;
   email: string;
-  role: "inspector" | "site_manager" | "expert" | "authority" | "ml_engineer" | "admin";
+  display_name: string;
+  role: Role;
   permissions: Permission[];
+  site_ids: string[];
+  must_change_password: boolean;
   csrf_token: string | null;
 };
 
-export const roleAr: Record<Me["role"], string> = {
+export const roleAr: Record<Role, string> = {
   inspector: "المساح الميداني",
   site_manager: "مدير الموقع",
   expert: "أخصائي الترميم",
@@ -128,6 +134,16 @@ export const roleAr: Record<Me["role"], string> = {
 
 export function can(me: Me | null, permission: Permission): boolean {
   return !!me && me.permissions.includes(permission);
+}
+
+export const PASSWORD_PAGE = "/dashboard/password";
+
+export function homeFor(me: Me): string {
+  if (me.must_change_password) return PASSWORD_PAGE;
+  if (can(me, "review")) return "/dashboard/maps";
+  if (can(me, "manage_site")) return "/dashboard/condition";
+  if (can(me, "survey")) return "/dashboard/maps/new";
+  return "/dashboard";
 }
 
 export type Passport = {
@@ -194,6 +210,14 @@ export function baselineUrl(facadeId: string): string {
 
 export function mapReportUrl(mapId: string): string {
   return `${BASE}/maps/${mapId}/report.pdf`;
+}
+
+export function conditionExportUrl(siteId: string, format: "csv" | "pdf"): string {
+  return `${BASE}/sites/${siteId}/condition.${format}`;
+}
+
+export function apiUrl(path: string): string {
+  return `${BASE}${path}`;
 }
 
 function readStorage(key: string): string | null {

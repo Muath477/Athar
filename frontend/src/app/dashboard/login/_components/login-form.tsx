@@ -6,16 +6,9 @@ import { AtharMark } from "@/components/brand/athar-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, can, type Me, rememberCsrf, request } from "@/lib/api";
+import { ApiError, homeFor, type Me, rememberCsrf, request } from "@/lib/api";
 
 const ERROR_ID = "login-error";
-
-function homeFor(me: Me): string {
-  if (can(me, "review")) return "/dashboard/maps";
-  if (can(me, "manage_site")) return "/dashboard/condition";
-  if (can(me, "survey")) return "/dashboard/maps/new";
-  return "/dashboard";
-}
 
 export function LoginForm() {
   const router = useRouter();
