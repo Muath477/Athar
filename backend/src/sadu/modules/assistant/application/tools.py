@@ -92,51 +92,16 @@ class Toolbox:
         run = await _detect(self._deps.detector, prepared)
 
         map_id = None
-        saving = facade is not None and context.can_save_maps
-        if not saving:
-            elements = mapping.draft_elements(prepared, run)
-        else:
-            async with self._deps.unit_of_work() as session:
-                view = await mapping.save_map(
-                    session,
-                    self._deps.store,
-                    wall=wall,
-                    prepared=prepared,
-                    run=run,
-                    created_by=context.user_id,
-                )
-                await admin.audit(
-                    session,
-                    actor_id=context.user_id,
-                    action="map.create",
-                    target_type="damage_map",
-                    target_id=str(view.id),
-                    details={
-                        "via": "assistant",
-                        "conversation_id": str(context.conversation_id),
-                        "detector": run.detector,
-                        "elements": len(view.elements),
-                    },
-                    request_id=context.request_id,
-                )
+        if facade is not None and context.can_save_maps:
+            view = await self._save_draft_map(context, wall, prepared, run)
             map_id, elements = view.id, view.elements
-
-        measured_wall = wall.size if facade is not None else None
-        rows = [_element_row(e, prepared.grid, measured_wall) for e in elements]
-        urgent = sum(1 for row in rows if row["severity"] == Severity.URGENT)
-        summary = f"حُللت الصورة: {elements_ar(len(rows))}"
-        if urgent:
-            summary += f"، منها {digits_ar(urgent)} عاجل"
-        if map_id is not None:
-            summary += "، وحُفظت مسودة مخطط تنتظر مراجعة المختص."
-        elif facade is not None:
-            summary += ". لم تُحفظ مسودة مخطط لأن حفظ المخططات يحتاج صلاحية المسح الميداني."
         else:
-            summary += "."
+            elements = mapping.draft_elements(prepared, run)
+        rows = [_element_row(e, prepared.grid, wall.size if facade else None) for e in elements]
         return ToolOutcome(
             ToolName.ANALYSE_PHOTO,
             True,
-            summary,
+            _analysis_summary(rows, saved=map_id is not None, facade_named=facade is not None),
             {
                 "attachment_id": str(photo.id),
                 "map_id": str(map_id) if map_id else None,
@@ -151,6 +116,33 @@ class Toolbox:
                 "elements": rows,
             },
         )
+
+    async def _save_draft_map(
+        self,
+        context: TurnContext,
+        wall: mapping.WallSpec,
+        prepared: mapping.PreparedWall,
+        run: mapping.DetectionRun,
+    ) -> mapping.MapView:
+        async with self._deps.unit_of_work() as session:
+            view = await mapping.save_map(
+                session, self._deps.store, wall=wall, prepared=prepared, run=run, created_by=context.user_id
+            )
+            await admin.audit(
+                session,
+                actor_id=context.user_id,
+                action="map.create",
+                target_type="damage_map",
+                target_id=str(view.id),
+                details={
+                    "via": "assistant",
+                    "conversation_id": str(context.conversation_id),
+                    "detector": run.detector,
+                    "elements": len(view.elements),
+                },
+                request_id=context.request_id,
+            )
+        return view
 
     async def get_site_condition(
         self, arguments: dict[str, Any], context: TurnContext, earlier: Sequence[ToolOutcome]
@@ -407,6 +399,18 @@ async def _detect(detector: mapping.DamageDetector, prepared: mapping.PreparedWa
             "detector_unavailable", "كاشف التلف غير متاح الآن. أعد المحاولة لاحقًا أو ارسم المخطط يدويًا."
         )
     return run
+
+
+def _analysis_summary(rows: Sequence[dict[str, Any]], *, saved: bool, facade_named: bool) -> str:
+    summary = f"حُللت الصورة: {elements_ar(len(rows))}"
+    urgent = sum(1 for row in rows if row["severity"] == Severity.URGENT)
+    if urgent:
+        summary += f"، منها {digits_ar(urgent)} عاجل"
+    if saved:
+        return summary + "، وحُفظت مسودة مخطط تنتظر مراجعة المختص."
+    if facade_named:
+        return summary + ". لم تُحفظ مسودة مخطط لأن حفظ المخططات يحتاج صلاحية المسح الميداني."
+    return summary + "."
 
 
 def _wall_for(photo: AttachmentRef, facade: sites.FacadeView | None) -> mapping.WallSpec:
