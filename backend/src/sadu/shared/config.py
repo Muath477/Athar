@@ -93,6 +93,8 @@ class Settings(BaseSettings):
     sadu_watch_interval_h: int = Field(default=168, ge=0)
     sadu_watch_sample_events: str = ""
     sadu_alert_webhook_url: str = Field(default="", pattern=r"^(https://\S+)?$")
+    sadu_retention_interval_h: int = Field(default=24, ge=0)
+    sadu_approval_overdue_days: int = Field(default=7, ge=0)
 
     @property
     def watch_sample_events_path(self) -> Path:

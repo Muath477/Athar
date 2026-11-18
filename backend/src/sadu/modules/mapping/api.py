@@ -1,17 +1,24 @@
 import asyncio
 import json
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sadu.modules.admin import api as admin
 from sadu.modules.mapping.application.claude_detector import ClaudeGridDetector
 from sadu.modules.mapping.application.manual_detector import ManualOnly
+from sadu.modules.mapping.application.notices import (
+    APPROVAL_OVERDUE,
+    URGENT_ELEMENTS,
+    approval_overdue_notice,
+    urgent_elements_notice,
+)
 from sadu.modules.mapping.application.ports import (
     DamageDetector,
     DetectionInput,
@@ -44,7 +51,7 @@ from sadu.modules.mapping.domain.grid import CellRef, Grid, WallSize
 from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.modules.mapping.domain.scoring import MapScore, ScoredPair, TypeScore, score_maps
-from sadu.modules.mapping.domain.workflow import Step, StepState, WorkflowFacts, workflow
+from sadu.modules.mapping.domain.workflow import Detection, Step, StepState, WorkflowFacts, workflow
 from sadu.modules.mapping.infrastructure.http_detector import (
     HttpCellClassifier,
     HttpDetectionModel,
@@ -58,6 +65,7 @@ from sadu.shared.config import DetectorKind, Settings
 from sadu.shared.errors import Conflict, NotFound, SaduError
 from sadu.shared.i18n import translate
 from sadu.shared.ports.llm import LLMPort
+from sadu.shared.ports.notify import Notice
 from sadu.shared.storage import ObjectStore, new_object_key
 from sadu.shared.vocabulary import DamageType, ModelConfidence, RetakeReason, Severity
 
@@ -106,6 +114,13 @@ class DetectorStatus(StrEnum):
     OK = "ok"
     FAILED = "failed"
     MANUAL = "manual"
+
+
+DETECTION_BY_STATUS = {
+    DetectorStatus.OK: Detection.MODEL,
+    DetectorStatus.FAILED: Detection.FAILED,
+    DetectorStatus.MANUAL: Detection.MANUAL,
+}
 
 
 @dataclass(frozen=True)
@@ -174,6 +189,10 @@ class MapView:
     @property
     def low_confidence(self) -> tuple[Element, ...]:
         return tuple(e for e in self.elements if e.needs_review)
+
+    @property
+    def urgent(self) -> tuple[Element, ...]:
+        return tuple(e for e in self.elements if e.severity is Severity.URGENT)
 
 
 @dataclass(frozen=True)
@@ -288,6 +307,7 @@ async def list_maps(
     *,
     site_id: UUID | None = None,
     facade_id: UUID | None = None,
+    visible_site_ids: Collection[UUID] | None = None,
     limit: int | None = DEFAULT_LIST_LIMIT,
 ) -> list[MapSummary]:
     damaged = (
@@ -309,6 +329,8 @@ async def list_maps(
         query = query.where(DamageMapRow.site_id == site_id)
     if facade_id is not None:
         query = query.where(DamageMapRow.facade_id == facade_id)
+    if visible_site_ids is not None:
+        query = query.where(or_(DamageMapRow.site_id.is_(None), DamageMapRow.site_id.in_(visible_site_ids)))
     return [
         MapSummary(
             id=row.id,
@@ -450,8 +472,48 @@ def map_workflow(view: MapView, plan: treatments.TreatmentPlan) -> tuple[Step, .
             corrections=corrections,
             field_inspected=view.field_inspected_at is not None,
             approved=view.status is MapStatus.APPROVED,
+            detection=DETECTION_BY_STATUS[view.detector_status],
         )
     )
+
+
+async def announce_urgent(session: AsyncSession, view: MapView, origin: str) -> Notice | None:
+    if not view.urgent or await admin.was_audited(session, URGENT_ELEMENTS, str(view.id)):
+        return None
+    await admin.audit(
+        session,
+        actor_id=None,
+        action=URGENT_ELEMENTS,
+        target_type="damage_map",
+        target_id=str(view.id),
+        details={"urgent": len(view.urgent)},
+    )
+    return urgent_elements_notice(view.wall_name, len(view.urgent), _map_link(origin, view.id))
+
+
+async def announce_overdue_approvals(
+    session: AsyncSession, *, waiting_longer_than: timedelta, origin: str, now: datetime
+) -> list[Notice]:
+    drafts = await session.scalars(
+        select(DamageMapRow)
+        .where(DamageMapRow.status == MapStatus.DRAFT, DamageMapRow.created_at < now - waiting_longer_than)
+        .order_by(DamageMapRow.created_at)
+    )
+    notices = []
+    for row in drafts:
+        if await admin.was_audited(session, APPROVAL_OVERDUE, str(row.id)):
+            continue
+        waiting_days = (now - row.created_at).days
+        await admin.audit(
+            session,
+            actor_id=None,
+            action=APPROVAL_OVERDUE,
+            target_type="damage_map",
+            target_id=str(row.id),
+            details={"waiting_days": waiting_days},
+        )
+        notices.append(approval_overdue_notice(row.wall_name, waiting_days, _map_link(origin, row.id)))
+    return notices
 
 
 async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapScore:
@@ -466,6 +528,10 @@ async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapSco
         predicted = {c.ref: c.damage_type for c in _cells_from_json(row.model_cells)}
         pairs.append(ScoredPair(row.rows * row.cols, predicted, expected))
     return score_maps(pairs)
+
+
+def _map_link(origin: str, map_id: UUID) -> str:
+    return f"{origin.rstrip('/')}/dashboard/maps/{map_id}"
 
 
 async def _draft_row(session: AsyncSession, map_id: UUID) -> DamageMapRow:

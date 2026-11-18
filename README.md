@@ -588,7 +588,9 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification` or `none` | `claude` |
 | `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
 | `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
-| `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts | Alerts only show on the dashboard |
+| `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts, urgent-damage notices and overdue-approval reminders | Alerts only show on the dashboard |
+| `SADU_RETENTION_INTERVAL_H` | Hours between purges of visitor photos past their 30-day retention, default 24; `0` turns the purge off | Daily |
+| `SADU_APPROVAL_OVERDUE_DAYS` | Days a draft map may wait for approval before a reminder is sent, default 7; `0` turns reminders off | Weekly |
 | `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
 | `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |

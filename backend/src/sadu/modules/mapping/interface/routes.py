@@ -2,11 +2,12 @@ import asyncio
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Request, UploadFile
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.admin import api as admin
+from sadu.modules.admin.api import UserView
 from sadu.modules.admin.interface.auth import Expert, Inspector, Staff
 from sadu.modules.capture import api as capture
 from sadu.modules.mapping import api as mapping
@@ -48,6 +49,7 @@ async def create_map(
     user: Inspector,
     state: State,
     detector: Detector,
+    background: BackgroundTasks,
     meta: Annotated[str, Form(max_length=4000)],
     photo: Annotated[UploadFile | None, File()] = None,
 ) -> MapOut:
@@ -60,6 +62,7 @@ async def create_map(
 
     async with state.unit_of_work() as session:
         wall = await _wall_spec(session, parsed)
+        admin.ensure_sees_site(user, wall.site_id)
         photo_jpeg = await _photo(session, state, photo, parsed.observation_id)
 
     prepared = await asyncio.to_thread(
@@ -80,20 +83,25 @@ async def create_map(
             details={"detector": run.detector, "detector_status": run.status, "cells": len(view.cells)},
             request_id=getattr(request.state, "request_id", None),
         )
+        await announce_urgent(session, state, background, view)
         previous = await mapping.previous_approved(session, view)
     return map_out(view, state.store, _catalog(state), previous)
 
 
 @router.get("/maps")
 async def list_maps(
-    _: Staff, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
+    user: Staff, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
 ) -> list[MapSummaryOut]:
-    summaries = await mapping.list_maps(session, site_id=site_id, facade_id=facade_id)
+    admin.ensure_sees_site(user, site_id)
+    summaries = await mapping.list_maps(
+        session, site_id=site_id, facade_id=facade_id, visible_site_ids=user.visible_site_ids
+    )
     return [summary_out(s, state.store) for s in summaries]
 
 
 @router.get("/maps/accuracy")
-async def map_accuracy(_: Staff, session: Session, site_id: UUID | None = None) -> AccuracyOut:
+async def map_accuracy(user: Staff, session: Session, site_id: UUID | None = None) -> AccuracyOut:
+    admin.ensure_sees_site(user, site_id)
     return accuracy_out(await mapping.accuracy(session, site_id))
 
 
@@ -103,16 +111,22 @@ async def map_glossary(_: Staff) -> list[GlossaryEntryOut]:
 
 
 @router.get("/maps/{map_id}")
-async def get_map(map_id: UUID, _: Staff, session: Session, state: State) -> MapOut:
-    view = await mapping.get_map(session, map_id)
+async def get_map(map_id: UUID, user: Staff, session: Session, state: State) -> MapOut:
+    view = await visible_map(session, map_id, user)
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
 
 
 @router.post("/maps/{map_id}/cells")
 async def correct_cells(
-    map_id: UUID, body: CorrectionsIn, user: Expert, session: Session, state: State, request: Request
+    map_id: UUID,
+    body: CorrectionsIn,
+    user: Expert,
+    session: Session,
+    state: State,
+    request: Request,
+    background: BackgroundTasks,
 ) -> MapOut:
-    current = await mapping.get_map(session, map_id)
+    current = await visible_map(session, map_id, user)
     try:
         corrections = [
             mapping.CellCorrection(current.grid.parse(c.cell), c.damage_type, c.severity)
@@ -130,12 +144,19 @@ async def correct_cells(
         details={"cells": [c.cell for c in body.corrections]},
         request_id=getattr(request.state, "request_id", None),
     )
+    await announce_urgent(session, state, background, view)
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
 
 
 @router.post("/maps/{map_id}/elements")
 async def edit_elements(
-    map_id: UUID, body: ElementEditsIn, user: Expert, session: Session, state: State, request: Request
+    map_id: UUID,
+    body: ElementEditsIn,
+    user: Expert,
+    session: Session,
+    state: State,
+    request: Request,
+    background: BackgroundTasks,
 ) -> MapOut:
     try:
         edits = [
@@ -158,6 +179,7 @@ async def edit_elements(
         ]
     except (ValueError, IndexError) as error:
         raise SaduError("validation_failed", status=422) from error
+    await visible_map(session, map_id, user)
     view = await mapping.edit_elements(session, map_id, edits, user.id)
     await admin.audit(
         session,
@@ -168,6 +190,7 @@ async def edit_elements(
         details={"edits": [f"{e.action}:{e.element_id or 'new'}" for e in body.edits]},
         request_id=getattr(request.state, "request_id", None),
     )
+    await announce_urgent(session, state, background, view)
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
 
 
@@ -175,6 +198,7 @@ async def edit_elements(
 async def record_field_inspection(
     map_id: UUID, body: FieldInspectionIn, user: Expert, session: Session, state: State, request: Request
 ) -> MapOut:
+    await visible_map(session, map_id, user)
     view = await mapping.record_field_inspection(session, map_id, user.id, body.notes.strip())
     await admin.audit(
         session,
@@ -189,6 +213,7 @@ async def record_field_inspection(
 
 @router.post("/maps/{map_id}/approve")
 async def approve_map(map_id: UUID, user: Expert, session: Session, state: State, request: Request) -> MapOut:
+    await visible_map(session, map_id, user)
     view = await mapping.approve_map(session, map_id, user.id)
     await admin.audit(
         session,
@@ -199,6 +224,20 @@ async def approve_map(map_id: UUID, user: Expert, session: Session, state: State
         request_id=getattr(request.state, "request_id", None),
     )
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
+
+
+async def announce_urgent(
+    session: AsyncSession, state: AppState, background: BackgroundTasks, view: mapping.MapView
+) -> None:
+    notice = await mapping.announce_urgent(session, view, state.settings.sadu_public_origin)
+    if notice is not None:
+        background.add_task(state.notifier.send, notice)
+
+
+async def visible_map(session: AsyncSession, map_id: UUID, user: UserView) -> mapping.MapView:
+    view = await mapping.get_map(session, map_id)
+    admin.ensure_sees_site(user, view.site_id)
+    return view
 
 
 def _quad(corners: list[list[float]] | None) -> mapping.Quad:

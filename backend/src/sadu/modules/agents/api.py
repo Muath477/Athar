@@ -1,6 +1,7 @@
 import asyncio
 import json
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -11,6 +12,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sadu.modules.admin import api as admin
 from sadu.modules.agents.application.graph import RunState, build_graph
 from sadu.modules.agents.application.guide import Dependencies
 from sadu.modules.agents.infrastructure.recording_llm import RecordingLLM, current_observation
@@ -24,12 +26,21 @@ from sadu.modules.stories import api as stories
 from sadu.shared.errors import Conflict
 from sadu.shared.ports.embeddings import EmbeddingPort
 from sadu.shared.storage import ObjectStore
+from sadu.shared.web import UnitOfWork
 
 __all__ = ["AgentRunner", "Dependencies", "RecordingLLM"]
 
 log = structlog.get_logger()
 
 STALE_RUN_AGE = timedelta(minutes=2)
+RETENTION_BATCH = 1000
+
+
+@dataclass(frozen=True)
+class RetentionResult:
+    observations: int
+    objects: int
+
 
 type RunInput = RunState | Command[Any] | None
 
@@ -127,6 +138,31 @@ async def forget_visitor(session: AsyncSession, store: ObjectStore, passport_id:
     await passport.delete_passport(session, passport_id)
     for key in keys:
         await store.delete(key)
+
+
+async def purge_expired_photos(
+    unit_of_work: UnitOfWork, store: ObjectStore, *, now: datetime, actor_id: UUID | None = None
+) -> RetentionResult:
+    async with unit_of_work() as session:
+        photos = await capture.expired_photos(session, now, RETENTION_BATCH)
+        keys = [*photos.values(), *await inspection.artifact_keys(session, list(photos))]
+        await capture.delete_observations(session, list(photos))
+        if photos or actor_id is not None:
+            await admin.audit(
+                session,
+                actor_id=actor_id,
+                action="retention.purge",
+                target_type="observation",
+                target_id="expired",
+                details={
+                    "observations": len(photos),
+                    "objects": len(keys),
+                    "trigger": "schedule" if actor_id is None else "admin",
+                },
+            )
+    for key in keys:
+        await store.delete(key)
+    return RetentionResult(observations=len(photos), objects=len(keys))
 
 
 def _config(observation_id: UUID) -> RunnableConfig:

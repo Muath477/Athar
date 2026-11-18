@@ -8,8 +8,10 @@ from typing import Annotated, Any
 from fastapi import Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sadu.shared.adapters.webhook import NoNotifier
 from sadu.shared.config import Settings
 from sadu.shared.errors import TooManyRequests
+from sadu.shared.ports.notify import Notifier
 from sadu.shared.storage import ObjectStore
 
 type UnitOfWork = Callable[[], AbstractAsyncContextManager[AsyncSession]]
@@ -58,6 +60,7 @@ class AppState:
     store: ObjectStore
     runner: Any
     rate_limiter: RateLimiter = field(default_factory=RateLimiter)
+    notifier: Notifier = field(default_factory=NoNotifier)
 
 
 def app_state(request: Request) -> AppState:
