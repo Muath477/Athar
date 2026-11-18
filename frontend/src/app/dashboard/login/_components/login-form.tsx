@@ -2,10 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AtharMark } from "@/components/brand/athar-mark";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ApiError, can, type Me, rememberCsrf, request } from "@/lib/api";
 
 const ERROR_ID = "login-error";
-const INPUT_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3";
 
 function homeFor(me: Me): string {
   if (can(me, "review")) return "/dashboard/maps";
@@ -39,11 +42,15 @@ export function LoginForm() {
   const invalid = error !== null;
 
   return (
-    <form action={submit} className="mx-auto mt-10 flex w-full max-w-sm flex-col gap-4">
-      <h1 className="text-3xl font-bold leading-snug">دخول المفتشين والخبراء</h1>
-      <label className="flex flex-col gap-1">
-        البريد الإلكتروني
-        <input
+    <form action={submit} className="mx-auto mt-10 flex w-full max-w-sm flex-col gap-5">
+      <div className="flex flex-col gap-3">
+        <AtharMark className="size-12" />
+        <h1 className="text-3xl font-bold">دخول المفتشين والخبراء</h1>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="login-email">البريد الإلكتروني</Label>
+        <Input
+          id="login-email"
           name="email"
           type="email"
           required
@@ -51,12 +58,12 @@ export function LoginForm() {
           dir="ltr"
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? ERROR_ID : undefined}
-          className={INPUT_CLASS}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        كلمة المرور
-        <input
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="login-password">كلمة المرور</Label>
+        <Input
+          id="login-password"
           name="password"
           type="password"
           required
@@ -64,15 +71,11 @@ export function LoginForm() {
           dir="ltr"
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? ERROR_ID : undefined}
-          className={INPUT_CLASS}
         />
-      </label>
-      <button
-        disabled={pending}
-        className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
-      >
+      </div>
+      <Button disabled={pending} size="lg">
         {pending ? "جارٍ الدخول…" : "دخول"}
-      </button>
+      </Button>
       {error && (
         <p id={ERROR_ID} role="alert" className="text-urgent">
           {error}

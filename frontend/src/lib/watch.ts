@@ -125,9 +125,9 @@ export const statusAr: Record<ScanStatus, string> = {
 export const levelClass: Record<RiskLevel, string> = {
   unknown: "bg-clay/25 text-ink",
   stable: "bg-ink/10 text-ink",
-  watch: "bg-watch text-ink",
-  moderate: "bg-moderate text-ink",
-  urgent: "bg-urgent text-white",
+  watch: "bg-watch text-on-accent",
+  moderate: "bg-moderate text-on-accent",
+  urgent: "bg-urgent text-on-accent",
 };
 
 export const LEVEL_ORDER: RiskLevel[] = ["urgent", "moderate", "watch", "stable", "unknown"];

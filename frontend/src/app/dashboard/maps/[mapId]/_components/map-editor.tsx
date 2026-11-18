@@ -2,6 +2,13 @@
 
 import { useParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MarginNote } from "@/components/brand/margin-note";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, can, mapReportUrl } from "@/lib/api";
 import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
 import { NO_PENDING, buildEdits, pendingCount as countPending, withPending } from "@/lib/elements";
@@ -258,22 +265,14 @@ export function MapEditor() {
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-prose flex-col gap-1.5">
-          <p className="text-sm text-mud">
-            <span
-              className={`me-2 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                map.status === "approved" ? "bg-ink text-sand" : "bg-white/80 text-ink"
-              }`}
-            >
-              {mapStatusAr[map.status]}
+          <p className="flex flex-wrap items-center gap-2 text-sm text-mud">
+            <Badge variant={map.status === "approved" ? "ink" : "outline"}>{mapStatusAr[map.status]}</Badge>
+            {unsaved > 0 && <Badge variant="watch">تعديلات غير محفوظة: {unsaved.toLocaleString("ar-SA")}</Badge>}
+            <span>
+              {detectorStatusAr[map.detector_status]} · {new Date(map.created_at).toLocaleDateString("ar-SA")}
             </span>
-            {unsaved > 0 && (
-              <span className="me-2 rounded-full bg-watch/25 px-2.5 py-0.5 text-xs font-bold text-ink">
-                تعديلات غير محفوظة: {unsaved.toLocaleString("ar-SA")}
-              </span>
-            )}
-            {detectorStatusAr[map.detector_status]} · {new Date(map.created_at).toLocaleDateString("ar-SA")}
           </p>
-          <h1 className="text-3xl font-bold leading-snug">{map.wall_name}</h1>
+          <h1 className="text-3xl font-bold">{map.wall_name}</h1>
           <p className="text-mud">
             <bdi className="tabular-nums">{formatMeters(map.width_m)}</bdi> عرضًا ×{" "}
             <bdi className="tabular-nums">{formatMeters(map.height_m)}</bdi> ارتفاعًا ·{" "}
@@ -285,17 +284,17 @@ export function MapEditor() {
               "لا تلف محدد بعد"
             )}
           </p>
-          {map.summary_ar && <p className="leading-relaxed">{map.summary_ar}</p>}
+          {map.summary_ar && (
+            <MarginNote label="حاشية التحليل" className="mt-1">
+              {map.summary_ar}
+            </MarginNote>
+          )}
         </div>
         <div className="no-print flex flex-col items-start gap-1">
           <a
             href={mapReportUrl(map.id)}
             download
-            className={`min-h-11 content-center rounded-full px-5 text-sm font-bold ${
-              map.status === "approved"
-                ? "bg-sadu text-sand hover:bg-ink"
-                : "border border-ink/30 bg-transparent text-ink hover:bg-ink hover:text-sand"
-            }`}
+            className={buttonVariants({ variant: map.status === "approved" ? "default" : "outline" })}
           >
             حمّل التقرير PDF
           </a>
@@ -305,38 +304,24 @@ export function MapEditor() {
 
       <WorkflowSteps steps={map.workflow} />
 
-      <div role="group" aria-label="طريقة العرض" className="no-print flex w-fit gap-1 rounded-full bg-white/60 p-1">
-        {(
-          [
-            ["elements", "عناصر التلف بالمسرد"],
-            ["grid", "شبكة النموذج"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={mode === value}
-            onClick={() => setMode(value)}
-            className={`min-h-11 rounded-full px-4 text-sm ${mode === value ? "bg-ink text-sand" : "hover:bg-clay/20"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={mode} onValueChange={(value) => setMode(value as typeof mode)}>
+        <TabsList aria-label="طريقة العرض" className="no-print">
+          <TabsTrigger value="elements">عناصر التلف بالمسرد</TabsTrigger>
+          <TabsTrigger value="grid">شبكة النموذج</TabsTrigger>
+        </TabsList>
 
-      <div className="flex flex-col gap-3">
-        {error && (
-          <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
-            {error}
-          </p>
-        )}
-        <div ref={statusRef} role="status" tabIndex={-1} className="no-print">
-          {notice && <p className="rounded-lg bg-white/75 p-3 text-sm">{notice.message}</p>}
+        <div className="flex flex-col gap-3">
+          {error && (
+            <p role="alert" className="rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm">
+              {error}
+            </p>
+          )}
+          <div ref={statusRef} role="status" tabIndex={-1} className="no-print">
+            {notice && <p className="rounded-sm border border-line bg-white p-3 text-sm">{notice.message}</p>}
+          </div>
         </div>
-      </div>
 
-      {mode === "elements" ? (
-        <>
+        <TabsContent value="elements">
           {canEdit && glossary.length > 0 && (
             <ElementTools
               glossary={glossary}
@@ -362,10 +347,12 @@ export function MapEditor() {
           )}
           <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(16rem,1fr)]">
             <div className="flex flex-col gap-3">
-              <label className="no-print flex min-h-11 w-fit items-center gap-2 text-sm">
-                <input type="checkbox" className="size-5 accent-sadu" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
-                أظهر الشبكة المرجعية
-              </label>
+              <div className="no-print flex min-h-11 w-fit items-center gap-2">
+                <Checkbox id="show-grid" checked={showGrid} onCheckedChange={(checked) => setShowGrid(checked === true)} />
+                <Label htmlFor="show-grid" className="text-ink">
+                  أظهر الشبكة المرجعية
+                </Label>
+              </div>
               <ElementCanvas
                 map={map}
                 elements={shownElements}
@@ -398,64 +385,63 @@ export function MapEditor() {
               />
             </div>
           </div>
-        </>
-      ) : (
-        <>
-      {canEdit && gridLocked && (
-        <p className="no-print rounded-lg bg-white/75 p-3 text-sm">
-          عُدّلت عناصر هذا المخطط يدويًا، فالشبكة الآن للعرض فقط. التصحيح من وضع «عناصر التلف بالمسرد».
-        </p>
-      )}
-      {canEdit && !gridLocked && (
-        <MapToolbar
-          damageTypes={map.damage_types}
-          brush={brush}
-          onBrush={setBrush}
-          pendingCount={pendingCount}
-          unsaved={unsaved}
-          fieldInspected={!!map.field_inspected_at}
-          unreviewed={shownElements.filter((e) => e.needs_review).length}
-          canUndo={strokes.length > 0}
-          canRedo={redo.length > 0}
-          busy={busy}
-          onUndo={undo}
-          onRedo={redoLast}
-          onSave={() => run("cells", () => correctCells(map.id, Object.values(pending)))}
-          onApprove={() => run("approve", () => approveMap(map.id))}
-        />
-      )}
+        </TabsContent>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(16rem,1fr)]">
-        <div className="flex flex-col gap-2">
-          <LayerControls layers={layers} onChange={setLayers} hasChanges={!!map.changes?.items.length} />
-          <DamageGrid
-            map={map}
-            cells={cells}
-            layers={layers}
-            brush={canEdit && !gridLocked ? brush : null}
-            focusCell={focusCell}
-            onFocusCell={setFocusCell}
-            onStroke={commitStroke}
-          />
-          <CellInspector label={focusCell} cell={focused} change={change} editable={canEdit && !gridLocked} />
-        </div>
-        <DamageLegend
-          map={map}
-          cells={cells}
-          hidden={layers.hidden}
-          onToggle={(type) =>
-            setLayers((current) => ({
-              ...current,
-              hidden: current.hidden.includes(type)
-                ? current.hidden.filter((t) => t !== type)
-                : [...current.hidden, type],
-            }))
-          }
-        />
-      </div>
+        <TabsContent value="grid">
+          {canEdit && gridLocked && (
+            <p className="no-print rounded-lg bg-white/75 p-3 text-sm">
+              عُدّلت عناصر هذا المخطط يدويًا، فالشبكة الآن للعرض فقط. التصحيح من وضع «عناصر التلف بالمسرد».
+            </p>
+          )}
+          {canEdit && !gridLocked && (
+            <MapToolbar
+              damageTypes={map.damage_types}
+              brush={brush}
+              onBrush={setBrush}
+              pendingCount={pendingCount}
+              unsaved={unsaved}
+              fieldInspected={!!map.field_inspected_at}
+              unreviewed={shownElements.filter((e) => e.needs_review).length}
+              canUndo={strokes.length > 0}
+              canRedo={redo.length > 0}
+              busy={busy}
+              onUndo={undo}
+              onRedo={redoLast}
+              onSave={() => run("cells", () => correctCells(map.id, Object.values(pending)))}
+              onApprove={() => run("approve", () => approveMap(map.id))}
+            />
+          )}
 
-        </>
-      )}
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(16rem,1fr)]">
+            <div className="flex flex-col gap-2">
+              <LayerControls layers={layers} onChange={setLayers} hasChanges={!!map.changes?.items.length} />
+              <DamageGrid
+                map={map}
+                cells={cells}
+                layers={layers}
+                brush={canEdit && !gridLocked ? brush : null}
+                focusCell={focusCell}
+                onFocusCell={setFocusCell}
+                onStroke={commitStroke}
+              />
+              <CellInspector label={focusCell} cell={focused} change={change} editable={canEdit && !gridLocked} />
+            </div>
+            <DamageLegend
+              map={map}
+              cells={cells}
+              hidden={layers.hidden}
+              onToggle={(type) =>
+                setLayers((current) => ({
+                  ...current,
+                  hidden: current.hidden.includes(type)
+                    ? current.hidden.filter((t) => t !== type)
+                    : [...current.hidden, type],
+                }))
+              }
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {map.changes && <MapChangesList changes={map.changes} />}
 
@@ -466,7 +452,7 @@ export function MapEditor() {
 
 function GlossaryLegend({ glossary }: { glossary: GlossaryEntry[] }) {
   return (
-    <section aria-labelledby="glossary-title" className="flex flex-col gap-2 rounded-xl bg-white/75 p-3">
+    <section aria-labelledby="glossary-title" className="flex flex-col gap-2">
       <h2 id="glossary-title" className="font-bold">
         المسرد الموحد
       </h2>
@@ -476,7 +462,7 @@ function GlossaryLegend({ glossary }: { glossary: GlossaryEntry[] }) {
           .map((g) => (
             <li key={g.damage_type} className="flex items-start gap-2">
               <span
-                className="mt-1 inline-block size-3.5 shrink-0 rounded-sm border border-ink/30"
+                className="mt-1.5 inline-block size-3.5 shrink-0 rounded-xs border border-ink/30"
                 style={{ background: g.color }}
               />
               <span>
@@ -526,10 +512,10 @@ function formatArea(value: number): string {
 function EditorSkeleton() {
   return (
     <div role="status" aria-busy="true" aria-label="جارٍ تحميل المخطط" className="flex flex-col gap-5">
-      <div className="h-9 w-64 animate-pulse motion-reduce:animate-none rounded bg-clay/25" />
+      <Skeleton className="h-9 w-64" />
       <div className="grid gap-5 lg:grid-cols-[3fr_1fr]">
-        <div className="aspect-[16/10] animate-pulse motion-reduce:animate-none rounded-xl bg-clay/20" />
-        <div className="h-64 animate-pulse motion-reduce:animate-none rounded-xl bg-clay/15" />
+        <Skeleton className="aspect-[16/10]" />
+        <Skeleton className="h-64" />
       </div>
     </div>
   );

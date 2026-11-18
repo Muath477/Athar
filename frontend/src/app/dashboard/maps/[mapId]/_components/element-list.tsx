@@ -1,5 +1,7 @@
+import { MarginNote } from "@/components/brand/margin-note";
+import { SeverityLabel } from "@/components/brand/severity-label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { classAr, measureAr } from "@/lib/elements";
-import { severityAr } from "@/lib/labels";
 import type { GlossaryEntry, MapElement } from "@/lib/maps";
 
 type Props = {
@@ -13,68 +15,65 @@ export function ElementList({ elements, glossary, selectedId, onSelect }: Props)
   const review = elements.filter((e) => e.needs_review).length;
   return (
     <section aria-labelledby="elements-title" className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="elements-title" tabIndex={-1} className="text-lg font-bold">
-          عناصر التلف
-        </h2>
-        {review > 0 && (
-          <p className="text-sm font-bold text-urgent">
-            عناصر بثقة منخفضة: {review.toLocaleString("ar-SA")}. لا تُعتمد قبل أن يراجعها المختص
-          </p>
-        )}
-      </div>
+      <h2 id="elements-title" tabIndex={-1} className="text-lg font-bold">
+        عناصر التلف
+      </h2>
+      {review > 0 && (
+        <MarginNote label="حاشية: ثقة منخفضة">
+          عناصر بثقة منخفضة: {review.toLocaleString("ar-SA")}. لا تُعتمد قبل أن يراجعها المختص
+        </MarginNote>
+      )}
       {elements.length === 0 ? (
         <p className="text-mud">لا عناصر بعد. ارسم التلف على الصورة.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white/75">
-          <table className="w-full text-sm">
-            <thead className="text-start text-mud">
-              <tr className="border-b border-clay/30">
-                <th className="p-2 text-start font-normal">العنصر</th>
-                <th className="p-2 text-start font-normal">النوع</th>
-                <th className="p-2 text-start font-normal">الموقع</th>
-                <th className="p-2 text-start font-normal">القياس</th>
-                <th className="hidden p-2 text-start font-normal sm:table-cell">الفئة</th>
-                <th className="p-2 text-start font-normal">الشدة</th>
-                <th className="hidden p-2 text-start font-normal sm:table-cell">المصدر</th>
-              </tr>
-            </thead>
-            <tbody>
-              {elements.map((e) => (
-                <tr
-                  key={e.id}
-                  className={`border-b border-clay/20 last:border-0 ${e.id === selectedId ? "bg-sand" : ""}`}
-                >
-                  <td className="p-2">
-                    <button
-                      type="button"
-                      onClick={() => onSelect(e.id)}
-                      aria-pressed={e.id === selectedId}
-                      className="font-bold underline-offset-2 hover:underline"
-                    >
-                      <bdi>{e.id}</bdi>
-                    </button>
-                    {e.needs_review && <span className="ms-2 text-xs font-bold text-urgent">ثقة منخفضة</span>}
-                  </td>
-                  <td className="p-2">
-                    <span
-                      className="me-1.5 inline-block size-3 rounded-sm border border-ink/20 align-middle"
-                      style={{ background: glossary[e.damage_type]?.color }}
-                    />
-                    {glossary[e.damage_type]?.name_ar ?? e.damage_type}
-                  </td>
-                  <td className="p-2 tabular-nums">
-                    <bdi>{e.location}</bdi>
-                  </td>
-                  <td className="p-2 tabular-nums">{measureAr(e)}</td>
-                  <td className="hidden p-2 sm:table-cell">{e.damage_class ? (classAr[e.damage_class] ?? e.damage_class) : "—"}</td>
-                  <td className={`p-2 ${e.severity === "urgent" ? "font-bold text-urgent" : ""}`}>{severityAr[e.severity]}</td>
-                  <td className="hidden p-2 sm:table-cell">{e.source === "expert" ? "المختص" : "النموذج"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>العنصر</TableHead>
+              <TableHead>النوع</TableHead>
+              <TableHead>الموقع</TableHead>
+              <TableHead>القياس</TableHead>
+              <TableHead className="hidden sm:table-cell">الفئة</TableHead>
+              <TableHead>الشدة</TableHead>
+              <TableHead className="hidden sm:table-cell">المصدر</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {elements.map((e) => (
+              <TableRow key={e.id} data-state={e.id === selectedId ? "selected" : undefined}>
+                <TableCell>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(e.id)}
+                    aria-pressed={e.id === selectedId}
+                    className="min-h-6 cursor-pointer font-bold underline-offset-4 hover:text-sadu hover:underline"
+                  >
+                    <bdi>{e.id}</bdi>
+                  </button>
+                  {e.needs_review && <span className="ms-2 text-xs font-bold text-sadu">ثقة منخفضة</span>}
+                </TableCell>
+                <TableCell>
+                  <span
+                    className="me-1.5 inline-block size-3 rounded-xs border border-ink/20 align-middle"
+                    style={{ background: glossary[e.damage_type]?.color }}
+                  />
+                  {glossary[e.damage_type]?.name_ar ?? e.damage_type}
+                </TableCell>
+                <TableCell>
+                  <bdi>{e.location}</bdi>
+                </TableCell>
+                <TableCell>{measureAr(e)}</TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  {e.damage_class ? (classAr[e.damage_class] ?? e.damage_class) : "—"}
+                </TableCell>
+                <TableCell>
+                  <SeverityLabel severity={e.severity} />
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">{e.source === "expert" ? "المختص" : "النموذج"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </section>
   );

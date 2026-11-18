@@ -33,7 +33,7 @@ export function ObservationProgress() {
   if (!state || state.status === "received" || state.status === "processing") {
     return (
       <div className="flex flex-col items-center gap-4 pt-16" aria-live="polite">
-        <div className="sadu-band w-40 animate-pulse motion-reduce:animate-none" aria-hidden />
+        <div className="jadwal w-40 animate-pulse motion-reduce:animate-none" aria-hidden />
         <p className="text-lg">{stageAr[state?.detail.stage ?? ""] ?? "استلمنا صورتك"}</p>
       </div>
     );
