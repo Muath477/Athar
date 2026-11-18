@@ -594,10 +594,17 @@ Frontend, from `frontend/`:
 
 ```bash
 npm ci
-npm run lint && npm run typecheck && npm run build
+npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-CI runs all of the above plus `pip-audit`, `npm audit`, gitleaks, Semgrep, Trivy and a render of every Mermaid diagram in `docs/`.
+End-to-end, with the stack running (`docker compose up -d`, seed, and an expert account):
+
+```bash
+npx playwright install chromium
+E2E_EXPERT_EMAIL=you@example.com E2E_EXPERT_PASSWORD='…' npm run e2e
+```
+
+CI runs all of the above, including the end-to-end tests against the stack in Docker, plus `pip-audit`, `npm audit`, gitleaks, Semgrep, Trivy and a render of every Mermaid diagram in `docs/`.
 
 ## Project layout
 

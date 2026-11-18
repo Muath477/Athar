@@ -72,7 +72,8 @@ SADU_ENABLE_YOLO=false
 | Integration (module boundary) | pytest + real Postgres/PostGIS/pgvector and SeaweedFS in compose (or Testcontainers) | Each module's `api.py` facade with its infrastructure | `find_sites_near`, upload idempotency, EXIF/face fixtures, publish rejects findings without evidence (DB CHECK), retrieval returns chunks for the site, interrupt + resume round trip |
 | Contract | pytest | JSON schemas in docs match Pydantic models; OpenAPI snapshot | Schema drift fails CI |
 | Architecture | import-linter | Module and layer rules from ADR-001 | No cycles; domain imports no framework |
-| End to end | Playwright | Photo to pin happy path with LLM calls stubbed by recorded responses (`SADU_DEMO_MODE=true`) | Upload a scripted photo on the visitor page → story appears → pin appears on the dashboard at the expected facade → evidence panel shows three images |
+| Unit (frontend) | Vitest 5 in Node mode (`npm test`) | Pure logic in `src/**/*.test.ts` | Route geometry and progress (next turn, off route, arrival), Google Maps links, Arabic distance and time |
+| End to end | Playwright 1.65 (`npm run e2e`, `frontend/e2e/`) | The stack in compose with `SADU_DAMAGE_DETECTOR=none` | Phone: At-Turaif page with walking and driving directions; home page. Desktop: expert logs in, maps a wall from a photo, approves it, downloads the PDF report. Planned: photo to pin with recorded model answers |
 | Evaluation | `eval/run.py` | The 50-image set against the real pipeline (real LLM) | Prints every success metric (below) |
 
 ### Evaluation harness
@@ -99,10 +100,10 @@ The harness also writes a confusion table by damage type and lists every false p
 ### CI pipeline (GitHub Actions, every push and PR)
 
 1. `backend`: ruff format check, ruff lint, mypy (strict on `domain/` and `application/`), import-linter, pytest unit + integration (services: Postgres image, SeaweedFS).
-2. `frontend`: eslint, `tsc --noEmit`, `next build`.
+2. `frontend`: eslint, `tsc --noEmit`, Vitest, `next build`, `npm audit`.
 3. `security`: gitleaks, pip-audit, npm audit, Semgrep (see threat model §6).
 4. `images`: build `api`, `web`, `db`; Trivy scan; fail on HIGH/CRITICAL.
-5. `e2e`: compose up with `SADU_DEMO_MODE=true`, Playwright happy path (`--trace off`).
+5. `e2e`: after `backend` and `frontend` pass, compose up `api` and `web`, seed both region packs, create a throwaway expert, run Playwright in Chromium; the HTML report and service logs are kept on failure.
 6. `docs`: render every Mermaid block with mermaid-cli; fail on a syntax error.
 
 The evaluation harness runs manually (it spends API credit) and its results file is committed.
