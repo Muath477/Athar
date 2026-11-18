@@ -42,6 +42,10 @@ function site(lat: number, lon: number): SiteRisk {
     scanning: false,
     latest: null,
     failed_attempt: null,
+    trend: null,
+    confidence: null,
+    confirmed_threats: [],
+    alert: false,
   };
 }
 

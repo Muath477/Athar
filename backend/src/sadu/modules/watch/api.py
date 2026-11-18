@@ -11,14 +11,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.missions import api as missions
 from sadu.modules.sites import api as sites
-from sadu.modules.watch.application.ports import SceneSource, SceneSourceUnavailable, WatchArea
+from sadu.modules.watch.application.ports import (
+    AlertMessage,
+    AlertNotifier,
+    SceneSource,
+    SceneSourceUnavailable,
+    WatchArea,
+)
 from sadu.modules.watch.application.screening import BUFFER_M, Periods, Screening, screen
 from sadu.modules.watch.domain.change import THREAT_COLORS, ChangeRules, Signal, Threat, Zone
 from sadu.modules.watch.domain.geometry import LatLon, window_for
 from sadu.modules.watch.domain.risk import Risk, RiskLevel, priority
+from sadu.modules.watch.domain.warning import Confidence, Reading, Trend, Warning, warn
 from sadu.modules.watch.infrastructure.disabled_source import DisabledSceneSource
 from sadu.modules.watch.infrastructure.earth_search import EarthSearchSceneSource
 from sadu.modules.watch.infrastructure.evidence import render
+from sadu.modules.watch.infrastructure.notifier import NoNotifier, WebhookNotifier
 from sadu.modules.watch.infrastructure.orm import SiteScanRow
 from sadu.modules.watch.infrastructure.sample_source import SampleSceneSource
 from sadu.shared.config import SceneSourceKind, Settings
@@ -28,6 +36,7 @@ from sadu.shared.web import UnitOfWork
 
 __all__ = [
     "THREAT_COLORS",
+    "Confidence",
     "GroundCheck",
     "RiskLevel",
     "ScanQueue",
@@ -36,8 +45,11 @@ __all__ = [
     "SceneSource",
     "SiteRisk",
     "Threat",
+    "Trend",
+    "Warning",
     "Zone",
     "acknowledge",
+    "build_notifier",
     "build_scene_source",
     "due_sites",
     "rank_sites",
@@ -53,6 +65,20 @@ WORLD_HERITAGE_TYPE = "world_heritage"
 GROUND_CHECK_FACADES = 3
 RETRY_FAILED_AFTER = timedelta(hours=6)
 RECENT_SCANS = 10
+LEVEL_AR = {
+    RiskLevel.UNKNOWN: "بلا حكم",
+    RiskLevel.STABLE: "مستقر",
+    RiskLevel.WATCH: "يُراقب",
+    RiskLevel.MODERATE: "متوسط",
+    RiskLevel.URGENT: "عاجل",
+}
+THREAT_AR = {
+    Threat.WATER: "مياه راكدة",
+    Threat.VEGETATION_LOSS: "إزالة غطاء نباتي",
+    Threat.CONSTRUCTION: "بناء جديد",
+    Threat.EARTHWORKS: "حفر",
+    Threat.SAND: "زحف رمال",
+}
 CONCURRENT_SCANS = 2
 LEVEL_RANK = {
     RiskLevel.UNKNOWN: 0,
@@ -109,6 +135,7 @@ class SiteRisk:
     failed_attempt: ScanView | None
     priority: float
     scanning: bool
+    warning: Warning | None = None
 
 
 @dataclass(frozen=True)
@@ -116,6 +143,21 @@ class GroundCheck:
     scan: ScanView
     missions: tuple[missions.MissionView, ...]
     inspector_visit: bool
+
+
+def build_notifier(settings: Settings) -> AlertNotifier:
+    if settings.sadu_alert_webhook_url:
+        return WebhookNotifier(settings.sadu_alert_webhook_url)
+    return NoNotifier()
+
+
+def site_warning(history: list[ScanView]) -> Warning | None:
+    readings = [
+        Reading(scan.score, scan.level, frozenset((s.threat, s.zone) for s in scan.signals))
+        for scan in history
+        if scan.status is ScanStatus.OK
+    ]
+    return warn(readings)
 
 
 def build_scene_source(settings: Settings) -> SceneSource:
@@ -148,10 +190,15 @@ class ScanQueue:
         store: ObjectStore,
         source: SceneSource,
         concurrency: int = CONCURRENT_SCANS,
+        *,
+        notifier: AlertNotifier | None = None,
+        public_origin: str = "",
     ) -> None:
         self._unit_of_work = unit_of_work
         self._store = store
         self._source = source
+        self._notifier = notifier or NoNotifier()
+        self._public_origin = public_origin
         self._slots = asyncio.Semaphore(concurrency)
         self._running: dict[UUID, asyncio.Task[ScanView | None]] = {}
 
@@ -181,7 +228,26 @@ class ScanQueue:
                 log.exception("site_scan_failed", site_id=str(site_id))
                 return None
         log.info("site_scanned", site_id=str(site_id), status=scan.status, level=scan.level)
+        if scan.status is ScanStatus.OK:
+            await self._warn(site_id, scan)
         return scan
+
+    async def _warn(self, site_id: UUID, scan: ScanView) -> None:
+        async with self._unit_of_work() as session:
+            site = await sites.get_site(session, site_id)
+            warning = site_warning(await site_scans(session, site_id, limit=RECENT_SCANS))
+        if warning is None or not warning.alert:
+            return
+        await self._notifier.notify(
+            AlertMessage(
+                site_name_ar=site.name_ar,
+                level=LEVEL_AR[scan.level],
+                score=scan.score,
+                threats_ar=tuple(dict.fromkeys(THREAT_AR[s.threat] for s in scan.signals)),
+                trend=warning.trend.value,
+                link=f"{self._public_origin}/dashboard/watch/{site_id}",
+            )
+        )
 
 
 async def watch_area(session: AsyncSession, site_id: UUID) -> WatchArea:
@@ -234,7 +300,7 @@ async def rank_sites(session: AsyncSession, queue: ScanQueue | None = None) -> l
             score = priority_of(latest, world_heritage=site.building_type == WORLD_HERITAGE_TYPE)
         facades = len(await sites.list_facades(session, site.id))
         scanning = queue is not None and queue.running(site.id)
-        ranked.append(SiteRisk(site, facades, latest, failed, score, scanning))
+        ranked.append(SiteRisk(site, facades, latest, failed, score, scanning, site_warning(history)))
     return sorted(
         ranked, key=lambda r: (-_level_rank(r.latest), -r.priority, r.latest is None, r.site.name_ar)
     )

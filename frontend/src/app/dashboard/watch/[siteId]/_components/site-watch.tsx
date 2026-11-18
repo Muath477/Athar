@@ -23,6 +23,8 @@ import {
   statusAr,
   strongestSignal,
   threatAr,
+  trendAr,
+  warningAr,
   zoneAr,
 } from "@/lib/watch";
 import { CompareImages } from "./compare-images";
@@ -106,6 +108,14 @@ export function SiteWatch() {
           </p>
         )}
       </header>
+
+      {warningAr(site) && (
+        <p className={`rounded-lg px-4 py-2 ${site.alert ? "border-s-4 border-urgent bg-urgent/10" : "bg-white/75"}`}>
+          {site.alert && <strong>تنبيه مُرسل للمختصين · </strong>}
+          {warningAr(site)}
+          {site.trend && site.trend !== "new" && <> · {trendAr[site.trend]}</>}
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="rounded-lg bg-urgent/10 px-4 py-2 text-urgent">

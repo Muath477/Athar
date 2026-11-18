@@ -54,6 +54,11 @@ class LatLonOut(BaseModel):
     lon: float
 
 
+class SignalKeyOut(BaseModel):
+    threat: str
+    zone: str
+
+
 class SiteRiskOut(BaseModel):
     site_id: str
     slug: str
@@ -66,12 +71,17 @@ class SiteRiskOut(BaseModel):
     scanning: bool
     latest: ScanOut | None
     failed_attempt: ScanOut | None
+    trend: str | None
+    confidence: str | None
+    confirmed_threats: list[SignalKeyOut]
+    alert: bool
 
 
 class WatchOverviewOut(BaseModel):
     source: str
     is_sample: bool
     threat_colors: dict[str, str]
+    alerts_pending: int
     sites: list[SiteRiskOut]
 
 
@@ -134,6 +144,11 @@ async def watch_overview(_: Staff, session: Session, state: State, request: Requ
         source=source.name,
         is_sample=source.is_sample,
         threat_colors={str(k): v for k, v in watch.THREAT_COLORS.items()},
+        alerts_pending=sum(
+            1
+            for r in ranked
+            if r.warning and r.warning.alert and r.latest and r.latest.acknowledged_at is None
+        ),
         sites=[
             SiteRiskOut(
                 site_id=str(r.site.id),
@@ -147,6 +162,13 @@ async def watch_overview(_: Staff, session: Session, state: State, request: Requ
                 scanning=r.scanning,
                 latest=scan_out(r.latest, state.store) if r.latest else None,
                 failed_attempt=scan_out(r.failed_attempt, state.store) if r.failed_attempt else None,
+                trend=r.warning.trend if r.warning else None,
+                confidence=r.warning.confidence if r.warning else None,
+                confirmed_threats=[
+                    SignalKeyOut(threat=t, zone=z)
+                    for t, z in sorted(r.warning.confirmed_threats if r.warning else ())
+                ],
+                alert=bool(r.warning and r.warning.alert),
             )
             for r in ranked
         ],

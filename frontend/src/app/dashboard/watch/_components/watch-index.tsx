@@ -17,6 +17,8 @@ import {
   statusAr,
   strongestSignal,
   threatAr,
+  trendAr,
+  warningAr,
   zoneAr,
 } from "@/lib/watch";
 import { RegionMap } from "./region-map";
@@ -88,6 +90,13 @@ export function WatchIndex() {
         )}
       </header>
 
+      {overview.alerts_pending > 0 && (
+        <p role="status" className="rounded-lg border-s-4 border-urgent bg-urgent/10 px-4 py-2">
+          <strong>{overview.alerts_pending.toLocaleString("ar-SA")}</strong> تنبيه بانتظار مراجعة المختص. التنبيه
+          يصدر عند تغيّر عاجل أو تغيّر يتكرر في فحصين متتاليين.
+        </p>
+      )}
+
       {error && (
         <p role="alert" className="rounded-lg bg-urgent/10 px-4 py-2 text-urgent">
           {error}
@@ -146,6 +155,13 @@ function SiteRow({
             <>
               {threatAr[strongest.threat]} {zoneAr[strongest.zone]} · {areaAr(strongest.area_m2)}
             </>
+          )}
+          {warningAr(site) && (
+            <span className="block text-xs">
+              {site.alert && <strong className="text-urgent">تنبيه · </strong>}
+              {warningAr(site)}
+              {site.trend && site.trend !== "new" && <> · {trendAr[site.trend]}</>}
+            </span>
           )}
           {scan !== null && site.failed_attempt && (
             <span className="block text-xs">آخر محاولة: {statusAr[site.failed_attempt.status]}</span>

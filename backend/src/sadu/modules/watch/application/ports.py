@@ -28,3 +28,17 @@ class SceneSource(Protocol):
     def is_sample(self) -> bool: ...
 
     async def scenes(self, area: WatchArea, start: date, end: date, limit: int) -> list[Scene]: ...
+
+
+@dataclass(frozen=True)
+class AlertMessage:
+    site_name_ar: str
+    level: str
+    score: int
+    threats_ar: tuple[str, ...]
+    trend: str
+    link: str
+
+
+class AlertNotifier(Protocol):
+    async def notify(self, message: AlertMessage) -> None: ...

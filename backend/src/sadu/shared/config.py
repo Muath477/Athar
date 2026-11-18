@@ -92,6 +92,7 @@ class Settings(BaseSettings):
     sadu_scene_search_url: str = "https://earth-search.aws.element84.com/v1/search"
     sadu_watch_interval_h: int = Field(default=168, ge=0)
     sadu_watch_sample_events: str = ""
+    sadu_alert_webhook_url: str = Field(default="", pattern=r"^(https://\S+)?$")
 
     @property
     def watch_sample_events_path(self) -> Path:

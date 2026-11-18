@@ -50,12 +50,17 @@ export type SiteRisk = {
   scanning: boolean;
   latest: Scan | null;
   failed_attempt: Scan | null;
+  trend: "new" | "rising" | "steady" | "falling" | null;
+  confidence: "first_sighting" | "confirmed" | null;
+  confirmed_threats: { threat: Threat; zone: Zone }[];
+  alert: boolean;
 };
 
 export type WatchOverview = {
   source: string;
   is_sample: boolean;
   threat_colors: Record<Threat, string>;
+  alerts_pending: number;
   sites: SiteRisk[];
 };
 
@@ -143,4 +148,17 @@ export function areaAr(m2: number): string {
 export function copernicusCredit(scan: Scan | null): string {
   const year = scan ? new Date(scan.recent_end).getFullYear() : new Date().getFullYear();
   return `يحتوي على بيانات Copernicus Sentinel معدّلة ${year.toLocaleString("ar-SA", { useGrouping: false })}`;
+}
+
+export const trendAr: Record<NonNullable<SiteRisk["trend"]>, string> = {
+  new: "أول فحص",
+  rising: "الخطر يتصاعد",
+  steady: "مستقر منذ الفحص السابق",
+  falling: "الخطر يتراجع",
+};
+
+export function warningAr(site: SiteRisk): string | null {
+  if (!site.latest || site.latest.signals.length === 0) return null;
+  if (site.confidence === "confirmed") return "تغيّر مؤكد في فحصين متتاليين";
+  return "رصد أول، ينتظر التأكيد في الفحص القادم";
 }
