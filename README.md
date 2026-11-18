@@ -67,6 +67,25 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track: the Diriyah Gat
 
 Model labels map to damage types with `SADU_DETECTOR_LABELS`, for example `{"spalling": "plaster_loss"}`. If the detector fails, the map is still saved empty so the expert can label it by hand. Details in [ADR-018](docs/adr/ADR-018-damage-detector-port.md).
 
+### The Diriyah procedure, step by step
+
+The map page shows the authority's ten steps with their state, output and criterion. The procedure runs from photo check, privacy, damage and place, through confidence, treatment, materials and the unified map, to specialist review, approval and outputs.
+
+- **Glossary:** the unified glossary from their brief.
+  - Plaster loss, basal erosion and salt efflorescence are drawn as areas.
+  - Cracks (with width class) and rain gullies are drawn as lines.
+  - Holes and burrows are points.
+  - All are measured in metres from the wall size.
+- **Editing:** the model proposes elements from the grid. The specialist reshapes, adds or deletes them with the editor, and every change goes into the correction log.
+- **Approval:** a map is approved only after a recorded field inspection, and only when no low-confidence model element is left unreviewed.
+- **Roles:**
+  - The field surveyor photographs and scans.
+  - The restoration specialist reviews and approves.
+  - The site manager reads the site condition summary (`/dashboard/condition`) and grants or withdraws the field photography permit.
+  - Visitor photo missions run only on sites with a permit.
+
+Details in [ADR-026](docs/adr/ADR-026-diriyah-agent-workflow.md).
+
 ### From orbit to the wall
 
 1. Each week, and on demand as a background job, the API pulls Sentinel-2 scenes for every site from Element 84 Earth Search and builds two median composites: the last 30 days and the year before, taking the clearest scene from each slice of the year so no season dominates.
@@ -569,6 +588,7 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification` or `none` | `claude` |
 | `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
 | `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
+| `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts | Alerts only show on the dashboard |
 | `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
 | `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
@@ -668,7 +688,8 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Wall damage maps | [docs/10-damage-maps.md](docs/10-damage-maps.md) |
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
 | Satellite screening | [docs/adr/ADR-025-space-watch.md](docs/adr/ADR-025-space-watch.md), [region-packs/riyadh/README.md](region-packs/riyadh/README.md) |
-| Decisions (ADR-001 to ADR-025) | [docs/adr/](docs/adr/) |
+| Diriyah procedure, glossary and roles | [docs/adr/ADR-026-diriyah-agent-workflow.md](docs/adr/ADR-026-diriyah-agent-workflow.md) |
+| Decisions (ADR-001 to ADR-026) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 

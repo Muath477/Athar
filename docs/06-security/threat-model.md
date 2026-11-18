@@ -99,6 +99,17 @@ Entry points: `POST /observations` (files + metadata), `POST /observations/{id}/
 | **D**enial of service | Repeated scans hammer Earth Search, the API threads or the database pool. | 30 scans and 30 ground checks per user per hour; scans run in a queue of two, one per site, with no database transaction open while imagery is read; reads use a 4-thread limiter with HTTP timeouts and 3 retries; the scheduler scans only sites past their interval. |
 | **E**levation of privilege | An inspector acknowledges alerts, or opens urgent visitor missions from a stale or quiet scan. | Acknowledge is expert-only and audited; a ground check is accepted only on the site's latest completed scan with signals; tests check the 403 and the 409s. |
 
+### 3.5 Roles, map review and alerts
+
+| Threat | Example | Mitigation |
+|---|---|---|
+| **S**poofing | Someone posts alerts to look like Athar's. | The webhook URL comes from settings only and must be HTTPS. Payloads carry no secrets, only the site name, level, threats and a dashboard link that requires sign-in. |
+| **T**ampering | A map is approved with model guesses left in, or before anyone visits the wall. | Approval needs a recorded field inspection and no unreviewed low-confidence elements. Element shapes are validated against the glossary (geometry, point count, coordinates inside the wall, allowed classes). |
+| **R**epudiation | Disputed who changed a damage element or opened photography on a site. | Every element edit is in the map's correction log with editor and time, and audited as `map.edit_elements`. Permit changes are audited as `site.field_photography`. |
+| **I**nformation disclosure | A site manager or surveyor sees more than their role needs. | All staff can read, which matches the brief's shared site record. Write actions check explicit permissions. |
+| **D**enial of service | Huge element batches. | At most 200 edits per request and 200 points per element. |
+| **E**levation of privilege | A site manager edits maps, or a surveyor grants a photography permit. | The permission matrix in `admin/api.py` gives `review` only to experts and admins, and `manage_site` only to site managers and admins. Tests cover the 403s. |
+
 ## 4. Controls mapped to OWASP Top 10 (2021) and ASVS L1
 
 | OWASP Top 10 | Control in Sadu | ASVS area | Status |

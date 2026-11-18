@@ -206,6 +206,12 @@ REST under `/api/v1`, documented by FastAPI's generated OpenAPI 3.1 at `/api/v1/
 | `POST /sites/{id}/reports` · `GET /reports/{id}` | inspector+ | Round 2: 202 + job; site-wide PDF when ready. |
 | `POST /maps` | inspector+ | Multipart: `photo` (or `meta.observation_id` to reuse a visitor photo), `meta` JSON (facade_id? or wall_name + width_m + height_m, corners? as four `[x, y]` in 0..1, clockwise from top-left). Returns `201` with the full map. `422 photo_unusable`, `invalid_corners`, `wall_size_required`. |
 | `GET /maps?site_id=&facade_id=` · `GET /maps/{id}` | inspector+ | Map list; one map with cells, treatment plan and changes since the previous approved map of the same wall. |
+| `GET /maps/glossary` | staff | The unified glossary: types, geometry, measures, classes and colours. |
+| `POST /maps/{id}/elements` | expert | `{edits: [{action: add\|update\|delete, element_id?, element?: {damage_type, points, severity, damage_class?}}]}`; every edit is logged. |
+| `POST /maps/{id}/field-inspection` | expert | Records the specialist's field inspection; approval needs it. |
+| `GET /sites/{id}/condition` | staff | Site condition summary for the site manager. |
+| `POST /sites/{id}/field-photography` | site manager | `{permitted}`; gates visitor missions on the site. |
+| `GET /auth/roles` | staff | Roles and their permissions. |
 | `POST /maps/{id}/cells` · `POST /maps/{id}/approve` | expert | `{corrections: [{cell: "B4", damage_type, severity}]}` (`damage_type: none` clears a cell); approve freezes the map. `409 map_already_approved`. |
 | `GET /maps/accuracy?site_id=` | inspector+ | Per-type precision and recall of the model against approved maps. |
 | `GET /treatments/catalog` | inspector+ | The treatment catalog with its review status and sources. |
