@@ -130,3 +130,10 @@ async def test_errors_are_problem_json_with_security_headers(client):
     assert response.json()["code"] == "not_found" and response.json()["title"] == "Not found"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "x-request-id" in response.headers
+
+
+async def test_public_reads_are_rate_limited_per_ip(client):
+    nearby = "/sites/nearby?lat=24.7136&lon=46.6753"
+    statuses = [(await client.get(nearby)).status_code for _ in range(241)]
+    assert statuses[:240] == [200] * 240
+    assert statuses[240] == 429
