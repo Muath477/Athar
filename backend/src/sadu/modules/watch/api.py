@@ -45,6 +45,13 @@ __all__ = [
 
 WORLD_HERITAGE_TYPE = "world_heritage"
 GROUND_CHECK_FACADES = 3
+LEVEL_RANK = {
+    RiskLevel.UNKNOWN: 0,
+    RiskLevel.STABLE: 1,
+    RiskLevel.WATCH: 2,
+    RiskLevel.MODERATE: 3,
+    RiskLevel.URGENT: 4,
+}
 
 
 class ScanStatus(StrEnum):
@@ -165,7 +172,15 @@ async def rank_sites(session: AsyncSession) -> list[SiteRisk]:
             score = priority_of(latest, world_heritage=site.building_type == WORLD_HERITAGE_TYPE)
         facades = len(await sites.list_facades(session, site.id))
         ranked.append(SiteRisk(site, facades, latest, score))
-    return sorted(ranked, key=lambda r: (-r.priority, r.latest is None, r.site.name_ar))
+    return sorted(
+        ranked, key=lambda r: (-_level_rank(r.latest), -r.priority, r.latest is None, r.site.name_ar)
+    )
+
+
+def _level_rank(scan: ScanView | None) -> int:
+    if scan is None or scan.status is not ScanStatus.OK:
+        return 0
+    return LEVEL_RANK[scan.level]
 
 
 def priority_of(scan: ScanView, *, world_heritage: bool) -> float:

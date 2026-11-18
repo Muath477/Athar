@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const SECTIONS = [
   { href: "/dashboard", label: "الموقع ثلاثي الأبعاد", exact: true },
+  { href: "/dashboard/watch", label: "الرصد من الفضاء", exact: false },
   { href: "/dashboard/maps", label: "مخططات تلف الجدران", exact: false },
   { href: "/dashboard/review", label: "قائمة المراجعة", exact: false },
 ];

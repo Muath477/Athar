@@ -19,3 +19,7 @@ export const urgentCells: Forms = {
 export const corrections: Forms = { one: "تصحيحًا واحدًا", two: "تصحيحين", few: "تصحيحات", many: "تصحيحًا" };
 
 export const maps: Forms = { one: "مخطط واحد", two: "مخططان", few: "مخططات", many: "مخططًا" };
+
+export const scenes: Forms = { one: "صورة واحدة", two: "صورتين", few: "صور", many: "صورة" };
+
+export const missions: Forms = { one: "مهمة تصوير واحدة", two: "مهمتا تصوير", few: "مهام تصوير", many: "مهمة تصوير" };
