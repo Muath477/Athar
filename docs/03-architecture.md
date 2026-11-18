@@ -115,7 +115,7 @@ infra/                            # Dockerfiles, compose, Caddyfile
 | i18n / RTL | Frontend `lib/i18n/` (ar default, en); backend `shared/i18n.py` for user-facing messages (retake reasons, questions) | Messages keyed, not hard-coded; logical CSS properties only. |
 | Background jobs | `shared/jobs.py` wrapping FastAPI `BackgroundTasks` + startup sweep | Agent runs start as background tasks; LangGraph checkpoints make them resumable; on startup, observations stuck in `processing` for > 2 min are resumed. [ADR-008](adr/ADR-008-background-jobs.md) |
 | File storage | `shared/storage.py` (`ObjectStorePort`, S3 adapter via boto3) | Private bucket; presigned GET URLs valid 5 min for the dashboard; keys are random UUIDs, never visitor-provided names. [ADR-006](adr/ADR-006-object-storage.md) |
-| Rate limiting | `shared/rate_limit.py` | Per passport token and per IP (§7). In-memory store is acceptable because there is one API process. |
+| Rate limiting | `shared/web.py` (`RateLimiter`, `limit_per_ip`, `limit_public_reads`) | Per passport token and per IP (§7): login 5/min, passport creation 10/h, upload 30/min, live updates 30/min, answers 30/min, story 30/min, public reads 240/min shared, wall maps per user per hour. In-memory store is acceptable because there is one API process; idle keys are forgotten every 1000 checks so memory stays bounded. |
 | External-call policy | `shared/resilience.py` | `call_with_policy(fn, timeout, retries, fallback)` used by every adapter. |
 
 ## 6. Data architecture

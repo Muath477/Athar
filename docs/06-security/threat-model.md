@@ -96,7 +96,7 @@ Entry points: `POST /observations` (files + metadata), `POST /observations/{id}/
 | A02 Cryptographic Failures | HTTPS only (Caddy, HSTS 1 year); Argon2id; token hashes; no secrets in images | V2, V6, V9 | To build |
 | A03 Injection | SQLAlchemy parameterized queries; Pydantic validation `extra="forbid"`; LLM output schema-validated; prompt-injection design in §3.2 | V5 | To build |
 | A04 Insecure Design | Threat model (this file); verification rule; evidence DB constraint | V1 | Done (design) |
-| A05 Security Misconfiguration | Security headers at Caddy; CSP; strict CORS; debug off in prod; non-root containers | V14 | To build |
+| A05 Security Misconfiguration | Security headers at Caddy; CSP; strict CORS; debug off in prod; non-root containers | V14 | Built; CSP trade-offs below |
 | A06 Vulnerable Components | pip-audit, npm audit, Trivy in CI; Dependabot | V14 | To build |
 | A07 Identification and Authentication Failures | Lockout, session expiry, rotation, generic login errors | V2, V3 | To build |
 | A08 Software and Data Integrity Failures | Pinned dependencies with lockfiles; GitHub Actions pinned by SHA; region packs validated against JSON schema | V10, V14 | To build |
@@ -113,7 +113,8 @@ Entry points: `POST /observations` (files + metadata), `POST /observations/{id}/
 | Rate limiting | See 03-architecture §7 |
 | Secrets | Environment variables only; `.env` git-ignored; gitleaks in CI and pre-commit; rotate on any leak |
 | HTTPS | Caddy automatic certificates; HSTS `max-age=31536000`; HTTP redirects to HTTPS |
-| CSP | `default-src 'self'; img-src 'self' blob: data: <storage-origin>; media-src 'self' <storage-origin>; connect-src 'self'; script-src 'self' 'nonce-…'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; frame-ancestors 'none'` (the 3D decoders need `blob:` workers; final list verified at build) |
+| CSP | Set by Caddy (`infra/caddy/Caddyfile`). Pages: `default-src 'self'`; scripts `'self' 'unsafe-inline' 'unsafe-eval'` plus Google Maps hosts; images, audio and model fetches from `files.<domain>`; `worker-src 'self' blob:`; `object-src 'none'`; `frame-ancestors 'none'`; `form-action 'self'`; `base-uri 'self'`. The API sends its own `default-src 'none'`. Checked 2026-11-18 behind Caddy over HTTPS: no violations on the visitor pages, the 3D site page, the dashboard, the 3D model and the map editor. |
+| CSP trade-offs | Nonces would remove `'unsafe-inline'`, but they force every page to render per request and Next.js partial prerendering cannot use them. Google's allowlist for the Maps JavaScript API needs `'unsafe-eval'` and wildcard Google hosts. One policy covers all pages because client-side navigation keeps the first page's policy; a split would break the map after moving from the dashboard to a site page. React escaping and no `dangerouslySetInnerHTML` remain the main XSS defence. Revisit with nonces if pages move to dynamic rendering. |
 | Other headers | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(self), geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self)` |
 | CORS | API allows only the web origin; credentials only for dashboard routes |
 
