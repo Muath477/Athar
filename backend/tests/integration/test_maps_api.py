@@ -1,4 +1,6 @@
 import json
+import re
+import zlib
 
 import httpx
 import pytest
@@ -69,6 +71,16 @@ async def client(committed_unit_of_work, store, detector):
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test/api/v1") as http:
         yield http
+
+
+def pdf_objects(pdf: bytes) -> bytes:
+    unpacked = [pdf]
+    for stream in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", pdf, re.DOTALL):
+        try:
+            unpacked.append(zlib.decompress(stream))
+        except zlib.error:
+            continue
+    return b"".join(unpacked)
 
 
 async def login(client: httpx.AsyncClient, email: str) -> dict[str, str]:
@@ -197,3 +209,21 @@ async def test_treatment_catalog_is_readable_by_inspectors(client):
     catalog = (await client.get("/treatments/catalog")).json()
     assert catalog["review_status"] == "draft"
     assert all(t["sources"] for t in catalog["treatments"])
+
+
+async def test_wall_report_pdf_is_for_staff_and_embeds_an_arabic_font(client, detector):
+    detector.cells = [("A1", DamageType.CRACK, Severity.URGENT), ("C4", DamageType.MOISTURE, Severity.WATCH)]
+    inspector = await login(client, "inspector@example.org")
+    created = await create_map(client, inspector, {"facade_id": await north_facade_id(client)})
+    map_id = created.json()["id"]
+
+    response = await client.get(f"/maps/{map_id}/report.pdf")
+
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"].startswith('attachment; filename="athar-wall-report-')
+    assert response.content.startswith(b"%PDF-")
+    assert b"Noto-Naskh-Arabic" in pdf_objects(response.content)
+
+    client.cookies.clear()
+    assert (await client.get(f"/maps/{map_id}/report.pdf")).status_code == 401

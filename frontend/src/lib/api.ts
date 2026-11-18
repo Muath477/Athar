@@ -162,6 +162,10 @@ export function baselineUrl(facadeId: string): string {
   return `${BASE}/facades/${facadeId}/baseline`;
 }
 
+export function mapReportUrl(mapId: string): string {
+  return `${BASE}/maps/${mapId}/report.pdf`;
+}
+
 function readStorage(key: string): string | null {
   try {
     return window.localStorage.getItem(key);

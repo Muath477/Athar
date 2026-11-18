@@ -39,7 +39,7 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate De
 | For | Athar gives them |
 |---|---|
 | Conservation experts | A damage map of each wall from one photo: seven damage types (crack, plaster loss, moisture, basal erosion, surface erosion, partial collapse, graffiti), colour by type, strength by severity. They paint corrections with a brush and approve. |
-| Site managers | A treatment plan per map: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. Each new map lists what changed since the last approved one. |
+| Site managers | A treatment plan per map: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. Each new map lists what changed since the last approved one. All of it downloads as an Arabic PDF report. |
 | The authority | Model accuracy measured against expert decisions, cell by cell, so nobody has to take the model's word for it. |
 | Visitors | A verified story of the place read aloud in Arabic and a passport stamp. A 3D view of the site on Google Maps, and the route there: steps in Arabic, a fly-through preview, and live tracking to the door. Their photos keep the condition record current. |
 
@@ -94,10 +94,11 @@ Every external call has a timeout, retries and a fallback; status updates stream
 | Data | PostgreSQL, PostGIS, pgvector, SQLAlchemy, Alembic | 18 · 3.7 · 0.8.7 · 2.1.8 · 1.20.1 | One store for records, geometry and story embeddings |
 | Files | S3 API (SeaweedFS locally), boto3 | 4.54 · 1.44 | Private bucket, presigned URLs for five minutes |
 | Speech | Azure AI Speech REST, `ar-SA-HamedNeural` | | Saudi Arabic voice for the visitor story |
+| Reports | WeasyPrint, Jinja2, Noto Naskh Arabic | 70.0 · 3.1.6 | Arabic A4 wall reports; external fetches disabled |
 | Web | Next.js App Router, React, TypeScript strict, Tailwind CSS | 16.4.6 · 19.3 · 5 · 4.3 | Arabic RTL PWA and dashboard; each page keeps its own components |
 | 3D | three.js, React Three Fiber, drei | 0.187 · 9.8 · 10.7 | Facade pins on the site model |
 | Maps | Google Maps JavaScript API (3D Maps, Routes), `@vis.gl/react-google-maps` | 1.10.2 | The site in 3D with its boundary, an orbit, and a drawn route; directions open in Google Maps |
-| Quality | pytest, ruff, mypy strict, import-linter, ESLint | 9.2 · 0.17 · 2.4 · 2.16 | 153 backend tests; module boundaries checked in CI |
+| Quality | pytest, ruff, mypy strict, import-linter, ESLint | 9.2 · 0.17 · 2.4 · 2.16 | 180 backend tests; module boundaries checked in CI |
 | Security | gitleaks, pip-audit, npm audit, Semgrep, Trivy, Argon2id | | Scans on every push; hashed passwords and session tokens |
 | Ops | Docker Compose, Caddy, Sentry, structlog | 2.11.9 (Caddy) | One VM with automatic TLS, error reports, JSON logs |
 
@@ -636,7 +637,7 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Verification and demo script | [docs/09-verification-and-demo.md](docs/09-verification-and-demo.md) |
 | Wall damage maps | [docs/10-damage-maps.md](docs/10-damage-maps.md) |
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
-| Decisions (ADR-001 to ADR-023) | [docs/adr/](docs/adr/) |
+| Decisions (ADR-001 to ADR-024) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 

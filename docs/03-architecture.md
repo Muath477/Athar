@@ -32,7 +32,7 @@ Rules: a module owns its tables and no other module reads them; other modules ca
 | **Missions** (`missions`) | missions; gap detection, priority, expiry | `coverage(site_id)`, `gaps(site_id)`, `create(...)`, `open_near(point)`, `fulfil(mission_id, obs_id)` | `MissionCreated`, `MissionFulfilled` | `FindingPublished` (to close confirm-missions) | sites, capture, verification |
 | **Passport** (`passport`) | passports, passport_entries; anonymous token handling, deletion | `create()`, `resolve(token)`, `record_entry(passport_id, site_id, obs_id)`, `summary(passport_id)`, `delete(passport_id)` | `PassportDeleted` | `FindingPublished` (contribution status) | none |
 | **Agents** (`agents`) | LangGraph checkpoints, agent run log; plans and routing | `start_run(obs_id)`, `resume(obs_id, value)`, `dispatch_missions(site_id)` | none | `ObservationReceived` | capture, sites, inspection, verification, stories, missions, passport |
-| **Reports** (`reports`) (Round 2) | report jobs and PDFs | `create_report(site_id)`, `get_report(id)` | `ReportReady` | none | sites, verification |
+| **Reports** (`reports`) | PDFs. Built: the wall condition report (map on the rectified photo, damage totals, changes since the last approved map, treatment plan, materials, model agreement, sources), rendered with WeasyPrint. Round 2: site reports as jobs | `wall_report(session, store, map_id, catalog)`, `wall_report_pdf(report)` | none | none | mapping, treatments, sites |
 | **Wall maps** (`mapping`) | damage_maps, damage_map_cells; wall rectification, grid, detector port (Claude or a ready model over HTTP), corrections, approval, change between maps, model accuracy against approved maps | `prepare_wall(photo, quad, wall, rows)`, `detect_damage(detector, prepared)`, `save_map(...)`, `get_map(id)`, `list_maps(...)`, `correct_cells(id, corrections)`, `approve_map(id, reviewer)`, `previous_approved(map)`, `treatment_plan(map, catalog)`, `accuracy(site_id?)` | none | none | sites, capture, treatments |
 | **Treatments** (`treatments`) | treatment catalog file (per damage type and severity, with materials per m², tools, steps and sources); planning by damaged area | `catalog_at(path)`, `plan_treatments(areas, catalog)` | none | none | none |
 | **Admin** (`admin`) | users, sessions, audit_log, llm_calls (cost counter) | `authenticate(...)`, `record_llm_call(...)`, `audit(...)`, `costs(...)` | none | `PassportDeleted` (audit) | none (other modules call it) |
@@ -56,7 +56,8 @@ flowchart TD
   missions --> sites
   missions --> verification
   reports --> sites
-  reports --> verification
+  reports --> mapping
+  reports --> treatments
   mapping --> sites
   mapping --> capture
   mapping --> treatments
@@ -194,7 +195,8 @@ REST under `/api/v1`, documented by FastAPI's generated OpenAPI 3.1 at `/api/v1/
 | `POST /findings/{id}/review` | expert | `{decision: confirm\|correct\|reject, changes?, reason}`; resumes the run. |
 | `GET /sites/{id}/coverage` | inspector+ | Days since last usable photo per facade, open missions. |
 | `POST /missions` · `GET /missions?site_id=` | inspector+ | Manual dispatch; list. |
-| `POST /sites/{id}/reports` · `GET /reports/{id}` | inspector+ | Round 2: 202 + job; PDF when ready. |
+| `GET /maps/{id}/report.pdf` | inspector+ | Arabic A4 PDF of one wall map, drafts marked as drafts. 30 per user per hour. |
+| `POST /sites/{id}/reports` · `GET /reports/{id}` | inspector+ | Round 2: 202 + job; site-wide PDF when ready. |
 | `POST /maps` | inspector+ | Multipart: `photo` (or `meta.observation_id` to reuse a visitor photo), `meta` JSON (facade_id? or wall_name + width_m + height_m, corners? as four `[x, y]` in 0..1, clockwise from top-left). Returns `201` with the full map. `422 photo_unusable`, `invalid_corners`, `wall_size_required`. |
 | `GET /maps?site_id=&facade_id=` · `GET /maps/{id}` | inspector+ | Map list; one map with cells, treatment plan and changes since the previous approved map of the same wall. |
 | `POST /maps/{id}/cells` · `POST /maps/{id}/approve` | expert | `{corrections: [{cell: "B4", damage_type, severity}]}` (`damage_type: none` clears a cell); approve freezes the map. `409 map_already_approved`. |

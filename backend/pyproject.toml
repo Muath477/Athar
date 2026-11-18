@@ -28,6 +28,8 @@ dependencies = [
     "argon2-cffi==25.1.0",
     "httpx==0.28.1",
     "sentry-sdk==2.75.0",
+    "weasyprint>=70.0",
+    "jinja2>=3.1.6",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +60,7 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "S", "SIM", "RUF", "PL"]
 ignore = ["PLR0911", "PLR0913", "PLR2004", "N818"]
+allowed-confusables = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩", "٫"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [
@@ -83,11 +86,15 @@ mypy_path = "src"
 packages = ["sadu", "eval"]
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*"]
+module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbedding.*", "geoalchemy2.*", "pgvector.*", "weasyprint.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["sadu.modules.inspection.infrastructure.opencv_pipeline", "sadu.modules.mapping.infrastructure.imaging"]
+module = [
+    "sadu.modules.inspection.infrastructure.opencv_pipeline",
+    "sadu.modules.mapping.infrastructure.imaging",
+    "sadu.modules.reports.infrastructure.pdf",
+]
 disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
@@ -109,6 +116,7 @@ forbidden_modules = ["fastapi", "sqlalchemy", "anthropic", "boto3", "langgraph",
 name = "Module layers point inward"
 type = "layers"
 containers = [
+    "sadu.modules.reports",
     "sadu.modules.sites",
     "sadu.modules.capture",
     "sadu.modules.inspection",
@@ -125,8 +133,8 @@ exhaustive = false
 name = "Module dependency graph from docs/03-architecture.md"
 type = "layers"
 layers = [
-    "sadu.modules.agents",
-    "sadu.modules.reports | sadu.modules.missions | sadu.modules.mapping",
+    "sadu.modules.agents | sadu.modules.reports",
+    "sadu.modules.missions | sadu.modules.mapping",
     "sadu.modules.verification | sadu.modules.stories | sadu.modules.capture | sadu.modules.passport",
     "sadu.modules.inspection",
     "sadu.modules.sites | sadu.modules.treatments",

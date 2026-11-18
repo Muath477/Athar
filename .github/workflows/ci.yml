@@ -31,6 +31,11 @@ jobs:
       - name: Start Postgres
         working-directory: .
         run: docker compose up -d --build --wait db
+      - name: Install PDF libraries and Arabic fonts
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends \
+            libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-noto-core
       - name: Install dependencies
         run: |
           pip install "uv==${UV_VERSION}"

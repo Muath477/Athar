@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>تقرير حالة {{ r.wall_name }}</title>
+<style>
+  :root {
+    --ink: #1f1a16;
+    --sand: #efe4d2;
+    --clay: #b3804f;
+    --mud: #7a5434;
+    --sadu: #8f1f1a;
+    --urgent: #b3261e;
+    --muted: #6b5d50;
+  }
+  @page {
+    size: A4;
+    margin: 20mm 16mm 18mm 16mm;
+    @top-right { content: "أثر · تقرير حالة جدار"; font-size: 8.5pt; color: var(--muted); }
+    @top-left { content: string(wall); font-size: 8.5pt; color: var(--muted); }
+    @bottom-center { content: "صفحة " counter(page, arabic-indic) " من " counter(pages, arabic-indic); font-size: 8.5pt; color: var(--muted); }
+  }
+  html { font-family: "Noto Naskh Arabic", "Noto Sans Arabic", serif; font-size: 10.5pt; line-height: 1.75; color: var(--ink); }
+  body { margin: 0; }
+  h1, h2, h3 { line-height: 1.35; margin: 0; }
+  h1 { font-size: 21pt; string-set: wall content(); }
+  h2 { font-size: 13.5pt; margin-block: 14pt 6pt; padding-block-end: 3pt; border-block-end: 1.2pt solid var(--clay); break-after: avoid; }
+  h3 { font-size: 11pt; margin-block: 8pt 2pt; }
+  p { margin: 0 0 4pt; }
+  .band { height: 7pt; margin-block-end: 10pt;
+    background: repeating-linear-gradient(135deg, var(--sadu) 0 5pt, var(--ink) 5pt 10pt); }
+  .subtitle { color: var(--muted); font-size: 11pt; margin-block-end: 8pt; }
+  .status { display: inline-block; padding: 1pt 8pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .status.approved { background: #e3efe3; color: #1e5b2a; }
+  .status.draft { background: #f6e0dc; color: var(--urgent); }
+  .draft-note { border: 1pt solid var(--urgent); color: var(--urgent); padding: 4pt 8pt; margin-block: 6pt; border-radius: 3pt; }
+  .facts { display: flex; gap: 6pt; margin-block: 8pt; }
+  .fact { flex: 1 1 0; background: var(--sand); padding: 5pt 8pt; border-radius: 3pt; }
+  .fact .value { font-size: 15pt; font-weight: bold; display: block; line-height: 1.3; }
+  .fact .label { font-size: 8.5pt; color: var(--muted); }
+  .fact.urgent .value { color: var(--urgent); }
+  figure { margin: 8pt 0; break-inside: avoid; }
+  figure img { width: 100%; border: 0.6pt solid var(--clay); }
+  figcaption { font-size: 8.5pt; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4pt 12pt; font-size: 8.5pt; margin-block-start: 4pt; }
+  .swatch { display: inline-block; width: 8pt; height: 8pt; border-radius: 1.5pt; margin-inline-end: 3pt; vertical-align: middle; }
+  table { width: 100%; border-collapse: collapse; margin-block: 4pt 8pt; font-size: 9.5pt; }
+  thead { display: table-header-group; }
+  th { text-align: start; background: var(--sand); font-weight: bold; padding: 3pt 6pt; }
+  td { padding: 3pt 6pt; border-block-end: 0.5pt solid #e2d6c3; vertical-align: top; }
+  tr { break-inside: avoid; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sev-urgent { color: var(--urgent); font-weight: bold; }
+  .treatment { border: 0.6pt solid #d9c7aa; border-radius: 3pt; padding: 6pt 9pt; margin-block: 6pt; break-inside: avoid; }
+  .treatment .meta { font-size: 9pt; color: var(--muted); }
+  .treatment ol { margin: 2pt 0 4pt; padding-inline-start: 14pt; }
+  .specialist { color: var(--urgent); font-weight: bold; font-size: 9pt; }
+  .note { font-size: 9pt; color: var(--muted); }
+  .sources { font-size: 9pt; text-align: left; padding-inline-start: 16pt; }
+  .sources li { margin-block-end: 3pt; }
+  .url { color: var(--muted); word-break: break-all; }
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+  .page-break { break-before: page; }
+  .cells-grid { columns: 3; column-gap: 12pt; font-size: 9pt; }
+  .cells-grid div { break-inside: avoid; }
+</style>
+</head>
+<body>
+  <div class="band"></div>
+  <h1>{{ r.wall_name }}</h1>
+  <p class="subtitle">
+    {% if r.site_name %}{{ r.site_name }} · {% endif %}مخطط بتاريخ {{ date(r.created_at) }}
+    · {% if r.approved %}<span class="status approved">معتمد{% if r.approved_at %} في {{ date(r.approved_at) }}{% endif %}</span>{% else %}<span class="status draft">مسودة</span>{% endif %}
+  </p>
+  {% if not r.approved %}
+  <p class="draft-note">هذه مسودة لم يعتمدها خبير بعد. لا تُبنى عليها قرارات معالجة قبل الاعتماد.</p>
+  {% endif %}
+
+  <div class="facts">
+    <div class="fact"><span class="value num">{{ number(r.damaged_area_m2) }} م²</span><span class="label">مساحة متضررة من {{ number(r.wall_area_m2) }} م² ({{ percent(r.damaged_share) }})</span></div>
+    <div class="fact urgent"><span class="value num">{{ digits(r.urgent_cells) }}</span><span class="label">خلية عاجلة</span></div>
+    <div class="fact"><span class="value num">{{ digits(r.totals|length) }}</span><span class="label">أنواع تلف</span></div>
+    <div class="fact"><span class="value">{% if r.needs_specialist %}نعم{% else %}لا{% endif %}</span><span class="label">يحتاج إشراف مختص</span></div>
+  </div>
+
+  <figure>
+    <img src="data:image/jpeg;base64,{{ overlay }}" alt="مخطط التلف على صورة الجدار المصححة">
+    <figcaption>صورة الجدار بعد تصحيح المنظور، مقسمة إلى {{ digits(r.rows) }} صفوف × {{ digits(r.cols) }} أعمدة؛ كل خلية {{ number(r.cell_area_m2, 2) }} م². اللون يدل على نوع التلف وقوته على شدته.</figcaption>
+    <div class="legend">
+      {% for t in r.totals %}<span><span class="swatch" style="background: {{ r.damage_colors[t.damage_type] }}"></span>{{ damage(t.damage_type) }}</span>{% endfor %}
+    </div>
+  </figure>
+
+  <h2>ملخص التلف</h2>
+  {% if r.totals %}
+  <table>
+    <thead><tr><th>النوع</th><th>الخلايا</th><th>المساحة</th><th>أشد درجة</th></tr></thead>
+    <tbody>
+    {% for t in r.totals %}
+      <tr>
+        <td><span class="swatch" style="background: {{ r.damage_colors[t.damage_type] }}"></span>{{ damage(t.damage_type) }}</td>
+        <td class="num">{{ digits(t.cells) }}</td>
+        <td class="num">{{ number(t.area_m2) }} م²</td>
+        <td class="{% if t.worst_severity == 'urgent' %}sev-urgent{% endif %}">{{ severity(t.worst_severity) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>لا يظهر في هذا المخطط تلف على الجدار.</p>
+  {% endif %}
+
+  <h2>ما تغيّر منذ آخر مخطط معتمد</h2>
+  {% if r.changes is none %}
+  <p>هذا أول مخطط معتمد لهذا الجدار، فلا مقارنة بعد.</p>
+  {% elif not r.changes %}
+  <p>لا تغيير عن مخطط {{ date(r.previous_approved_at) }}.</p>
+  {% else %}
+  <p class="note">مقارنة بمخطط {{ date(r.previous_approved_at) }}.</p>
+  <table>
+    <thead><tr><th>الخلية</th><th>التغيّر</th><th>قبل</th><th>بعد</th></tr></thead>
+    <tbody>
+    {% for c in r.changes %}
+      <tr>
+        <td class="ltr num">{{ c.label }}</td>
+        <td>{{ change(c.kind) }}</td>
+        <td>{% if c.before %}{{ damage(c.before.damage_type) }} · {{ severity(c.before.severity) }}{% else %}—{% endif %}</td>
+        <td>{% if c.after %}{{ damage(c.after.damage_type) }} · {{ severity(c.after.severity) }}{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2 class="page-break">خطة المعالجة</h2>
+  {% if not r.catalog_reviewed %}
+  <p class="draft-note">كتالوج المعالجات (الإصدار {{ digits(r.catalog_version) }}) مسودة لم يراجعها مختص ترميم. الخطة دليل للنقاش وليست أمر عمل.</p>
+  {% endif %}
+  {% for t in r.treatments %}
+  <div class="treatment">
+    <h3>{{ t.title_ar }}</h3>
+    <p class="meta">{{ damage(t.damage_type) }} · {{ severity(t.severity) }} · {{ digits(t.cells) }} خلية · {{ number(t.area_m2) }} م²
+      {% if t.specialist_required %} · <span class="specialist">بإشراف مختص</span>{% endif %}</p>
+    <ol>{% for step in t.steps_ar %}<li>{{ step }}</li>{% endfor %}</ol>
+    {% if t.materials %}<p><strong>المواد:</strong> {% for m in t.materials %}{{ m.name_ar }} {{ number(m.quantity) }} {{ m.unit_ar }}{% if not loop.last %}، {% endif %}{% endfor %}</p>{% endif %}
+    {% if t.tools_ar %}<p><strong>الأدوات:</strong> {{ t.tools_ar|join("، ") }}</p>{% endif %}
+  </div>
+  {% else %}
+  <p>لا معالجات مطلوبة لهذا المخطط.</p>
+  {% endfor %}
+  {% if r.unmatched %}
+  <h3>تلف بلا معالجة في الكتالوج</h3>
+  <ul>{% for u in r.unmatched %}<li>{{ damage(u.damage_type) }} · {{ severity(u.worst_severity) }} · {{ digits(u.cells) }} خلية — يحتاج رأي مختص.</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if r.material_totals %}
+  <h2>إجمالي المواد</h2>
+  <table>
+    <thead><tr><th>المادة</th><th>الكمية</th></tr></thead>
+    <tbody>{% for m in r.material_totals %}<tr><td>{{ m.name_ar }}</td><td class="num">{{ number(m.quantity) }} {{ m.unit_ar }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="note">{{ r.quantities_note_ar }}</p>
+  {% endif %}
+
+  <h2>دقة النموذج في هذا المخطط</h2>
+  {% if r.detector == "manual" %}
+  <p>رُسم هذا المخطط يدويًا دون نموذج؛ حدّد الخبير {{ digits(r.agreement.added) }} خلية متضررة.</p>
+  {% else %}
+  <p>اقترح {{ detector(r.detector) }} {{ digits(r.agreement.proposed) }} خلية. أبقى الخبير {{ digits(r.agreement.kept) }} كما هي، وعدّل {{ digits(r.agreement.changed) }}،
+    وأضاف {{ digits(r.agreement.added) }}، وحذف {{ digits(r.agreement.removed) }}.</p>
+  {% endif %}
+
+  {% if r.cells %}
+  <h2>الخلايا المتضررة</h2>
+  <div class="cells-grid">
+    {% for c in r.cells %}<div><span class="ltr num">{{ c.label }}</span> · {{ damage(c.damage_type) }} · <span class="{% if c.severity == 'urgent' %}sev-urgent{% endif %}">{{ severity(c.severity) }}</span> <span class="note">({{ source(c.source) }})</span></div>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if r.sources %}
+  <h2>المصادر</h2>
+  <ol class="sources" dir="ltr">{% for s in r.sources %}<li>{{ s.title }}<br><span class="url">{{ s.url }}</span></li>{% endfor %}</ol>
+  {% endif %}
+
+  <p class="note" style="margin-block-start: 14pt">أُنشئ هذا التقرير في {{ date(r.generated_at) }} من أثر. رقم المخطط <span class="ltr">{{ r.map_id }}</span>.</p>
+</body>
+</html>

@@ -102,6 +102,10 @@ Accepted response formats are listed in [ADR-018](adr/ADR-018-damage-detector-po
    It prints damaged-vs-sound agreement and precision, recall and F1 per damage type, and exits non-zero below the threshold. Claude answers are cached in `SADU_DEMO_CACHE_DIR`, so a second run costs nothing.
 3. In the app, maps approved by the expert feed `GET /maps/accuracy`, shown on the maps page.
 
+## The report
+
+"حمّل التقرير PDF" on a map page downloads an Arabic A4 report (`GET /maps/{id}/report.pdf`, ADR-024): the wall with damage painted per cell, totals by type, changes since the last approved map, the treatment plan with materials and tools, material totals, how much of the model's proposal the expert kept, and the cited sources. A draft map and a draft treatment catalog both say so on the page.
+
 ## Demo addition (60 seconds, after the visitor part)
 
 1. Dashboard → مخططات تلف الجدران → مخطط جديد. Pick the wall, take the photo, drag the four corners.
