@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 320" width="1010" height="320" role="img" aria-label="Visitor flow: photo, privacy, compare with baseline, verify; evidence-backed changes become pins, uncertain ones go to an expert">
+<title>Visitor flow: photo, privacy, compare with baseline, verify; evidence-backed changes become pins, uncertain ones go to an expert</title>
+<style>
+text{font-family:'Segoe UI',Tahoma,'Noto Sans','Noto Naskh Arabic',sans-serif}
+text:not([fill]):not(.light):not(.muted){fill:#1f1a16}
+.muted{fill:#7a5434}
+.light{fill:#efe4d2}
+@keyframes v0{0%{opacity:0;transform:translate(135px,145px)}0%{opacity:0;transform:translate(135px,145px)}2%{opacity:1;transform:translate(135px,145px)}12%{transform:translate(325px,145px)}22%{transform:translate(515px,145px)}32%{transform:translate(705px,145px)}40%{opacity:1;transform:translate(895px,118px)}46%{opacity:0;transform:translate(895px,118px)}100%{opacity:0}}
+.v0{animation:v0 10s linear infinite}
+@keyframes v1{0%{opacity:0;transform:translate(135px,145px)}50%{opacity:0;transform:translate(135px,145px)}52%{opacity:1;transform:translate(135px,145px)}62%{transform:translate(325px,145px)}72%{transform:translate(515px,145px)}82%{transform:translate(705px,145px)}90%{opacity:1;transform:translate(895px,204px)}96%{opacity:0;transform:translate(895px,204px)}100%{opacity:0}}
+.v1{animation:v1 10s linear infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+<rect width="1010" height="320" rx="18" fill="#efe4d2"/>
+<text x="40" y="44" font-size="18" font-weight="700">Visitors keep watch between surveys</text>
+<text x="40" y="68" font-size="13" class="muted">Only changes with evidence reach the authority. Unsure ones wait for an expert.</text>
+<rect x="60" y="110" width="150" height="70" rx="10" fill="#f8f2e8"/><text x="135" y="140" text-anchor="middle" font-size="14" font-weight="700">Visitor photo</text><text x="135" y="161" text-anchor="middle" font-size="12" class="muted">QR, no app</text>
+<rect x="250" y="110" width="150" height="70" rx="10" fill="#f8f2e8"/><text x="325" y="140" text-anchor="middle" font-size="14" font-weight="700">Privacy</text><text x="325" y="161" text-anchor="middle" font-size="12" class="muted">blur faces, drop EXIF</text>
+<rect x="440" y="110" width="150" height="70" rx="10" fill="#f8f2e8"/><text x="515" y="140" text-anchor="middle" font-size="14" font-weight="700">Compare</text><text x="515" y="161" text-anchor="middle" font-size="12" class="muted">align to baseline, diff</text>
+<rect x="630" y="110" width="150" height="70" rx="10" fill="#f8f2e8"/><text x="705" y="140" text-anchor="middle" font-size="14" font-weight="700">Verify</text><text x="705" y="161" text-anchor="middle" font-size="12" class="muted">evidence rule</text>
+<path d="M210 145 h34" stroke="#7a5434" stroke-width="2"/><path d="M244 139 l6 6 l-6 6 z" fill="#7a5434"/>
+<path d="M400 145 h34" stroke="#7a5434" stroke-width="2"/><path d="M434 139 l6 6 l-6 6 z" fill="#7a5434"/>
+<path d="M590 145 h34" stroke="#7a5434" stroke-width="2"/><path d="M624 139 l6 6 l-6 6 z" fill="#7a5434"/>
+<rect x="820" y="90" width="150" height="56" rx="10" fill="#1f1a16"/><text x="895" y="115" text-anchor="middle" font-size="14" font-weight="700" class="light">Pin on 3D site</text><text x="895" y="134" text-anchor="middle" font-size="12" fill="#efe4d2" fill-opacity="0.7">likely or confirmed</text>
+<rect x="820" y="176" width="150" height="56" rx="10" fill="#f8f2e8" stroke="#8f1f1a" stroke-width="2"/><text x="895" y="201" text-anchor="middle" font-size="14" font-weight="700">Expert queue</text><text x="895" y="220" text-anchor="middle" font-size="12" class="muted">uncertain or urgent</text>
+<path d="M780 145 C 800 145, 800 118, 820 118" stroke="#7a5434" stroke-width="2" fill="none"/><path d="M780 145 C 800 145, 800 204, 820 204" stroke="#7a5434" stroke-width="2" fill="none"/>
+<rect x="60" y="250" width="910" height="44" rx="10" fill="#f8f2e8"/>
+<text x="80" y="277" font-size="13">The visitor gets a sourced story read aloud and a passport stamp. No account, no name, location dropped once the facade is known.</text>
+<circle class="v0" cx="0" cy="0" r="7" fill="#1f1a16"/>
+<circle class="v1" cx="0" cy="0" r="7" fill="#8f1f1a"/>
+</svg>
