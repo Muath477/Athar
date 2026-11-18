@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { request, type Site } from "@/lib/api";
 import type { TravelMode } from "@/lib/directions";
 import { DirectionsPanel } from "./directions-panel";
@@ -12,7 +13,7 @@ import { VIEWPORT_CLASS } from "./viewport";
 
 const SiteModel = dynamic(() => import("@/components/site-model").then((m) => m.SiteModel), {
   ssr: false,
-  loading: () => <div className="size-full animate-pulse rounded-xl bg-clay/20 motion-reduce:animate-none" />,
+  loading: () => <Skeleton className="size-full" />,
 });
 
 type Props = { siteId: string; mapsApiKey: string | null };
@@ -67,9 +68,9 @@ function ExplorerSkeleton() {
       aria-label="جارٍ التحميل"
       className="flex animate-pulse flex-col gap-5 pt-4 motion-reduce:animate-none"
     >
-      <div className="h-9 w-2/3 rounded-xl bg-clay/25" />
-      <div className={`${VIEWPORT_CLASS} bg-clay/20`} />
-      <div className="h-40 rounded-xl bg-clay/20" />
+      <Skeleton className="h-9 w-2/3 animate-none" />
+      <Skeleton className={`${VIEWPORT_CLASS} animate-none`} />
+      <Skeleton className="h-40 animate-none" />
     </div>
   );
 }

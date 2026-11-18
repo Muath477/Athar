@@ -1,15 +1,11 @@
+import { RetryAlert } from "@/app/_components/page-status";
+import { Skeleton } from "@/components/ui/skeleton";
 import { type Scan, imageryYear } from "@/lib/watch";
 
 export function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div
-      role="alert"
-      className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm"
-    >
-      <p>{message}</p>
-      <button type="button" onClick={onRetry} className="min-h-11 rounded-full border border-ink/30 px-4">
-        أعد المحاولة
-      </button>
+    <div className="mt-6">
+      <RetryAlert message={message} onRetry={onRetry} />
     </div>
   );
 }
@@ -30,14 +26,14 @@ export function IndexSkeleton() {
       className="flex animate-pulse flex-col gap-6 pt-6 motion-reduce:animate-none"
     >
       <div className="flex flex-col gap-2">
-        <div className="h-9 w-72 max-w-full rounded-xl bg-clay/25" />
-        <div className="h-4 w-full max-w-3xl rounded-xl bg-clay/20" />
+        <Skeleton className="h-9 w-72 max-w-full animate-none" />
+        <Skeleton className="h-4 w-full max-w-3xl animate-none" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="aspect-[16/11] rounded-xl bg-clay/20 max-lg:order-last" />
+        <Skeleton className="aspect-[16/11] max-lg:order-last animate-none" />
         <div className="flex flex-col gap-2">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-clay/20" />
+            <Skeleton key={i} className="h-16 animate-none" />
           ))}
         </div>
       </div>
@@ -53,15 +49,15 @@ export function SiteWatchSkeleton() {
       className="flex animate-pulse flex-col gap-6 pt-6 motion-reduce:animate-none"
     >
       <div className="flex flex-col gap-2">
-        <div className="h-4 w-24 rounded-xl bg-clay/20" />
-        <div className="h-9 w-72 max-w-full rounded-xl bg-clay/25" />
-        <div className="h-4 w-full max-w-xl rounded-xl bg-clay/20" />
+        <Skeleton className="h-4 w-24 animate-none" />
+        <Skeleton className="h-9 w-72 max-w-full animate-none" />
+        <Skeleton className="h-4 w-full max-w-xl animate-none" />
       </div>
-      <div className="h-11 w-40 rounded-full bg-clay/20" />
+      <Skeleton className="h-11 w-40 animate-none" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <div className="aspect-square w-full max-w-xl rounded-xl bg-clay/20" />
+        <Skeleton className="aspect-square w-full max-w-xl animate-none" />
         <div className="flex flex-col gap-2">
-          <div className="h-40 rounded-xl bg-clay/20" />
+          <Skeleton className="h-40 animate-none" />
         </div>
       </div>
     </div>

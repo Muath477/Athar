@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { distanceAr, durationAr, travelModeAr } from "@/lib/directions";
 import type { RouteProgress } from "./route-progress";
 import { RouteSteps } from "./route-steps";
@@ -38,15 +41,17 @@ export function RoutePanel(props: Props) {
   if (state.status !== "ready") {
     const busy = BUSY_AR[state.status];
     return (
-      <section className="flex flex-col gap-2 rounded-xl border border-clay/40 p-4" aria-label="الطريق على الخريطة">
-        <button
+      <section className="flex flex-col gap-2 rounded-sm border border-line bg-white p-4" aria-label="الطريق على الخريطة">
+        <Button
+          type="button"
+          variant="outline"
           onClick={route.find}
           disabled={!route.available || Boolean(busy)}
           aria-busy={Boolean(busy)}
-          className="min-h-11 self-start rounded-full bg-mud px-5 text-sand disabled:opacity-60"
+          className="self-start"
         >
           {busy ?? "ارسم طريقي من موقعي"}
-        </button>
+        </Button>
         <p className="text-xs text-mud">نطلب موقعك ونرسله إلى Google لحساب الطريق فقط، ولا نحفظه عندنا.</p>
         <p aria-live="polite" className="text-sm empty:hidden">
           {PROBLEM_AR[state.status] ?? ""}
@@ -56,7 +61,7 @@ export function RoutePanel(props: Props) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-clay/40 p-4" aria-label="الطريق على الخريطة">
+    <section className="flex flex-col gap-3 rounded-sm border border-line bg-white p-4" aria-label="الطريق على الخريطة">
       <p className="text-lg font-bold tabular-nums">
         {props.progress
           ? `باقي ${distanceAr(props.progress.remainingMeters)}`
@@ -66,23 +71,25 @@ export function RoutePanel(props: Props) {
       <TrackingNotice {...props} />
 
       <div className="flex flex-wrap gap-2">
-        <button onClick={props.onToggleTracking} className="min-h-11 rounded-full bg-sadu px-5 font-bold text-sand">
+        <Button type="button" onClick={props.onToggleTracking}>
           {props.tracking ? "أوقف التتبع" : "ابدأ التتبع"}
-        </button>
+        </Button>
         {props.canPreview && !props.tracking && (
-          <button onClick={props.onPreview} className="min-h-11 rounded-full border border-ink px-4">
+          <Button type="button" variant="outline" onClick={props.onPreview}>
             شاهد الطريق قبل أن تمشي
-          </button>
+          </Button>
         )}
         {props.tracking && (
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-ink px-4">
-            <input type="checkbox" checked={props.following} onChange={props.onToggleFollowing} className="size-4 accent-mud" />
-            الكاميرا تتبعني
-          </label>
+          <div className="flex min-h-11 items-center gap-2 px-2">
+            <Checkbox id="route-follow" checked={props.following} onCheckedChange={props.onToggleFollowing} />
+            <Label htmlFor="route-follow" className="text-ink">
+              الكاميرا تتبعني
+            </Label>
+          </div>
         )}
-        <button onClick={route.clear} className="min-h-11 rounded-full px-4 underline underline-offset-4">
+        <Button type="button" variant="ghost" onClick={route.clear} className="underline underline-offset-4">
           امسح الطريق
-        </button>
+        </Button>
       </div>
 
       <RouteSteps
@@ -102,10 +109,10 @@ function TrackingNotice({ route, siteName, tracking, trackingDenied, progress }:
   if (!progress) return <p className="text-sm">ننتظر موقعك…</p>;
   if (progress.arrived) {
     return (
-      <div className="flex flex-col gap-2 rounded-lg bg-mud/10 p-3">
+      <div className="flex flex-col gap-2 rounded-sm border border-line bg-sand p-3">
         <p className="font-bold">وصلت إلى {siteName}.</p>
         <p className="text-sm">صوّر واجهته الآن، فصورتك تساعد في متابعة حالته.</p>
-        <Link href="/capture" className="min-h-11 self-start content-center rounded-full bg-mud px-5 text-sand">
+        <Link href="/capture" className={buttonVariants({ className: "self-start" })}>
           صوّر الواجهة
         </Link>
       </div>
@@ -113,11 +120,11 @@ function TrackingNotice({ route, siteName, tracking, trackingDenied, progress }:
   }
   if (progress.offRoute) {
     return (
-      <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-moderate bg-moderate/10 p-3 text-sm">
+      <div role="alert" className="flex flex-wrap items-center gap-2 rounded-sm border border-moderate bg-moderate/10 p-3 text-sm">
         <p className="flex-1">يبدو أنك ابتعدت عن الطريق.</p>
-        <button onClick={route.find} className="min-h-11 rounded-full border border-ink px-4">
+        <Button type="button" variant="outline" size="sm" onClick={route.find}>
           أعد حساب الطريق
-        </button>
+        </Button>
       </div>
     );
   }

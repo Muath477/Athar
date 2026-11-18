@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MarginNote } from "@/components/brand/margin-note";
+import { SeverityLabel } from "@/components/brand/severity-label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { colorFor } from "@/lib/damage-palette";
@@ -44,14 +45,14 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
           <ol className="flex flex-col gap-3">
             {plan.items.map((item, index) => (
               <li key={`${item.code}-${item.severity}`}>
-                <details open={index === 0} className="group rounded-xl bg-white/70">
+                <details open={index === 0} className="group rounded-sm border border-line bg-white">
                   <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 p-4">
                     <span className="flex items-center gap-3">
-                      <span aria-hidden className="h-8 w-1.5 rounded-full" style={{ background: colorFor(item.damage_type) }} />
+                      <span aria-hidden className="h-8 w-1.5 rounded-xs" style={{ background: colorFor(item.damage_type) }} />
                       <span className="flex flex-col">
                         <span className="font-bold">{item.title_ar}</span>
                         <span className="text-sm text-mud">
-                          {damageTypeAr[item.damage_type] ?? item.damage_type} · {severityAr[item.severity]} ·{" "}
+                          {damageTypeAr[item.damage_type] ?? item.damage_type} · <SeverityLabel severity={item.severity} /> ·{" "}
                           <bdi className="tabular-nums">{item.area_m2.toLocaleString("ar-SA")} م²</bdi>
                         </span>
                       </span>
@@ -83,7 +84,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
                         <caption className="pb-1 text-start font-bold">المواد لهذه المساحة (تقديرية)</caption>
                         <tbody>
                           {item.materials.map((material) => (
-                            <tr key={material.name_ar} className="border-t border-clay/30">
+                            <tr key={material.name_ar} className="border-t border-line">
                               <td className="py-1.5">{material.name_ar}</td>
                               <td className="tabular-nums">
                                 {material.quantity.toLocaleString("ar-SA")} {material.unit_ar}

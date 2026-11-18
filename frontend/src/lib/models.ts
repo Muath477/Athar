@@ -38,6 +38,18 @@ export function metricLines(metrics: Record<string, unknown>): MetricLine[] {
     .map(([key, value]) => ({ key, label: METRIC_LABELS[key] ?? key, value: formatMetric(key, value) }));
 }
 
+export type MetricColumn = { key: string; label: string };
+
+export function metricColumns(models: DamageModel[]): MetricColumn[] {
+  const columns = new Map<string, string>();
+  for (const model of models) {
+    for (const line of metricLines(model.metrics)) {
+      if (!columns.has(line.key)) columns.set(line.key, line.label);
+    }
+  }
+  return Array.from(columns, ([key, label]) => ({ key, label }));
+}
+
 function formatMetric(key: string, value: number): string {
   if (Number.isInteger(value) && !key.endsWith("_rate")) return value.toLocaleString("ar-SA");
   if (value >= 0 && value <= 1) {

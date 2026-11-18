@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Button } from "@/components/ui/button";
 import type { Scan, Threat } from "@/lib/watch";
 import { threatAr } from "@/lib/watch";
 
@@ -19,24 +20,23 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
         <h2 id={`${sliderId}-title`} className="text-lg font-bold">
           الصور
         </h2>
-        <div role="group" aria-label="طريقة العرض" className="flex gap-1 rounded-full bg-white/60 p-1">
+        <div role="group" aria-label="طريقة العرض" className="flex gap-1 rounded-sm border border-line p-0.5">
           {(
             [
               ["compare", "قبل وبعد"],
               ["change", "خريطة التغيّر"],
             ] as const
           ).map(([value, label]) => (
-            <button
+            <Button
               key={value}
               type="button"
+              variant="segment"
+              size="sm"
               aria-pressed={view === value}
               onClick={() => setView(value)}
-              className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                view === value ? "bg-ink text-sand" : "hover:bg-clay/20"
-              }`}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -44,16 +44,16 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
       {view === "compare" ? (
         <div className="flex flex-col gap-2" dir="ltr">
           <div className="relative aspect-square w-full max-w-xl overflow-hidden rounded-xl bg-mud/20">
-            <img src={scan.before_url} alt="الموقع قبل: متوسط صور السنة الماضية" className="absolute inset-0 h-full w-full bg-clay/20 text-transparent" />
+            <img src={scan.before_url} alt="الموقع قبل: متوسط صور السنة الماضية" className="absolute inset-0 h-full w-full bg-clay/60 text-transparent" />
             <img
               src={scan.after_url}
               alt="الموقع بعد: متوسط صور الشهر الأخير"
-              className="absolute inset-0 h-full w-full bg-clay/20 text-transparent"
+              className="absolute inset-0 h-full w-full bg-clay/60 text-transparent"
               style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
             />
             <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-white" style={{ left: `${split}%` }} />
-            <span className="absolute left-2 top-2 rounded bg-ink/70 px-2 py-0.5 text-xs text-sand">بعد</span>
-            <span className="absolute right-2 top-2 rounded bg-ink/70 px-2 py-0.5 text-xs text-sand">قبل</span>
+            <span className="absolute start-2 top-2 rounded-sm bg-ink/70 px-2 py-0.5 text-xs text-sand">بعد</span>
+            <span className="absolute end-2 top-2 rounded-sm bg-ink/70 px-2 py-0.5 text-xs text-sand">قبل</span>
           </div>
           <label htmlFor={sliderId} className="sr-only">
             حرّك للمقارنة بين قبل وبعد
@@ -73,7 +73,7 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
           <img
             src={scan.change_url}
             alt="صورة الشهر الأخير وعليها المناطق المتغيرة ملوّنة حسب نوع التغيّر"
-            className="aspect-square w-full max-w-xl rounded-xl bg-clay/20 text-transparent"
+            className="aspect-square w-full max-w-xl rounded-sm bg-clay/60 text-transparent"
           />
           <ul className="flex flex-wrap gap-3 text-sm" aria-label="مفتاح الألوان">
             {threats.map((threat) => (

@@ -23,7 +23,7 @@ export function ViewSwitch({ value, onChange }: Props) {
   }
 
   return (
-    <div role="tablist" aria-label="طريقة العرض" onKeyDown={moveFocus} className="flex self-start rounded-full border border-mud p-1">
+    <div role="tablist" aria-label="طريقة العرض" onKeyDown={moveFocus} className="flex self-start rounded-sm border border-line p-0.5">
       {VIEWS.map((view) => {
         const selected = view.id === value;
         return (
@@ -38,7 +38,7 @@ export function ViewSwitch({ value, onChange }: Props) {
             aria-controls={`view-${view.id}`}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(view.id)}
-            className={`min-h-11 rounded-full px-4 text-sm transition-colors ${selected ? "bg-mud text-sand" : "text-ink"}`}
+            className={`min-h-11 cursor-pointer rounded-sm px-4 text-sm transition-colors duration-150 ${selected ? "bg-ink font-bold text-sand" : "text-ink hover:bg-accent"}`}
           >
             {view.label}
           </button>

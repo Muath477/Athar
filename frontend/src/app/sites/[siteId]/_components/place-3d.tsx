@@ -12,6 +12,7 @@ import {
   Polyline3D,
 } from "@vis.gl/react-google-maps/3d";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { Site } from "@/lib/api";
 import { placeUrl, type TravelMode } from "@/lib/directions";
 import { bearingDegrees, metersBetween, type Point, sampleAlong } from "@/lib/route-geometry";
@@ -229,12 +230,12 @@ function PlaceScene({ site, mode, onFail }: { site: Site; mode: TravelMode; onFa
         </Map3D>
 
         <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap gap-2">
-          <button onClick={orbit} className="pointer-events-auto min-h-11 rounded-full bg-sand/95 px-4 text-sm shadow">
+          <Button type="button" variant="secondary" size="sm" onClick={orbit} className="pointer-events-auto">
             دُر حول المكان
-          </button>
-          <button onClick={stop} className="pointer-events-auto min-h-11 rounded-full bg-sand/95 px-4 text-sm shadow">
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={stop} className="pointer-events-auto">
             أوقف الحركة
-          </button>
+          </Button>
         </div>
 
         {tracking && progress && !progress.arrived && <NextTurn progress={progress} siteName={site.name_ar} />}
@@ -267,9 +268,9 @@ function LoadPrompt({ site, onLoad }: { site: Site; onLoad: () => void }) {
       <p className="max-w-sm leading-relaxed">
         شاهد {site.name_ar} مجسّمًا على خريطة Google، ودُر حوله، وارسم طريقك إليه خطوة بخطوة.
       </p>
-      <button onClick={onLoad} className="min-h-11 rounded-full bg-sadu px-6 text-lg font-bold text-sand shadow">
+      <Button type="button" size="lg" onClick={onLoad}>
         اعرض المجسّم
-      </button>
+      </Button>
       <p className="max-w-sm text-xs text-mud">تُحمَّل الخريطة من Google عند الضغط فقط، فلا نستهلك بياناتك قبل أن تطلبها.</p>
     </div>
   );
@@ -280,7 +281,7 @@ function MapUnavailable({ site }: { site: Site }) {
     <div className={`${VIEWPORT_CLASS} flex flex-col items-center justify-center gap-3 bg-white/60 p-6 text-center`}>
       <FootprintSketch boundary={site.boundary} />
       <p className="max-w-sm">تعذّر تحميل خريطة Google الآن. شاهد نموذج الواجهات، أو افتح المكان في Google Maps.</p>
-      <a href={placeUrl(site.location)} target="_blank" rel="noreferrer" className="min-h-11 content-center rounded-full border border-ink px-5">
+      <a href={placeUrl(site.location)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
         افتح في Google Maps
       </a>
     </div>

@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiError, can, mapReportUrl } from "@/lib/api";
+import { ApiError, can, mapElementsCsvUrl, mapReportUrl } from "@/lib/api";
 import { detectorStatusAr, mapSourceText, mapStatusAr } from "@/lib/labels";
 import { NO_PENDING, buildEdits, pendingCount as countPending, withPending } from "@/lib/elements";
 import {
@@ -292,13 +292,20 @@ export function MapEditor() {
           )}
         </div>
         <div className="no-print flex flex-col items-start gap-1">
-          <a
-            href={mapReportUrl(map.id)}
-            download
-            className={buttonVariants({ variant: map.status === "approved" ? "default" : "outline" })}
-          >
-            حمّل التقرير PDF
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={mapReportUrl(map.id)}
+              download
+              className={buttonVariants({ variant: map.status === "approved" ? "default" : "outline" })}
+            >
+              حمّل التقرير PDF
+            </a>
+            {can(me, "export") && (
+              <a href={mapElementsCsvUrl(map.id)} download className={buttonVariants({ variant: "outline" })}>
+                نزّل العناصر CSV
+              </a>
+            )}
+          </div>
           {unsaved > 0 && <p className="text-xs text-mud">احفظ تصحيحاتك أولًا ليتضمنها التقرير.</p>}
         </div>
       </header>
@@ -390,7 +397,7 @@ export function MapEditor() {
 
         <TabsContent value="grid">
           {canEdit && gridLocked && (
-            <p className="no-print rounded-lg bg-white/75 p-3 text-sm">
+            <p className="no-print rounded-sm border border-line bg-white p-3 text-sm">
               عُدّلت عناصر هذا المخطط يدويًا، فالشبكة الآن للعرض فقط. التصحيح من وضع «عناصر التلف بالمسرد».
             </p>
           )}
