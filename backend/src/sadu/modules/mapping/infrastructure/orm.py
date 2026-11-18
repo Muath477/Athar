@@ -41,6 +41,12 @@ class DamageMapRow(UuidPk, Timestamped, Base):
     created_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     approved_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    elements: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
+    elements_edited: Mapped[bool] = mapped_column(default=False)
+    correction_log: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
+    field_inspected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    field_inspected_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    field_notes: Mapped[str] = mapped_column(Text, default="")
 
 
 class DamageMapCellRow(Base):

@@ -22,6 +22,7 @@ export type PlanItem = {
   materials: { name_ar: string; unit_ar: string; quantity: number }[];
   specialist_required: boolean;
   sources: { title: string; url: string }[];
+  locations: string[];
 };
 
 export type TreatmentPlan = {
@@ -73,9 +74,74 @@ export type DamageMap = {
   damaged_area_m2: number;
   damage_types: string[];
   cells: MapCell[];
+  elements: MapElement[];
+  workflow: WorkflowStep[];
+  correction_log: CorrectionLogEntry[];
+  field_inspected_at: string | null;
+  field_notes: string;
   treatment_plan: TreatmentPlan;
   changes: MapChanges | null;
 };
+
+export type Geometry = "area" | "line" | "point";
+
+export type MapElement = {
+  id: string;
+  damage_type: string;
+  geometry: Geometry;
+  points: number[][];
+  severity: "watch" | "moderate" | "urgent";
+  confidence: "low" | "medium" | "high";
+  source: "model" | "expert";
+  damage_class: string | null;
+  area_m2: number;
+  length_m: number;
+  count: number;
+  location: string;
+  needs_review: boolean;
+};
+
+export type GlossaryEntry = {
+  damage_type: string;
+  name_ar: string;
+  geometry: Geometry;
+  measure_ar: string;
+  class_kind: "width" | "depth" | "size" | null;
+  classes: string[];
+  color: string;
+  core: boolean;
+};
+
+export type WorkflowStep = {
+  number: number;
+  key: string;
+  title_ar: string;
+  actor: "agent" | "specialist";
+  criterion: "none" | "privacy" | "accuracy" | "reviewability" | "map_clarity";
+  state: "done" | "flagged" | "waiting" | "blocked";
+  output_ar: string;
+};
+
+export type CorrectionLogEntry = {
+  at: string;
+  by: string;
+  action: "add" | "update" | "delete";
+  element_id: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+};
+
+export type ElementShape = {
+  damage_type: string;
+  points: number[][];
+  severity: string;
+  damage_class: string | null;
+};
+
+export type ElementEdit =
+  | { action: "add"; element: ElementShape }
+  | { action: "update"; element_id: string; element: ElementShape }
+  | { action: "delete"; element_id: string };
 
 export type MapSummary = {
   id: string;
@@ -147,4 +213,16 @@ export function approveMap(mapId: string): Promise<DamageMap> {
 
 export function cellLabel(row: number, col: number): string {
   return `${String.fromCharCode(65 + row)}${col + 1}`;
+}
+
+export function getGlossary(): Promise<GlossaryEntry[]> {
+  return request<GlossaryEntry[]>("/maps/glossary");
+}
+
+export function editElements(mapId: string, edits: ElementEdit[]): Promise<DamageMap> {
+  return request<DamageMap>(`/maps/${mapId}/elements`, { method: "POST", body: JSON.stringify({ edits }) });
+}
+
+export function recordFieldInspection(mapId: string, notes: string): Promise<DamageMap> {
+  return request<DamageMap>(`/maps/${mapId}/field-inspection`, { method: "POST", body: JSON.stringify({ notes }) });
 }

@@ -4,15 +4,33 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, mapReportUrl } from "@/lib/api";
 import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
-import { type CellCorrection, type DamageMap, type MapCell, approveMap, correctCells, getMap } from "@/lib/maps";
+import { NO_PENDING, type Pending, buildEdits, pendingCount as countPending, withPending } from "@/lib/elements";
+import {
+  type CellCorrection,
+  type DamageMap,
+  type ElementShape,
+  type GlossaryEntry,
+  type MapCell,
+  approveMap,
+  correctCells,
+  editElements,
+  getGlossary,
+  getMap,
+  recordFieldInspection,
+} from "@/lib/maps";
 import { useMe } from "@/lib/use-me";
 import { CellInspector } from "./cell-inspector";
 import { DamageGrid } from "./damage-grid";
 import { DamageLegend } from "./damage-legend";
+import { ElementCanvas, type Tool } from "./element-canvas";
+import { ElementList } from "./element-list";
+import { ElementTools } from "./element-tools";
+import { FieldReview } from "./field-review";
 import { LayerControls, type Layers } from "./layer-controls";
 import { MapChangesList } from "./map-changes";
 import { type Brush, MapToolbar } from "./map-toolbar";
 import { TreatmentPlanView } from "./treatment-plan";
+import { WorkflowSteps } from "./workflow-steps";
 
 type Stroke = Record<string, CellCorrection>;
 
@@ -27,6 +45,18 @@ export function MapEditor() {
   const [focusCell, setFocusCell] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"elements" | "grid">("elements");
+  const [glossary, setGlossary] = useState<GlossaryEntry[]>([]);
+  const [pendingElements, setPendingElements] = useState<Pending>(NO_PENDING);
+  const [tool, setTool] = useState<Tool>("select");
+  const [drawShape, setDrawShape] = useState<ElementShape>({
+    damage_type: "plaster_loss",
+    points: [],
+    severity: "moderate",
+    damage_class: null,
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showGrid, setShowGrid] = useState(true);
 
   const load = useCallback(
     () => getMap(mapId).then(setMap, (e) => setError(e instanceof ApiError ? e.message : "تعذر تحميل المخطط.")),
@@ -37,10 +67,25 @@ export function MapEditor() {
     if (me) load();
   }, [me, load]);
 
+  useEffect(() => {
+    if (me) getGlossary().then(setGlossary, () => setGlossary([]));
+  }, [me]);
+
+  const glossaryByType = useMemo(() => Object.fromEntries(glossary.map((g) => [g.damage_type, g])), [glossary]);
+  const shownElements = useMemo(
+    () =>
+      map
+        ? withPending(map.elements, pendingElements, glossaryByType, map, { rows: map.rows, cols: map.cols })
+        : [],
+    [map, pendingElements, glossaryByType],
+  );
+  const elementEdits = countPending(pendingElements);
+
   const pending = useMemo(() => Object.assign({}, ...strokes) as Stroke, [strokes]);
   const cells = useMemo(() => (map ? withCorrections(map.cells, pending) : []), [map, pending]);
   const canEdit = !!me && me.role !== "inspector" && map?.status === "draft";
   const pendingCount = Object.keys(pending).length;
+  const unsaved = pendingCount + elementEdits;
 
   const undo = useCallback(() => {
     setStrokes((all) => {
@@ -71,13 +116,13 @@ export function MapEditor() {
   }, [canEdit, undo, redoLast]);
 
   useEffect(() => {
-    if (pendingCount === 0) return;
+    if (unsaved === 0) return;
     function warn(event: BeforeUnloadEvent) {
       event.preventDefault();
     }
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [pendingCount]);
+  }, [unsaved]);
 
   if (error && !map) return <p role="alert" className="pt-6">{error}</p>;
   if (!me || !map) return <EditorSkeleton />;
@@ -89,8 +134,16 @@ export function MapEditor() {
       setMap(await action());
       setStrokes([]);
       setRedo([]);
+      setPendingElements(NO_PENDING);
+      setSelectedId(null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "تعذر الحفظ. تصحيحاتك ما زالت هنا، أعد المحاولة.");
+      if (e instanceof ApiError && e.code === "field_inspection_required") {
+        setError("سجّل الفحص الميداني للجدار قبل الاعتماد.");
+      } else if (e instanceof ApiError && e.code === "low_confidence_unreviewed") {
+        setError("في الخريطة عناصر بثقة منخفضة. أكّد كل عنصر أو صحّحه أو احذفه قبل الاعتماد.");
+      } else {
+        setError(e instanceof ApiError ? e.message : "تعذر الحفظ. تصحيحاتك ما زالت هنا، أعد المحاولة.");
+      }
     } finally {
       setBusy(false);
     }
@@ -102,6 +155,37 @@ export function MapEditor() {
     setRedo([]);
   }
 
+  function addElement(points: number[][]) {
+    const id = `N${Object.keys(pendingElements.added).length + 1}`;
+    setPendingElements((current) => ({ ...current, added: { ...current.added, [id]: { ...drawShape, points } } }));
+    setSelectedId(id);
+  }
+
+  function changeSelected(shape: ElementShape) {
+    if (!selectedId) return;
+    setPendingElements((current) =>
+      selectedId in current.added
+        ? { ...current, added: { ...current.added, [selectedId]: shape } }
+        : { ...current, updated: { ...current.updated, [selectedId]: shape } },
+    );
+  }
+
+  function deleteSelected() {
+    if (!selectedId) return;
+    setPendingElements((current) => {
+      if (selectedId in current.added) {
+        const added = { ...current.added };
+        delete added[selectedId];
+        return { ...current, added };
+      }
+      const updated = { ...current.updated };
+      delete updated[selectedId];
+      return { ...current, updated, deleted: [...current.deleted, selectedId] };
+    });
+    setSelectedId(null);
+  }
+
+  const selected = shownElements.find((e) => e.id === selectedId) ?? null;
   const focused = focusCell ? (cells.find((c) => c.cell === focusCell) ?? null) : null;
   const change = focusCell ? (map.changes?.items.find((c) => c.cell === focusCell) ?? null) : null;
 
@@ -123,7 +207,7 @@ export function MapEditor() {
           <p className="text-mud">
             <bdi className="tabular-nums">{formatMeters(map.width_m)}</bdi> عرضًا ×{" "}
             <bdi className="tabular-nums">{formatMeters(map.height_m)}</bdi> ارتفاعًا · المتضرر{" "}
-            <strong className="tabular-nums text-ink">{formatArea(cells.length * map.cell_area_m2)}</strong>
+            <strong className="tabular-nums text-ink">{formatArea(map.damaged_area_m2)}</strong>
           </p>
           {map.summary_ar && <p className="leading-relaxed">{map.summary_ar}</p>}
         </div>
@@ -135,10 +219,98 @@ export function MapEditor() {
           >
             حمّل التقرير PDF
           </a>
-          {pendingCount > 0 && <p className="text-xs text-mud">احفظ تصحيحاتك أولًا ليتضمنها التقرير.</p>}
+          {unsaved > 0 && <p className="text-xs text-mud">احفظ تصحيحاتك أولًا ليتضمنها التقرير.</p>}
         </div>
       </header>
 
+      <WorkflowSteps steps={map.workflow} />
+
+      <div role="group" aria-label="طريقة العرض" className="no-print flex w-fit gap-1 rounded-full bg-white/60 p-1">
+        {(
+          [
+            ["elements", "عناصر التلف بالمسرد"],
+            ["grid", "شبكة النموذج"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={mode === value}
+            onClick={() => setMode(value)}
+            className={`min-h-9 rounded-full px-4 text-sm ${mode === value ? "bg-ink text-sand" : "hover:bg-clay/20"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <p role="alert" className="border-s-4 border-urgent bg-urgent/10 p-3 text-sm">
+          {error}
+        </p>
+      )}
+
+      {mode === "elements" ? (
+        <>
+          {canEdit && glossary.length > 0 && (
+            <ElementTools
+              glossary={glossary}
+              tool={tool}
+              onTool={setTool}
+              draft={drawShape}
+              onDraft={setDrawShape}
+              selected={selected}
+              onChangeSelected={changeSelected}
+              onDeleteSelected={deleteSelected}
+              pendingCount={elementEdits}
+              busy={busy}
+              onSave={() => run(() => editElements(map.id, buildEdits(pendingElements)))}
+              onDiscard={() => {
+                setPendingElements(NO_PENDING);
+                setSelectedId(null);
+              }}
+            />
+          )}
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(16rem,1fr)]">
+            <div className="flex flex-col gap-3">
+              <label className="no-print flex w-fit items-center gap-2 text-sm">
+                <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+                أظهر الشبكة المرجعية
+              </label>
+              <ElementCanvas
+                map={map}
+                elements={shownElements}
+                glossary={glossaryByType}
+                tool={canEdit ? tool : "select"}
+                drawColor={glossaryByType[drawShape.damage_type]?.color ?? "#555"}
+                selectedId={selectedId}
+                showGrid={showGrid}
+                onSelect={setSelectedId}
+                onDraw={addElement}
+              />
+              <ElementList
+                elements={shownElements}
+                glossary={glossaryByType}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            </div>
+            <div className="flex flex-col gap-4">
+              <GlossaryLegend glossary={glossary} />
+              <FieldReview
+                map={map}
+                canReview={canEdit}
+                busy={busy}
+                pendingCount={unsaved}
+                unreviewed={shownElements.filter((e) => e.needs_review).length}
+                onInspect={(notes) => run(() => recordFieldInspection(map.id, notes))}
+                onApprove={() => run(() => approveMap(map.id))}
+              />
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
       {canEdit && (
         <MapToolbar
           damageTypes={map.damage_types}
@@ -153,12 +325,6 @@ export function MapEditor() {
           onSave={() => run(() => correctCells(map.id, Object.values(pending)))}
           onApprove={() => run(() => approveMap(map.id))}
         />
-      )}
-
-      {error && (
-        <p role="alert" className="border-s-4 border-urgent bg-urgent/10 p-3 text-sm">
-          {error}
-        </p>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(16rem,1fr)]">
@@ -190,10 +356,39 @@ export function MapEditor() {
         />
       </div>
 
+        </>
+      )}
+
       {map.changes && <MapChangesList changes={map.changes} />}
 
-      <TreatmentPlanView plan={map.treatment_plan} pendingCount={pendingCount} />
+      <TreatmentPlanView plan={map.treatment_plan} pendingCount={unsaved} />
     </div>
+  );
+}
+
+function GlossaryLegend({ glossary }: { glossary: GlossaryEntry[] }) {
+  return (
+    <section aria-labelledby="glossary-title" className="flex flex-col gap-2 rounded-xl bg-white/75 p-3">
+      <h2 id="glossary-title" className="font-bold">
+        المسرد الموحد
+      </h2>
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {glossary
+          .filter((g) => g.core)
+          .map((g) => (
+            <li key={g.damage_type} className="flex items-start gap-2">
+              <span
+                className="mt-1 inline-block size-3.5 shrink-0 rounded-sm border border-ink/30"
+                style={{ background: g.color }}
+              />
+              <span>
+                <span className="font-bold">{g.name_ar}</span>
+                <span className="block text-xs text-mud">{g.measure_ar}</span>
+              </span>
+            </li>
+          ))}
+      </ul>
+    </section>
   );
 }
 

@@ -28,6 +28,7 @@ class ScriptedDetector:
         self.cells: list[tuple[str, DamageType, Severity]] = []
         self.usable = True
         self.down = False
+        self.confidence = ModelConfidence.MEDIUM
 
     @property
     def name(self) -> str:
@@ -39,9 +40,7 @@ class ScriptedDetector:
         if not self.usable:
             return DetectionOutput(cells=(), usable=False, retake_reason=RetakeReason.BLURRY)
         cells = tuple(
-            MapCell(
-                request.grid.parse(label), damage_type, severity, ModelConfidence.MEDIUM, CellSource.MODEL
-            )
+            MapCell(request.grid.parse(label), damage_type, severity, self.confidence, CellSource.MODEL)
             for label, damage_type, severity in self.cells
         )
         return DetectionOutput(cells=cells, summary_ar="ملخص تجريبي.")
@@ -138,8 +137,15 @@ async def test_inspector_maps_a_wall_and_expert_corrects_and_approves_it(client,
         ("H3", "model"),
     ]
 
+    blocked = await client.post(f"/maps/{body['id']}/approve", headers=expert)
+    assert blocked.status_code == 409 and blocked.json()["code"] == "field_inspection_required"
+    inspected = await client.post(
+        f"/maps/{body['id']}/field-inspection", json={"notes": "زيارة ميدانية"}, headers=expert
+    )
+    assert inspected.json()["field_inspected_at"] is not None
     approved = await client.post(f"/maps/{body['id']}/approve", headers=expert)
     assert approved.json()["status"] == "approved"
+    assert [s["state"] for s in approved.json()["workflow"]][-2:] == ["done", "done"]
     again = await client.post(f"/maps/{body['id']}/cells", json=correction, headers=expert)
     assert again.status_code == 409
 
@@ -227,3 +233,108 @@ async def test_wall_report_pdf_is_for_staff_and_embeds_an_arabic_font(client, de
 
     client.cookies.clear()
     assert (await client.get(f"/maps/{map_id}/report.pdf")).status_code == 401
+
+
+async def test_expert_draws_glossary_elements_and_every_edit_is_logged(client, detector):
+    detector.cells = [
+        ("B2", DamageType.CRACK, Severity.MODERATE),
+        ("C2", DamageType.CRACK, Severity.MODERATE),
+        ("G5", DamageType.CAVITY, Severity.WATCH),
+        ("H1", DamageType.BASAL_EROSION, Severity.URGENT),
+        ("H2", DamageType.BASAL_EROSION, Severity.URGENT),
+    ]
+    inspector = await login(client, "inspector@example.org")
+    created = await create_map(client, inspector, {"facade_id": await north_facade_id(client)})
+    body = created.json()
+    by_type = {e["damage_type"]: e for e in body["elements"]}
+    assert by_type["crack"]["geometry"] == "line" and by_type["crack"]["length_m"] > 0
+    assert by_type["cavity"]["geometry"] == "point" and by_type["cavity"]["count"] == 1
+    assert by_type["basal_erosion"]["geometry"] == "area" and by_type["basal_erosion"]["area_m2"] > 0
+    assert [s["number"] for s in body["workflow"]] == list(range(1, 11))
+    assert body["workflow"][8]["state"] == "blocked"
+    plan = {item["code"]: item for item in body["treatment_plan"]["items"]}
+    assert plan["cavity-fill"]["locations"] == [f"{by_type['cavity']['id']} · G5"]
+
+    glossary = {g["damage_type"]: g for g in (await client.get("/maps/glossary")).json()}
+    assert glossary["crack"]["classes"] == ["under_1mm", "from_1_to_5mm", "over_5mm"]
+    assert glossary["salt_efflorescence"]["geometry"] == "area"
+
+    expert = await login(client, "expert@example.org")
+    crack_id = by_type["crack"]["id"]
+    edits = {
+        "edits": [
+            {
+                "action": "update",
+                "element_id": crack_id,
+                "element": {
+                    "damage_type": "crack",
+                    "points": [[0.1, 0.1], [0.12, 0.3], [0.1, 0.5]],
+                    "severity": "urgent",
+                    "damage_class": "over_5mm",
+                },
+            },
+            {
+                "action": "add",
+                "element": {
+                    "damage_type": "salt_efflorescence",
+                    "points": [[0.5, 0.8], [0.7, 0.8], [0.7, 0.95], [0.5, 0.95]],
+                    "severity": "moderate",
+                },
+            },
+            {"action": "delete", "element_id": by_type["cavity"]["id"]},
+        ]
+    }
+    edited = await client.post(f"/maps/{body['id']}/elements", json=edits, headers=expert)
+    assert edited.status_code == 200, edited.text
+    result = edited.json()
+    elements = {e["id"]: e for e in result["elements"]}
+    assert elements[crack_id]["damage_class"] == "over_5mm" and elements[crack_id]["source"] == "expert"
+    assert "cavity" not in {e["damage_type"] for e in result["elements"]}
+    salt = next(e for e in result["elements"] if e["damage_type"] == "salt_efflorescence")
+    assert salt["area_m2"] == 1.8
+    assert [entry["action"] for entry in result["correction_log"]] == ["update", "add", "delete"]
+    assert result["correction_log"][0]["before"]["severity"] == "moderate"
+    assert "salt-poultice" in {item["code"] for item in result["treatment_plan"]["items"]}
+
+    wrong_class = {
+        "edits": [
+            {
+                "action": "add",
+                "element": {
+                    "damage_type": "plaster_loss",
+                    "points": [[0, 0], [1, 0], [1, 1]],
+                    "damage_class": "deep",
+                },
+            }
+        ]
+    }
+    assert (
+        await client.post(f"/maps/{body['id']}/elements", json=wrong_class, headers=expert)
+    ).status_code == 422
+    assert (
+        await client.post(f"/maps/{body['id']}/elements", json=edits, headers=inspector)
+    ).status_code == 403
+
+
+async def test_low_confidence_elements_block_approval_until_the_specialist_confirms_them(client, detector):
+    detector.cells = [("B2", DamageType.SALT_EFFLORESCENCE, Severity.MODERATE)]
+    detector.confidence = ModelConfidence.LOW
+    inspector = await login(client, "inspector@example.org")
+    body = (await create_map(client, inspector, {"facade_id": await north_facade_id(client)})).json()
+    [doubtful] = body["elements"]
+    assert doubtful["needs_review"] and body["workflow"][3]["state"] == "flagged"
+
+    expert = await login(client, "expert@example.org")
+    await client.post(f"/maps/{body['id']}/field-inspection", json={"notes": ""}, headers=expert)
+    blocked = await client.post(f"/maps/{body['id']}/approve", headers=expert)
+    assert blocked.status_code == 409 and blocked.json()["code"] == "low_confidence_unreviewed"
+
+    keys = ("damage_type", "points", "severity", "damage_class")
+    confirm = {
+        "edits": [
+            {"action": "update", "element_id": doubtful["id"], "element": {k: doubtful[k] for k in keys}}
+        ]
+    }
+    confirmed = (await client.post(f"/maps/{body['id']}/elements", json=confirm, headers=expert)).json()
+    assert not confirmed["elements"][0]["needs_review"]
+    assert (await client.post(f"/maps/{body['id']}/approve", headers=expert)).json()["status"] == "approved"

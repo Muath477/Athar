@@ -59,6 +59,17 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
                     </span>
                   </summary>
                   <div className="flex flex-col gap-3 px-4 pb-4">
+                    {item.locations.length > 0 && (
+                      <p className="text-sm">
+                        <span className="text-mud">مواقع الاستخدام على الواجهة: </span>
+                        {item.locations.map((location, i) => (
+                          <span key={location}>
+                            <bdi>{location}</bdi>
+                            {i < item.locations.length - 1 && "، "}
+                          </span>
+                        ))}
+                      </p>
+                    )}
                     <ol className="list-[arabic-indic] ps-6 leading-relaxed">
                       {item.steps_ar.map((step) => (
                         <li key={step}>{step}</li>

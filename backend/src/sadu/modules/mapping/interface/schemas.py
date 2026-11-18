@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -27,6 +28,73 @@ class CorrectionIn(BaseModel):
 
 class CorrectionsIn(BaseModel):
     corrections: list[CorrectionIn] = Field(min_length=1, max_length=400)
+
+
+class ElementIn(BaseModel):
+    damage_type: DamageType
+    points: list[list[float]] = Field(min_length=1, max_length=200)
+    severity: Severity = Severity.WATCH
+    damage_class: str | None = Field(default=None, max_length=20)
+
+
+class ElementEditIn(BaseModel):
+    action: mapping.EditAction
+    element_id: str | None = Field(default=None, max_length=10)
+    element: ElementIn | None = None
+
+
+class ElementEditsIn(BaseModel):
+    edits: list[ElementEditIn] = Field(min_length=1, max_length=200)
+
+
+class FieldInspectionIn(BaseModel):
+    notes: str = Field(default="", max_length=2000)
+
+
+class ElementOut(BaseModel):
+    id: str
+    damage_type: str
+    geometry: str
+    points: list[list[float]]
+    severity: str
+    confidence: str
+    source: str
+    damage_class: str | None
+    area_m2: float
+    length_m: float
+    count: int
+    location: str
+    needs_review: bool
+
+
+class GlossaryEntryOut(BaseModel):
+    damage_type: str
+    name_ar: str
+    geometry: str
+    measure_ar: str
+    class_kind: str | None
+    classes: list[str]
+    color: str
+    core: bool
+
+
+class StepOut(BaseModel):
+    number: int
+    key: str
+    title_ar: str
+    actor: str
+    criterion: str
+    state: str
+    output_ar: str
+
+
+class CorrectionLogOut(BaseModel):
+    at: str
+    by: str
+    action: str
+    element_id: str
+    before: dict[str, Any] | None
+    after: dict[str, Any] | None
 
 
 class CellOut(BaseModel):
@@ -62,6 +130,7 @@ class PlanItemOut(BaseModel):
     materials: list[MaterialNeedOut]
     specialist_required: bool
     sources: list[SourceOut]
+    locations: list[str]
 
 
 class UnmatchedOut(BaseModel):
@@ -120,6 +189,11 @@ class MapOut(BaseModel):
     damaged_area_m2: float
     damage_types: list[str]
     cells: list[CellOut]
+    elements: list[ElementOut]
+    workflow: list[StepOut]
+    correction_log: list[CorrectionLogOut]
+    field_inspected_at: datetime | None
+    field_notes: str
     treatment_plan: PlanOut
     changes: ChangesOut | None
 
@@ -161,6 +235,7 @@ def map_out(
     catalog: treatments.Catalog,
     previous: mapping.MapView | None,
 ) -> MapOut:
+    plan = mapping.treatment_plan(view, catalog)
     return MapOut(
         id=str(view.id),
         site_id=_str_or_none(view.site_id),
@@ -185,7 +260,12 @@ def map_out(
         damaged_area_m2=round(view.damaged_area_m2, 2),
         damage_types=[t.value for t in mapping.MAP_DAMAGE_TYPES],
         cells=[cell_out(c) for c in view.cells],
-        treatment_plan=plan_out(mapping.treatment_plan(view, catalog), catalog),
+        elements=[element_out(e, view) for e in view.elements],
+        workflow=[step_out(step) for step in mapping.map_workflow(view, plan)],
+        correction_log=[CorrectionLogOut(**_log_fields(entry)) for entry in view.correction_log],
+        field_inspected_at=view.field_inspected_at,
+        field_notes=view.field_notes,
+        treatment_plan=plan_out(plan, catalog),
         changes=changes_out(previous, view) if previous is not None else None,
     )
 
@@ -223,6 +303,7 @@ def plan_out(plan: treatments.TreatmentPlan, catalog: treatments.Catalog) -> Pla
                     for m in item.materials
                 ],
                 specialist_required=item.treatment.specialist_required,
+                locations=list(item.locations),
                 sources=[
                     SourceOut(title=catalog.sources[s].title, url=catalog.sources[s].url)
                     for s in item.treatment.source_ids
@@ -297,3 +378,61 @@ def accuracy_out(score: mapping.MapScore) -> AccuracyOut:
 
 def _str_or_none(value: UUID | None) -> str | None:
     return str(value) if value is not None else None
+
+
+def element_out(element: mapping.Element, view: mapping.MapView) -> ElementOut:
+    size = mapping.measure(element, view.wall)
+    return ElementOut(
+        id=element.id,
+        damage_type=element.damage_type,
+        geometry=element.geometry,
+        points=[[x, y] for x, y in element.points],
+        severity=element.severity,
+        confidence=element.confidence,
+        source=element.source,
+        damage_class=element.damage_class,
+        area_m2=size.area_m2,
+        length_m=size.length_m,
+        count=size.count,
+        location=mapping.location_label(element, view.grid),
+        needs_review=element.needs_review,
+    )
+
+
+def glossary_out() -> list[GlossaryEntryOut]:
+    return [
+        GlossaryEntryOut(
+            damage_type=entry.damage_type,
+            name_ar=entry.name_ar,
+            geometry=entry.geometry,
+            measure_ar=entry.measure_ar,
+            class_kind=entry.class_kind,
+            classes=list(mapping.CLASS_VALUES[entry.class_kind]) if entry.class_kind else [],
+            color=mapping.DAMAGE_COLORS[entry.damage_type],
+            core=entry.core,
+        )
+        for entry in mapping.GLOSSARY.values()
+    ]
+
+
+def step_out(step: mapping.Step) -> StepOut:
+    return StepOut(
+        number=step.number,
+        key=step.key,
+        title_ar=step.title_ar,
+        actor=step.actor,
+        criterion=step.criterion,
+        state=step.state,
+        output_ar=step.output_ar,
+    )
+
+
+def _log_fields(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "at": str(entry.get("at", "")),
+        "by": str(entry.get("by", "")),
+        "action": str(entry.get("action", "")),
+        "element_id": str(entry.get("element_id", "")),
+        "before": entry.get("before"),
+        "after": entry.get("after"),
+    }

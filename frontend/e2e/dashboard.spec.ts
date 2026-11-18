@@ -20,11 +20,28 @@ test("an expert maps a wall, approves it and downloads the PDF report", async ({
   await page.setInputFiles('input[type="file"]', WALL_PHOTO);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/\/dashboard\/maps\/[0-9a-f-]{36}$/, { timeout: 60_000 });
-  await expect(page.getByRole("application", { name: /شبكة التلف/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "خريطة الإجراءات" })).toBeVisible();
+  await expect(page.getByRole("application", { name: /عناصر التلف/ })).toBeVisible();
 
-  await page.getByRole("button", { name: "اعتمد المخطط" }).click();
-  await page.getByRole("button", { name: "اعتمد", exact: true }).click();
-  await expect(page.getByRole("button", { name: "اعتمد المخطط" })).toHaveCount(0);
+  await page.getByLabel("نوع التلف من المسرد").selectOption("crack");
+  await page.getByRole("button", { name: /ارسم/ }).click();
+  const canvas = page.getByRole("application");
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("canvas has no size");
+  for (const [x, y] of [[0.2, 0.2], [0.22, 0.45], [0.2, 0.7]]) {
+    await page.mouse.click(box.x + x * box.width, box.y + y * box.height);
+  }
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: /احفظ التعديلات/ }).click();
+  await expect(page.getByText(/سجل التصحيحات/)).toBeVisible();
+
+  const approve = page.getByRole("button", { name: "اعتمد الخريطة والمعالجات" });
+  await expect(approve).toBeDisabled();
+  await page.getByLabel("ملاحظات الفحص الميداني").fill("فحص من الأرض");
+  await page.getByRole("button", { name: "سجّل أني فحصت الجدار ميدانيًا" }).click();
+  await approve.click();
+  await expect(approve).toHaveCount(0);
 
   const [download] = await Promise.all([
     page.waitForEvent("download"),
