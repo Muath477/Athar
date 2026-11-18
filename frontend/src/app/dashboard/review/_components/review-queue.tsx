@@ -4,6 +4,11 @@ import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import { PageSkeleton, RetryAlert } from "@/app/_components/page-status";
 import { EvidencePanel } from "@/components/evidence-panel";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiError, type Finding, request } from "@/lib/api";
 import { damageTypeAr, severityAr } from "@/lib/labels";
 import { useMeState } from "@/lib/use-me";
@@ -15,8 +20,6 @@ const DECISIONS = [
 ] as const;
 
 type Decision = (typeof DECISIONS)[number]["value"];
-
-const FIELD_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3 disabled:opacity-50";
 
 export function ReviewQueue() {
   const { me, error: meError, retry: retryMe } = useMeState();
@@ -73,7 +76,7 @@ export function ReviewQueue() {
 
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <h1 ref={heading} tabIndex={-1} className="text-3xl font-bold leading-snug">
+      <h1 ref={heading} tabIndex={-1} className="text-3xl font-bold">
         بانتظار المراجعة ({queue.length.toLocaleString("ar-SA")})
       </h1>
       <p role="status" className="text-sm empty:hidden">
@@ -81,7 +84,7 @@ export function ReviewQueue() {
       </p>
       {error && <RetryAlert message={error} onRetry={reload} />}
       {queue.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 rounded-xl bg-white/75 p-4">
+        <div className="flex flex-col items-start gap-2 rounded-sm border border-line bg-white p-4">
           <p className="leading-relaxed">لا بلاغات بانتظار المراجعة. تصل البلاغات الجديدة من صور الزوار.</p>
           <Link href="/dashboard/maps" className="font-bold text-sadu underline underline-offset-4">
             راجع مخططات التلف بانتظار الاعتماد
@@ -120,6 +123,10 @@ function ReviewItem({
 
   async function decide(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!decision) {
+      setError("اختر القرار أولًا: تأكيد أو تصحيح أو رفض.");
+      return;
+    }
     const form = new FormData(event.currentTarget);
     setPending(true);
     setError(null);
@@ -146,61 +153,59 @@ function ReviewItem({
       ref={ref}
       tabIndex={-1}
       aria-label={`${damageTypeAr[finding.damage_type] ?? finding.damage_type} · ${severityAr[finding.severity]}`}
-      className="flex flex-col gap-3 rounded-xl bg-white/75 p-4"
+      className="flex flex-col gap-3 rounded-sm border border-line bg-white p-4"
     >
       <EvidencePanel finding={finding} />
       <form onSubmit={decide} className="flex flex-col gap-4 text-sm">
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 font-bold">القرار</legend>
-          <div className="flex flex-wrap gap-x-5 gap-y-1">
+          <RadioGroup
+            name="decision"
+            required
+            value={decision ?? ""}
+            onValueChange={(value) => setDecision(value as Decision)}
+            className="flex flex-wrap gap-x-5 gap-y-1"
+          >
             {DECISIONS.map((option) => (
-              <label key={option.value} className="flex min-h-11 items-center gap-2">
-                <input
-                  type="radio"
-                  name="decision"
-                  value={option.value}
-                  required
-                  checked={decision === option.value}
-                  onChange={() => setDecision(option.value)}
-                  className="size-5 accent-sadu"
-                />
-                {option.label}
-              </label>
+              <div key={option.value} className="flex min-h-11 items-center gap-2">
+                <RadioGroupItem id={`${id}-${option.value}`} value={option.value} />
+                <Label htmlFor={`${id}-${option.value}`} className="text-ink">
+                  {option.label}
+                </Label>
+              </div>
             ))}
-          </div>
+          </RadioGroup>
         </fieldset>
         <div className="flex flex-wrap gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-mud">نوع التلف</span>
-            <select
+            <NativeSelect
               name="damage_type"
               defaultValue={finding.damage_type}
               disabled={!correcting}
               aria-describedby={correcting ? undefined : `${id}-correct-hint`}
-              className={FIELD_CLASS}
             >
               {Object.entries(damageTypeAr).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-mud">الشدة</span>
-            <select
+            <NativeSelect
               name="severity"
               defaultValue={finding.severity}
               disabled={!correcting}
               aria-describedby={correcting ? undefined : `${id}-correct-hint`}
-              className={FIELD_CLASS}
             >
               {Object.entries(severityAr).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         </div>
         {!correcting && (
@@ -210,26 +215,16 @@ function ReviewItem({
         )}
         <label className="flex flex-col gap-1">
           <span className="font-bold">سبب القرار</span>
-          <textarea
-            name="reason"
-            required
-            maxLength={1000}
-            rows={3}
-            className="rounded-lg border border-mud/60 bg-white p-3 leading-relaxed"
-          />
+          <Textarea name="reason" required maxLength={1000} rows={3} />
         </label>
         {error && (
-          <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3">
+          <p role="alert" className="rounded-sm border border-urgent/40 bg-urgent/5 p-3">
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={pending}
-          className="min-h-11 self-start rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
-        >
+        <Button type="submit" disabled={pending} className="self-start">
           {pending ? "نعتمد القرار…" : "اعتمد القرار"}
-        </button>
+        </Button>
       </form>
     </article>
   );
