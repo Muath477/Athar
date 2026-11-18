@@ -1,11 +1,6 @@
 <div align="center">
 
-# أثر · Athar
-
-**One photo of a mud wall becomes a damage map and a treatment plan that a conservator reviews.**
-Visitors' photos keep the map current between expert surveys.
-
-صورة واحدة لجدار طيني تتحول إلى خريطة تلف وخطة معالجة يراجعها المختص، وصور الزوار تبقي الخريطة محدّثة بين جولات الفحص.
+# أثر — Athar
 
 [![CI](https://github.com/Muath477/Athar/actions/workflows/ci.yml/badge.svg)](https://github.com/Muath477/Athar/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.13-1f1a16?logo=python&logoColor=efe4d2)
@@ -16,690 +11,454 @@ Visitors' photos keep the map current between expert surveys.
 
 </div>
 
+<div dir="rtl">
+
+**أثر** منصة عربية تساعد جهات التراث على متابعة حالة الجدران الطينية من الأرض ومن الفضاء. تصل صور الجدار من المساح الميداني أو كاميرات الموقع أو الطائرات المسيّرة أو الرفع الجماعي، فتُطمس الوجوه وتُحذف بيانات الموقع من الصورة قبل حفظها، ثم يقترح نموذج التحليل مخطط تلف أوليًا بمصطلحات المسرد الموحد. يراجع أخصائي الترميم المخطط ويصححه، ولا يُعتمد إلا بعد فحص ميداني موثّق، وتخرج منه خطة معالجة بالمواد والكميات وتقارير PDF وCSV. ومن الفضاء، يفحص أثر محيط كل موقع أسبوعيًا بصور Sentinel-2، فينبّه إلى البناء الجديد والحفر وتجمّع المياه، ويفتح مهام تصوير ميدانية للتحقق على الأرض.
+
+</div>
+
+**Athar** is an Arabic-first platform that helps heritage authorities follow the condition of mud-brick walls from the ground and from space. Wall photos arrive from field surveyors, site cameras, drones and bulk uploads. Faces are blurred and location data stripped before anything is stored, then an analysis model drafts a damage map in the unified glossary. A conservation specialist corrects the draft, and it can be approved only after a recorded field inspection. The approved map carries a treatment plan with materials and quantities, and downloads as PDF and CSV. From orbit, Athar screens the surroundings of each site weekly with Sentinel-2, warns about new building, digging and standing water, and opens photo missions so someone checks on the ground.
+
 <p align="center"><img src="docs/assets/athar-pipeline.svg" alt="Animated pipeline: a wall photo has faces blurred, is straightened and split into a grid, damaged cells are marked and corrected by an expert, and a treatment plan with materials appears" width="100%"></p>
 
-Built for the agentX Riyadh hackathon, Culture & Heritage track: the Diriyah Gate Development Authority challenge, *detecting and mapping damage to mud walls*, and the Heritage Commission challenge, *seeing heritage from space*. Team Athar.
+## Challenges it answers
+
+Built by team Athar for the agentX Riyadh hackathon, Culture and Heritage track.
+
+| Challenge owner | Challenge | Where Athar answers it |
+|---|---|---|
+| Diriyah Gate Development Authority (هيئة تطوير بوابة الدرعية) | Detecting and mapping damage to mud walls | Wall damage maps, the ten-step workflow, specialist correction and approval, treatment plans ([ADR-017](docs/adr/ADR-017-diriyah-challenge-alignment.md), [ADR-026](docs/adr/ADR-026-diriyah-agent-workflow.md)) |
+| Heritage Commission (هيئة التراث) | «كيف نرى التراث من الفضاء؟» | Weekly Sentinel-2 screening of eleven Riyadh-region sites, early warning and ground checks ([ADR-025](docs/adr/ADR-025-space-watch.md)) |
+
+## What works today
+
+<div dir="rtl">
+
+- مخطط تلف من صورة واحدة: تحديد زوايا الجدار الأربع، ثم تقويم الصورة وتقسيمها إلى شبكة، ثم رسم عناصر التلف بمصطلحات المسرد الموحد.
+- مسار هيئة تطوير بوابة الدرعية بخطواته العشر، وتصحيحات المختص مع سجلها، والفحص الميداني شرطًا للاعتماد.
+- خطة معالجة من مكتبة المعالجات (مسودة)، وتقرير الجدار PDF، وجدول العناصر CSV، وتقرير حالة الموقع PDF وCSV.
+- رصد أسبوعي من الفضاء لأحد عشر موقعًا في منطقة الرياض، مع ترتيب المخاطر وإنذار مبكر وتنبيهات عبر Webhook.
+- استقبال الصور من الكاميرات والطائرات المسيّرة والرفع الجماعي، ومطابقة الصورة بالواجهة من إحداثياتها.
+- «مساعد أثر» للموظفين بخمس مهارات فحص، يصوغ ملف تدقيق PDF ولا يرسله إلا بعد تأكيد المستخدم.
+- ستة أدوار، وتقييد الحساب بمواقع محددة، وسجل تدقيق قابل للتنزيل، وحذف تلقائي لصور الزوار بعد ٣٠ يومًا.
+
+</div>
+
+- One photo becomes a wall damage map: four corners, rectification, a grid, and elements in the unified glossary.
+- The ten-step Diriyah workflow, specialist corrections with a correction log, and a field inspection before approval.
+- Treatment plans from a draft catalog, the wall report PDF, the elements CSV, and the site condition PDF and CSV.
+- Weekly satellite screening of eleven Riyadh-region sites with risk ranking, early warning and webhook alerts.
+- Photos from site cameras (HTTP snapshot), drones and bulk uploads, matched to a facade by GPS.
+- «مساعد أثر», a staff assistant with five inspection skills that drafts an audit PDF and sends it only after the user confirms.
+- Six roles, site scoping, an exportable audit log, and a 30-day purge of visitor photos.
+- The visitor app: photograph a facade, hear a sourced story, collect a passport stamp, see the site in 3D with directions.
+- The code path for Athar's own damage model: dataset builder, Colab notebook, evaluation, model registry and detector.
+
+## Roadmap
+
+- Train the own model once enough maps are approved, and switch to it only when it beats the active detector on the same test maps ([ADR-029](docs/adr/ADR-029-own-model.md)).
+- Measure accuracy on real Najdi walls against specialists, and have a conservator review the treatment catalog.
+- Ship `ffmpeg` in the API image so RTSP-only cameras work.
+- Add a lease to the schedulers so more than one API process can run.
+- Read text from PDFs attached to the assistant (with OCR for scanned reports).
+- Scope visitor findings and pins by site, for a pilot with several authorities.
 
 ## Contents
 
-- [What it does](#what-it-does)
-- [How it works](#how-it-works)
-- [Tech stack](#tech-stack)
+- [How it flows](#how-it-flows)
+- [Features by role](#features-by-role)
+- [Identity and interface](#identity-and-interface)
+- [Wall damage maps and the glossary](#wall-damage-maps-and-the-glossary)
+- [Workflow and approval](#workflow-and-approval)
+- [Satellite watch and early warning](#satellite-watch-and-early-warning)
+- [Cameras, drones and bulk upload](#cameras-drones-and-bulk-upload)
+- [The assistant](#the-assistant)
+- [Athar's own model](#athars-own-model)
+- [Governance](#governance)
+- [Privacy and PDPL](#privacy-and-pdpl)
+- [Visitors](#visitors)
 - [Architecture](#architecture)
-- [UML](#uml)
-- [Run it](#run-it)
-- [Environment](#environment)
-- [Tests and checks](#tests-and-checks)
-- [Project layout](#project-layout)
+- [Running it](#running-it)
+- [Environment variables](#environment-variables)
+- [Testing and quality](#testing-and-quality)
 - [Documentation](#documentation)
-- [Privacy](#privacy)
+- [Limitations](#limitations)
 
-## What it does
+## How it flows
 
-| For | Athar gives them |
-|---|---|
-| Conservation experts | A damage map of each wall from one photo: seven damage types (crack, plaster loss, moisture, basal erosion, surface erosion, partial collapse, graffiti), colour by type, strength by severity. They paint corrections with a brush and approve. |
-| Site managers | A treatment plan per map: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. Each new map lists what changed since the last approved one. All of it downloads as an Arabic PDF report. |
-| The Heritage Commission | A weekly satellite screen of eleven Riyadh-region heritage sites and the 150 m around each: new building, digging, standing water, palm loss and sand, ranked by risk with before and after images. One click turns an alert into photo missions for the ground. |
-| The authority | Model accuracy measured against expert decisions, cell by cell, so nobody has to take the model's word for it. |
-| Visitors | A verified story of the place read aloud in Arabic and a passport stamp. A 3D view of the site on Google Maps, and the route there: steps in Arabic, a fly-through preview, and live tracking to the door. Their photos keep the condition record current. |
-
-## How it works
-
-### From a wall photo to a plan
-
-1. An inspector picks a registered facade (or names a wall and gives its width and height), takes a photo and drags four handles to the wall corners.
-2. The photo goes through the privacy step (EXIF stripped, faces blurred), then the wall is warped to a front-on view at its real aspect and split into a grid: 8 rows, columns follow the wall's shape.
-3. The configured detector marks damaged cells. Claude gets the photo with the grid labels drawn on it; a ready model gets the plain photo (object detection) or one crop per cell (classification).
-4. An expert paints corrections and approves. The model's original answer is kept, so `GET /maps/accuracy` shows how often the model agrees with the expert.
-5. The treatment plan comes from `region-packs/treatments/earthen-najdi.json`, a draft catalog that a conservator must review before it is used as advice.
-
-### Swap the model with one setting
-
-<p align="center"><img src="docs/assets/detector-port.svg" alt="Animated diagram: the mapping module calls one DamageDetector port, which routes to Claude, a ready model over HTTP, a per-cell classifier, or manual labelling" width="90%"></p>
-
-| `SADU_DAMAGE_DETECTOR` | Sends | Expects back |
-|---|---|---|
-| `claude` (default) | rectified wall with the labelled grid, one structured call | cell labels with type, severity, confidence |
-| `http_detection` | rectified JPEG to `SADU_DETECTOR_URL` | Hugging Face object detection `[{label, score, box: {xmin, ymin, xmax, ymax}}]`, or `{"detections": [{label, score, box: [x0, y0, x1, y1]}]}` |
-| `http_cell_classification` | one crop per grid cell | Hugging Face image classification `[{label, score}]` |
-| `qwen` | rectified JPEG to an OpenAI-compatible server at `SADU_QWEN_URL` (llama-server, Ollama or vLLM) | JSON elements (type, shape, severity, class, confidence) from Athar's own model |
-| `none` | nothing | the expert draws the map |
-
-Model labels map to damage types with `SADU_DETECTOR_LABELS`, for example `{"spalling": "plaster_loss"}`. If the detector fails, the map is still saved empty so the expert can label it by hand. Details in [ADR-018](docs/adr/ADR-018-damage-detector-port.md).
-
-### Athar's own model
-
-Approved maps train Athar's own damage model, so the authority is not tied to a paid API. It is Qwen3.5-4B (Apache-2.0, natively multimodal) fine-tuned with bf16 LoRA on Google Colab. It reads the rectified photo and answers with glossary elements: type, polygon, line or point, severity, width, depth or size class, and confidence.
-
-1. A model engineer downloads approved maps from `GET /api/v1/ml/training-export`. Faces were already blurred at upload, and no user or visitor data is included.
-2. `ml/data/build_dataset.py` adds licence-checked public crack and heritage-surface sets and splits by site, so test scores come from walls the model never saw.
-3. `ml/notebooks/train_qwen35_damage.ipynb` picks the profile from the GPU (4B on a 22 GB L4, 9B on an A100), trains, and scores the model with the same cell matching as the accuracy card. It then exports GGUF files for the 16 GB laptop.
-4. The version is registered with its metrics and activated on `/dashboard/models`. With `SADU_DAMAGE_DETECTOR=qwen`, every new map uses the active version and records it in the audit log.
-
-Details: [ADR-029](docs/adr/ADR-029-own-model.md), [the ML pipeline](docs/ml/architecture.md), [the dataset card](ml/data/README.md) and [serving](ml/serve/README.md).
-
-### The Diriyah procedure, step by step
-
-The map page shows the authority's ten steps with their state, output and criterion. The procedure runs from photo check, privacy, damage and place, through confidence, treatment, materials and the unified map, to specialist review, approval and outputs.
-
-- **Glossary:** the unified glossary from their brief.
-  - Plaster loss, basal erosion and salt efflorescence are drawn as areas.
-  - Cracks (with width class) and rain gullies are drawn as lines.
-  - Holes and burrows are points.
-  - All are measured in metres from the wall size.
-- **Editing:** the model proposes elements from the grid. The specialist changes their type, severity or class, confirms, deletes, or draws new ones (with the mouse, or with arrow keys and Space), and every change goes into the correction log.
-- **Approval:** a map is approved only after a recorded field inspection, and only when no low-confidence model element is left unreviewed.
-- **Roles:**
-  - The field surveyor photographs and scans.
-  - The restoration specialist reviews and approves.
-  - The site manager reads the site condition summary (`/dashboard/condition`) and grants or withdraws the field photography permit.
-  - Visitor photo missions run only on sites with a permit.
-
-Details in [ADR-026](docs/adr/ADR-026-diriyah-agent-workflow.md).
-
-### From orbit to the wall
-
-1. Each week, and on demand as a background job, the API pulls Sentinel-2 scenes for every site from Element 84 Earth Search and builds two median composites: the last 30 days and the year before, taking the clearest scene from each slice of the year so no season dominates.
-2. Pixels that moved more than three times their usual spread, in clusters of at least three, are labelled water, vegetation loss, construction, sand or earthworks, inside the site or in its 150 m ring.
-3. A risk score ranks the sites, with World Heritage properties first within a level. The dashboard at `/dashboard/watch` shows the ranking on a region map and, per site, a before/after slider and a change map.
-4. **Ground check** opens high-priority photo missions on the site's facades, so the next visitors photograph the walls the satellite cannot see. For a site without registered facades, the dashboard tells the inspector a visit is needed.
-5. 10 m pixels catch changes around a site, not cracks. The satellite layer screens; the wall maps and visitor photos confirm. Details and limits in [ADR-025](docs/adr/ADR-025-space-watch.md).
-
-Without internet access to the imagery, `SADU_SCENE_SOURCE=sample` serves labelled synthetic scenes with the invented events in `region-packs/riyadh/sample-events.json`. Every scan from it is marked as sample data.
-
-### Photos from cameras, drones and staff
-
-1. Register fixed site cameras at `/dashboard/devices` with the still-image (snapshot) URL most IP cameras and NVRs expose. The API captures each camera every `SADU_CAMERA_INTERVAL_H` hours, or on **التقط الآن**, and keeps every attempt in the camera's history.
-2. Staff upload up to 30 photos at a time at `/dashboard/uploads`, from a phone, a drone survey or an archive, and either pick the wall or let Athar match it from the photo's GPS: the nearest facade facing the photo position, within 60 m of a site. Photos without GPS wait for someone to pick the facade.
-3. Each photo becomes a job. The worker reads the GPS and capture time, blurs faces and strips EXIF, then creates a draft wall map through the same detector, 10-step workflow and specialist approval as a map drawn by hand. The map shows where it came from (inspector, camera name, drone or bulk upload).
-4. Camera addresses inside private networks are refused unless the admin lists them in `SADU_CAMERA_ALLOWED_HOSTS`; camera passwords live only in `SADU_CAMERA_SECRET_*` environment variables. Details in [ADR-027](docs/adr/ADR-027-ingestion.md).
-
-In demo mode, seeding the demo pack adds a camera on the demo building's north facade that reads a test photo served by the API itself, so the camera flow works offline.
-
-### Changes over time
-
-<p align="center"><img src="docs/assets/change-over-time.svg" alt="Animated comparison of two wall maps with new and resolved cells outlined" width="75%"></p>
-
-### Visitors between surveys
-
-<p align="center"><img src="docs/assets/visitor-flow.svg" alt="Animated flow: a visitor photo passes privacy, comparison with the baseline and the evidence rule, then becomes a pin or goes to an expert" width="90%"></p>
-
-1. The visitor app sends the photo with consent flags. Location and heading are dropped without consent; EXIF is stripped and faces are blurred before anything is stored.
-2. The orchestrator plans steps from a fixed set. The Identifier finds the site and facade (GPS when allowed, then feature matching against the baselines) and asks the visitor when it is unsure.
-3. The Monitor checks photo quality, aligns the photo to the baseline and builds a difference map. Claude judges only the numbered regions that changed.
-4. The Verifier publishes a finding as *likely* or *confirmed* only with evidence (baseline, aligned photo, difference map). Two independent contributors make it *confirmed*. Uncertain or urgent findings wait for an expert.
-5. The Guide returns a story built from curated sources; each sentence is checked against its source and labelled.
-
-Every external call has a timeout, retries and a fallback; status updates stream to the phone over server-sent events.
-
-### Athar assistant
-
-`/dashboard/assistant` is a chat for staff with the `assistant` permission. They attach wall photos, drone photos or PDFs of old inspection reports and ask in Arabic. The assistant picks an inspection skill (a Markdown file in `backend/src/sadu/modules/assistant/skills/`), follows its steps with tools from the other modules, and shows each step as it streams: «اختار مهارة: فحص صورة جدار», «حلّل الصورة: ٣ عناصر».
-
-- Findings use the unified glossary. A photo of a named facade becomes a draft wall map for the specialist; nothing is approved by the assistant.
-- «صياغة ملف التدقيق» renders an Arabic PDF with photos, the elements table, catalog treatments, recommendations and a «يتطلب اعتماد المختص» stamp.
-- Sending the file to specialists is a pending action. It goes out only when the user presses «أكّد الإرسال», and the send is written to the audit log.
-- When the model is down or the daily budget is spent, the chat says so and the «حلّل الصورة» button still analyses photos directly. In demo mode without a model key, a scripted planner runs the same flow offline.
-
-```mermaid
-sequenceDiagram
-  actor Staff
-  participant Chat as Dashboard chat
-  participant API as assistant API
-  participant Tools as Module APIs
-  Staff->>Chat: photo + question
-  Chat->>API: POST /messages, then POST /reply (SSE)
-  API-->>Chat: skill
-  loop each step
-    API->>Tools: analyse_photo, draft_audit_report, ...
-    API-->>Chat: tool_call, tool_result
-  end
-  API-->>Chat: reply with pending send
-  Staff->>Chat: «أكّد الإرسال»
-  Chat->>API: POST /actions/{id}/confirm
-  API->>API: webhook to specialists + audit_log
-```
-
-Details, privacy and failure modes in [ADR-028](docs/adr/ADR-028-assistant.md).
-
-## Tech stack
-
-| Layer | Technology | Version | Why |
-|---|---|---|---|
-| API | FastAPI, Pydantic, Uvicorn | 0.163.1 · 2.14.3 · 0.54.0 | Typed schemas and a generated OpenAPI contract |
-| Agents | LangGraph with a Postgres checkpointer | 1.2.22 | Resumable runs that pause for a visitor answer or an expert |
-| Model | Claude through the Anthropic SDK (`claude-sonnet-5-5`, `claude-haiku-5-5`) | SDK 2.9.0 | Vision plus structured output; one adapter behind a port |
-| Ready models | Any HTTP endpoint (Hugging Face inference, own server) via httpx | 0.28.1 | Plug in a crack or damage model without code changes |
-| Vision | OpenCV, scikit-image, Pillow, NumPy | 5.0 · 0.26 · 13.0 · 2.5 | Perspective rectification, grid drawing, alignment, SSIM, YuNet face blur |
-| Data | PostgreSQL, PostGIS, pgvector, SQLAlchemy, Alembic | 18 · 3.7 · 0.8.7 · 2.1.8 · 1.20.1 | One store for records, geometry and story embeddings |
-| Files | S3 API (SeaweedFS locally), boto3 | 4.54 · 1.44 | Private bucket, presigned URLs for five minutes |
-| Speech | Azure AI Speech REST, `ar-SA-HamedNeural` | | Saudi Arabic voice for the visitor story |
-| Reports | WeasyPrint, Jinja2, Noto Naskh Arabic | 70.0 · 3.1.6 | Arabic A4 wall reports; external fetches disabled |
-| Web | Next.js App Router, React, TypeScript strict, Tailwind CSS | 16.4.6 · 19.3 · 5 · 4.3 | Arabic RTL PWA and dashboard; each page keeps its own components |
-| 3D | three.js, React Three Fiber, drei | 0.187 · 9.8 · 10.7 | Facade pins on the site model |
-| Maps | Google Maps JavaScript API (3D Maps, Routes), `@vis.gl/react-google-maps` | 1.10.2 | The site in 3D with its boundary, an orbit, and a drawn route; directions open in Google Maps |
-| Quality | pytest, ruff, mypy strict, import-linter, ESLint | 9.2 · 0.17 · 2.4 · 2.16 | 180 backend tests; module boundaries checked in CI |
-| Security | gitleaks, pip-audit, npm audit, Semgrep, Trivy, Argon2id | | Scans on every push; hashed passwords and session tokens |
-| Ops | Docker Compose, Caddy, Sentry, structlog | 2.11.9 (Caddy) | One VM with automatic TLS, error reports, JSON logs |
-
-Versions and alternatives are recorded in [docs/04-stack.md](docs/04-stack.md) and the [ADRs](docs/adr/).
-
-## Architecture
-
-A modular monolith: one deployable API split into eleven modules. Each module exposes one `api.py` that the others may import; inside, layers point inward (`interface → api → infrastructure → application → domain`). import-linter fails the build on any other import.
-
-```mermaid
-flowchart LR
-  web[Next.js web app] -- REST + SSE --> api
-  subgraph api[FastAPI modular monolith]
-    direction TB
-    agents --> capture & inspection & verification & stories & missions & passport
-    mapping --> capture & sites & treatments
-    inspection --> sites
-    verification --> sites
-  end
-  api --> db[(Postgres + PostGIS + pgvector)]
-  api --> s3[(Object store)]
-  mapping -- DamageDetector --> claude[[Claude API]]
-  mapping -- DamageDetector --> model[[Ready model over HTTP]]
-  agents --> claude
-  stories --> tts[[Azure Speech]]
-```
-
-| Module | Owns |
-|---|---|
-| `mapping` | wall maps and cells, rectification, grid, detector port, corrections, approval, accuracy |
-| `treatments` | treatment catalog and plans scaled by damaged area |
-| `agents` | the LangGraph run for each visitor photo |
-| `assistant` | staff chat: inspection skills, tool calls into other modules, audit PDFs, confirmed sends |
-| `capture` | uploads, EXIF strip, face blur, idempotency |
-| `inspection` | quality gate, alignment, difference map, model judgment |
-| `verification` | evidence rule, findings, expert reviews, claim checks |
-| `stories`, `missions`, `passport` | sourced stories, photo missions for coverage gaps, anonymous passports |
-| `sites` | region packs, sites, facades, baselines |
-| `admin` | users, sessions, audit log, model cost counter |
-
-## UML
-
-All ten diagrams also live in [docs/11-uml.md](docs/11-uml.md). Click a title to expand.
-
-<details>
-<summary><b>Use cases</b>: Who uses Athar for what</summary>
-
-```mermaid
-flowchart LR
-  visitor([Visitor])
-  inspector([Inspector])
-  expert([Conservation expert])
-  admin([Admin])
-  detector([Damage detector<br/>Claude or ready model])
-
-  subgraph athar[Athar]
-    uc1(Photograph a facade from a QR code)
-    uc2(Hear the verified story)
-    uc3(Collect passport stamps)
-    uc4(Map a wall from one photo)
-    uc5(View pins on the 3D site)
-    uc6(Correct map cells)
-    uc7(Approve a map)
-    uc8(Read the treatment plan)
-    uc9(Review uncertain findings)
-    uc10(Track model accuracy)
-    uc11(Watch cost per photo)
-  end
-
-  visitor --- uc1
-  visitor --- uc2
-  visitor --- uc3
-  inspector --- uc4
-  inspector --- uc5
-  inspector --- uc8
-  expert --- uc6
-  expert --- uc7
-  expert --- uc9
-  expert --- uc10
-  admin --- uc11
-  uc4 -. calls .-> detector
-  uc1 -. feeds .-> uc5
-```
-
-</details>
-
-<details open>
-<summary><b>Components</b>: Web app, API modules, stores and external services; arrows inside the API are the only imports allowed</summary>
-
-```mermaid
-flowchart TB
-  subgraph web[Next.js web app]
-    vpages[Visitor pages<br/>capture, observation, passport]
-    dpages[Dashboard pages<br/>3D site, review, maps]
-  end
-
-  subgraph api[FastAPI modular monolith]
-    agents[agents<br/>LangGraph run per photo]
-    mapping[mapping<br/>rectify, grid, detector port]
-    treatments[treatments<br/>catalog, plan]
-    capture[capture<br/>EXIF strip, face blur]
-    inspection[inspection<br/>align, diff, judge]
-    verification[verification<br/>evidence rule]
-    stories[stories]
-    missions[missions]
-    passport[passport]
-    sites[sites<br/>region packs]
-    admin[admin<br/>auth, audit, costs]
-  end
-
-  db[(Postgres<br/>PostGIS, pgvector)]
-  s3[(Object store)]
-  claude[[Claude API]]
-  model[[Ready vision model<br/>over HTTP]]
-  tts[[Azure Speech]]
-
-  vpages -- REST + SSE --> agents
-  dpages -- REST --> mapping
-  dpages -- REST --> verification
-  agents --> capture & inspection & verification & stories & missions & passport
-  mapping --> capture & sites & treatments
-  inspection --> sites
-  verification --> sites
-  api --> db
-  api --> s3
-  agents -- structured calls --> claude
-  mapping -- detector port --> claude
-  mapping -- detector port --> model
-  stories --> tts
-```
-
-</details>
-
-<details open>
-<summary><b>Class diagram</b>: Domain of the wall map and the treatment plan</summary>
-
-```mermaid
-classDiagram
-  direction LR
-  class WallSize {
-    +float width_m
-    +float height_m
-    +aspect() float
-  }
-  class Grid {
-    +int rows
-    +int cols
-    +for_wall(wall, rows) Grid
-    +parse(label) CellRef
-    +coverage(box) dict
-    +cell_area_m2(wall) float
-  }
-  class CellRef {
-    +int row
-    +int col
-    +label() str
-  }
-  class Quad {
-    +Point top_left
-    +Point top_right
-    +Point bottom_right
-    +Point bottom_left
-    +area() float
-  }
-  class MapCell {
-    +CellRef ref
-    +DamageType damage_type
-    +Severity severity
-    +ModelConfidence confidence
-    +CellSource source
-  }
-  class CellCorrection {
-    +CellRef ref
-    +DamageType damage_type
-    +Severity severity
-  }
-  class MapView {
-    +UUID id
-    +MapStatus status
-    +DetectorStatus detector_status
-    +MapCell[] cells
-    +MapCell[] model_cells
-  }
-  class DamageDetector {
-    <<interface>>
-    +name str
-    +detect(DetectionInput) DetectionOutput
-  }
-  class ClaudeGridDetector
-  class HttpDetectionModel
-  class HttpCellClassifier
-  class ManualOnly
-  class Catalog {
-    +str version
-    +ReviewStatus review_status
-    +treatment_for(type, severity) Treatment
-  }
-  class Treatment {
-    +str code
-    +DamageType damage_type
-    +Severity[] severities
-    +str[] steps_ar
-    +Material[] materials
-    +bool specialist_required
-  }
-  class TreatmentPlan {
-    +PlanItem[] items
-    +DamagedArea[] unmatched
-    +needs_specialist() bool
-  }
-
-  MapView "1" *-- "many" MapCell
-  MapView --> Grid
-  MapView --> WallSize
-  MapView --> Quad
-  MapCell --> CellRef
-  CellCorrection --> CellRef
-  Grid ..> CellRef : creates
-  DamageDetector <|.. ClaudeGridDetector
-  DamageDetector <|.. HttpDetectionModel
-  DamageDetector <|.. HttpCellClassifier
-  DamageDetector <|.. ManualOnly
-  Catalog "1" *-- "many" Treatment
-  TreatmentPlan ..> Catalog : built from
-  TreatmentPlan ..> MapView : areas of
-```
-
-</details>
-
-<details>
-<summary><b>Sequence: visitor photo</b>: From upload to pin or expert review</summary>
-
-```mermaid
-sequenceDiagram
-  actor Visitor
-  participant Web as Visitor app
-  participant API as agents
-  participant Cap as capture
-  participant Ins as inspection
-  participant Ver as verification
-  participant Sto as stories
-  participant LLM as Claude
-
-  Visitor->>Web: photo + consent
-  Web->>API: POST /observations (Idempotency-Key)
-  API->>Cap: strip EXIF, blur faces, store
-  API-->>Web: 202 + events URL
-  API->>Ins: identify facade, align to baseline, diff
-  Ins->>LLM: judge numbered regions
-  LLM-->>Ins: per-region verdicts
-  API->>Ver: apply evidence rule
-  alt confident
-    Ver-->>API: publish pin (likely or confirmed)
-  else unsure
-    Ver-->>API: pause for expert
-  end
-  API->>Sto: story with sources
-  API-->>Web: SSE status, story, stamp
-```
-
-</details>
-
-<details>
-<summary><b>Sequence: wall map</b>: From photo to approval</summary>
-
-```mermaid
-sequenceDiagram
-  actor Inspector
-  actor Expert
-  participant Web as Dashboard
-  participant Map as mapping
-  participant Cap as capture
-  participant Det as DamageDetector
-  participant Tr as treatments
-  participant DB as Postgres + store
-
-  Inspector->>Web: wall, photo, four corners
-  Web->>Map: POST /maps
-  Map->>Cap: process_upload
-  Map->>Map: rectify + draw grid
-  Map->>Det: detect(rectified, labelled grid)
-  alt detector answers
-    Det-->>Map: cells, summary
-  else detector down
-    Det-->>Map: DetectorUnavailable
-    Map->>Map: empty map, status failed
-  end
-  Map->>DB: map, cells, model_cells
-  Map->>Tr: plan(areas by type and severity)
-  Map-->>Web: map + plan + changes
-  Expert->>Web: paint corrections
-  Web->>Map: POST /maps/{id}/cells
-  Expert->>Web: approve
-  Web->>Map: POST /maps/{id}/approve
-  Map->>DB: freeze, audit log
-```
-
-</details>
-
-<details>
-<summary><b>State: damage map</b>: Draft until an expert approves it</summary>
-
-```mermaid
-stateDiagram-v2
-  direction LR
-  state "Damage map" as map {
-    [*] --> Draft: created
-    Draft --> Draft: expert corrects cells
-    Draft --> Approved: expert approves
-    Approved --> [*]
-  }
-```
-
-</details>
-
-<details>
-<summary><b>State: visitor observation</b>: Lifecycle of one visitor photo</summary>
-
-```mermaid
-stateDiagram-v2
-  direction LR
-  [*] --> received
-  received --> processing
-  processing --> needs_input: facade unclear
-  needs_input --> processing: visitor answers or timeout
-  processing --> needs_retake: blurry, dark, wrong angle
-  processing --> done
-  processing --> failed
-  done --> [*]
-  needs_retake --> [*]
-  failed --> [*]
-```
-
-</details>
-
-<details>
-<summary><b>ER diagram</b>: Wall map tables and their neighbours</summary>
-
-```mermaid
-erDiagram
-  SITES ||--o{ FACADES : has
-  FACADES ||--o{ BASELINE_PHOTOS : has
-  FACADES ||--o{ OBSERVATIONS : "photographed in"
-  FACADES ||--o{ FINDINGS : "pinned on"
-  FACADES ||--o{ DAMAGE_MAPS : "mapped in"
-  DAMAGE_MAPS ||--o{ DAMAGE_MAP_CELLS : contains
-  USERS ||--o{ DAMAGE_MAPS : "creates, approves"
-  USERS ||--o{ AUDIT_LOG : writes
-
-  DAMAGE_MAPS {
-    uuid id PK
-    uuid facade_id FK
-    string wall_name
-    float width_m
-    float height_m
-    int rows
-    int cols
-    jsonb corners
-    string detector_status
-    jsonb model_cells
-    string status
-  }
-  DAMAGE_MAP_CELLS {
-    uuid map_id PK
-    int row PK
-    int col PK
-    string damage_type
-    string severity
-    string source
-  }
-  FINDINGS {
-    uuid id PK
-    string damage_type
-    string severity
-    string existence_label
-    string status
-  }
-```
-
-</details>
-
-<details>
-<summary><b>Deployment</b>: One VM with Docker Compose</summary>
-
-```mermaid
-flowchart LR
-  phone[Phone browser] -- HTTPS --> caddy
-  laptop[Inspector laptop] -- HTTPS --> caddy
-  subgraph vm[One VM, Docker Compose]
-    caddy[Caddy<br/>TLS]
-    web[web<br/>Next.js standalone]
-    api[api<br/>Uvicorn]
-    db[(db<br/>Postgres 18)]
-    storage[(storage<br/>SeaweedFS S3)]
-  end
-  caddy --> web
-  caddy -- /api --> api
-  api --> db
-  api --> storage
-  api -- HTTPS --> anthropic[[Anthropic API]]
-  api -- HTTPS --> hf[[Model endpoint<br/>optional]]
-  api -- HTTPS --> azure[[Azure Speech<br/>optional]]
-```
-
-</details>
-
-<details>
-<summary><b>Activity: expert review</b>: How a conservator checks and approves a map</summary>
+Every wall photo, whatever its source, ends in the same draft map and the same specialist approval. The model only drafts; a specialist approves. Visitor photos take their own path through the visitor agents to the specialist's review queue.
 
 ```mermaid
 flowchart TD
-  start([Map opens]) --> look{Cells look right?}
-  look -- yes --> approve[Approve]
-  look -- no --> brush[Pick a damage type and severity]
-  brush --> paint[Paint or erase cells]
-  paint --> undo{Mistake?}
-  undo -- yes --> back[Undo last stroke] --> paint
-  undo -- no --> save[Save corrections]
-  save --> look
-  approve --> plan[Treatment plan and accuracy update]
-  plan --> stop([Done])
+  sat["Satellite watch<br/>weekly Sentinel-2 screen"] -->|alert| missions["Photo missions<br/>ground check"]
+  missions --> visitor["Visitor photo"]
+  missions --> inspector["Inspector photo<br/>four wall corners"]
+  camera["Site camera"] --> ingest["Ingest job<br/>GPS match to facade"]
+  drone["Drone survey"] --> ingest
+  upload["Bulk upload"] --> ingest
+  inspector --> privacy["Face blur and EXIF strip"]
+  ingest --> privacy
+  privacy --> detector{"Analysis model"}
+  detector -->|claude| grid["Hosted grid detector"]
+  detector -->|qwen| own["Own Qwen3.5 model"]
+  grid --> draft["Draft wall map"]
+  own --> draft
+  draft --> workflow["Ten-step workflow"]
+  workflow --> corrections["Specialist corrections"]
+  corrections --> field["Field inspection"]
+  field --> approval["Approval"]
+  approval --> plan["Treatment plan"]
+  plan --> reports["PDF and CSV reports"]
+  draft -->|urgent elements| notices["Notifications<br/>webhook"]
+  workflow -->|overdue approval| notices
+  sat -->|alert| notices
+  visitor --> agents["Visitor agents<br/>blur, compare with baseline"]
+  agents --> queue["Specialist review queue"]
+  staff["Staff in the assistant"] --> skill["Inspection skill"]
+  skill -->|analyse_photo| detector
+  skill --> audit["Audit file PDF"]
+  audit -->|user confirms| notices
 ```
 
-</details>
+The other detectors (`http_detection`, `http_cell_classification`, `none`) plug into the same place; see [ADR-018](docs/adr/ADR-018-damage-detector-port.md).
 
-## Run it
+## Features by role
+
+Permissions come from `ROLE_PERMISSIONS` in [`backend/src/sadu/modules/admin/api.py`](backend/src/sadu/modules/admin/api.py). The dashboard reads the same matrix from `GET /api/v1/auth/roles`, hides what a role cannot open, and the API refuses it anyway.
+
+| Role | Permissions | Screens |
+|---|---|---|
+| المساح الميداني · `inspector` | `read`, `survey`, `assistant` | 3D site `/dashboard`, condition `/dashboard/condition`, space watch `/dashboard/watch`, maps `/dashboard/maps`, new map `/dashboard/maps/new`, uploads `/dashboard/uploads`, devices (read only) `/dashboard/devices`, assistant `/dashboard/assistant` |
+| مدير الموقع · `site_manager` | `read`, `manage_site`, `manage_devices`, `export`, `assistant` | The shared screens, plus the field photography permit and PDF/CSV downloads on `/dashboard/condition`, camera registry and «التقط الآن» on `/dashboard/devices`, assistant |
+| أخصائي الترميم · `expert` | `read`, `survey`, `review`, `export`, `assistant` | Everything an inspector has, plus the review queue `/dashboard/review`, element editing, field inspection and approval on `/dashboard/maps/{id}`, satellite alert acknowledgement, exports |
+| ممثل هيئة التراث · `authority` | `read`, `export`, `assistant`, `read_audit` | The shared screens across every site, exports, assistant, and the audit log `/dashboard/audit` with its CSV |
+| مهندس النماذج · `ml_engineer` | `read`, `export`, `manage_models` | The shared screens, exports, and the model registry `/dashboard/models` with the training export |
+| مسؤول النظام · `admin` | all ten, including `administer` | Everything, plus accounts and roles `/dashboard/users` |
+
+"The shared screens" are the 3D site, condition, space watch and maps pages, which need only `read`. Every signed-in user can change their password at `/dashboard/password`. The full matrix, endpoint list and account lifecycle are in [docs/06-security/roles.md](docs/06-security/roles.md).
+
+## Identity and interface
+
+The web app uses the «حاشية المخطوط» (Manuscript Margin) identity: warm paper ground, iron-gall ink, and a rubric red used for the specialist's voice. Specialist notes and low-confidence warnings sit beside what they describe as a marginal note, never in a popup. Urgent damage has its own darker red and always carries a text label and an icon, so colour is never the only signal.
+
+- Primitives are shadcn/ui components rewritten for the identity in `frontend/src/components/ui/`, with logical properties only and 44 px touch targets.
+- Arabic text uses Scheherazade New and Latin text Cormorant Garamond, both self-hosted so the build works offline.
+- The app is RTL by default (`<html dir="rtl">` and Radix `Direction.Provider`), uses Arabic-Indic digits, and keeps text contrast at 4.5:1 or more against WCAG 2.2.
+- `prefers-reduced-motion` turns animations off.
+
+Tokens, contrast table and component rules: [docs/design/DESIGN.md](docs/design/DESIGN.md).
+
+## Wall damage maps and the glossary
+
+1. An inspector picks a registered facade, or names a free-standing wall with its width and height, takes a photo and drags four handles to the wall corners.
+2. The photo goes through the privacy step, then the wall is warped to a front-on view at its real aspect and split into a grid: 8 rows by default (`SADU_MAP_ROWS`), columns follow the wall's shape.
+3. The configured detector proposes damage. The map shows each element as an area, a line or a point, measured in metres from the wall size.
+4. If the detector fails, the map is still saved empty so the specialist can draw it by hand.
+5. The model's original answer is kept, so `GET /maps/accuracy` shows how often the model agrees with the specialist.
+
+The unified glossary in `mapping/domain/glossary.py` has eight core types:
+
+| Type | Arabic | Drawn as | Class |
+|---|---|---|---|
+| `plaster_loss` | فقدان اللياسة | area | |
+| `crack` | التشققات | line | width: under 1 mm, 1 to 5 mm, over 5 mm |
+| `basal_erosion` | تآكل القاعدة | area | depth |
+| `rain_gully` | أخاديد الأمطار | line | depth |
+| `salt_efflorescence` | تزهّر الأملاح | area | |
+| `cavity` | الفجوات والجحور | point | size |
+| `wall_head` | تلف رؤوس الجدران والشرفات | area | |
+| `cement_repair` | ترميمات إسمنتية سابقة | area | |
+
+Four older types (moisture, surface erosion, partial collapse, graffiti) are kept outside the core list for maps drawn before the glossary. Details: [docs/10-damage-maps.md](docs/10-damage-maps.md), [ADR-019](docs/adr/ADR-019-rectified-grid-damage-map.md).
+
+## Workflow and approval
+
+The map page shows the authority's ten steps with their state, output and criterion: photo check, privacy, damage detection, confidence, treatment, materials and tools, unified map, specialist review, approval, approved outputs.
+
+- The specialist changes an element's type, severity or class, confirms it, deletes it, or draws a new one with the mouse or the keyboard (arrow keys and Space). Every change goes into the correction log.
+- Approval is refused until a field inspection is recorded and no low-confidence model element is left unreviewed.
+- The treatment plan comes from `region-packs/treatments/earthen-najdi.json`: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. The catalog is a draft that a conservator must review before it is used as advice, and the plan says so ([ADR-020](docs/adr/ADR-020-treatment-catalog.md)).
+- "حمّل التقرير PDF" downloads an Arabic A4 report of the wall; `elements.csv` gives the elements table. A draft map is marked as a draft on the page ([ADR-024](docs/adr/ADR-024-wall-report-pdf.md)).
+- The site manager reads the site condition summary on `/dashboard/condition`, downloads it as PDF or CSV, and grants or withdraws the field photography permit. Visitor photo missions run only on sites with a permit.
+
+Details: [ADR-026](docs/adr/ADR-026-diriyah-agent-workflow.md).
+
+## Satellite watch and early warning
+
+1. Weekly (`SADU_WATCH_INTERVAL_H`, default 168) and on demand, the API pulls Sentinel-2 scenes for each site from Element 84 Earth Search and builds two median composites: the last 30 days and the year before.
+2. Pixels that moved more than three times their usual spread, in clusters of at least three, are labelled water, vegetation loss, construction, sand or earthworks, inside the site or in the 150 m ring around it.
+3. A risk score ranks the sites. `/dashboard/watch` shows the ranking on a map and, per site, a before/after slider and a change map.
+4. The early warning compares each scan with one at least five days older: the trend is new, rising, steady or falling, and a threat seen in both scans is confirmed. An urgent scan, or a moderate one with a confirmed threat, sends an alert to `SADU_ALERT_WEBHOOK_URL`.
+5. **Ground check** opens high-priority photo missions on the site's facades. A site without registered facades tells the inspector a visit is needed.
+
+10 m pixels catch changes around a site, not cracks: the satellite layer screens, and wall maps confirm. `SADU_SCENE_SOURCE=sample` serves labelled synthetic scenes with invented events from `region-packs/riyadh/sample-events.json`, and every scan from it is marked as sample data. Details and limits: [ADR-025](docs/adr/ADR-025-space-watch.md), [region-packs/riyadh/README.md](region-packs/riyadh/README.md).
+
+## Cameras, drones and bulk upload
+
+- **Cameras.** Register fixed cameras on `/dashboard/devices` with the snapshot URL most IP cameras and NVRs expose. The API captures each one every `SADU_CAMERA_INTERVAL_H` hours (default 24) or on «التقط الآن», and keeps every attempt in the camera's history.
+- **Uploads.** Staff with `survey` upload 1 to 30 photos of up to 8 MB on `/dashboard/uploads`, from a phone, a drone survey or an archive. They pick the wall, or Athar matches it from the photo's GPS: the nearest facade facing the photo position, within 60 m of a site. Photos without GPS wait for someone to pick the facade.
+- **Jobs.** Each photo becomes a job. The worker reads GPS and capture time, blurs faces and strips EXIF, then creates a draft map through the same detector, workflow and approval as a hand-drawn one. The map shows its source: inspector, camera name, drone or upload.
+- **Safety.** Camera addresses inside private networks are refused unless listed in `SADU_CAMERA_ALLOWED_HOSTS`, and cloud metadata addresses stay blocked. Camera passwords live only in `SADU_CAMERA_SECRET_*` environment variables; the database holds the variable name.
+
+In demo mode, seeding the demo pack adds a camera on the demo building's north facade that reads a test photo served by the API, so the camera flow works offline. Details: [ADR-027](docs/adr/ADR-027-ingestion.md).
+
+## The assistant
+
+`/dashboard/assistant` is a chat for staff with the `assistant` permission. They attach wall photos, drone photos or PDFs of old inspection reports and ask in Arabic. The assistant picks one of five inspection skills (Markdown files in `backend/src/sadu/modules/assistant/skills/`): wall photo inspection, drone roof and wall head, satellite alert review, treatment check, and audit report. It follows the skill's steps with tools from the other modules and streams each step.
+
+- A photo of a named facade becomes a draft wall map, only for users with `survey`. The assistant cannot approve maps, edit elements or approve treatments.
+- «صياغة ملف التدقيق» renders an Arabic PDF with the photos, the elements table, catalog treatments, recommendations and a «يتطلب اعتماد المختص» stamp.
+- Sending the file to specialists waits for «أكّد الإرسال». The confirmed send goes to `SADU_SPECIALIST_WEBHOOK_URL` and is written to the audit log.
+- When the model is down or the daily budget is spent, the chat says so and «حلّل الصورة» still analyses photos directly. In demo mode without a model key, a scripted planner runs the same flow offline.
+
+Details, privacy and failure modes: [ADR-028](docs/adr/ADR-028-assistant.md).
+
+## Athar's own model
+
+Approved maps train a damage model the authority owns, so it does not depend on a paid API. It is Qwen3.5-4B (Apache-2.0, natively multimodal) fine-tuned with bf16 LoRA. It reads the rectified photo and answers with glossary elements: type, shape, severity, class and confidence.
+
+1. A model engineer downloads approved maps from `GET /api/v1/ml/training-export` (`manage_models`). Faces were blurred at upload, and no user or visitor data is exported.
+2. `ml/data/build_dataset.py` adds licence-checked public crack and heritage-surface sets and splits by site, so test scores come from walls the model never saw.
+3. `ml/notebooks/train_qwen35_damage.ipynb` runs on Google Colab. It reads the GPU and picks the profile: Qwen3.5-4B in bf16 LoRA on a 22 GB L4, 9B on an A100, 2B below 16 GB. It evaluates with the same cell matching as the accuracy card and exports GGUF files.
+4. Inference runs on a 16 GB machine with llama.cpp `llama-server` and the Q4_K_M GGUF plus its vision projector, about 5 GB in use.
+5. The version is registered with its metrics and activated on `/dashboard/models`. With `SADU_DAMAGE_DETECTOR=qwen`, new maps use the active version and the audit log records it.
+
+The model has not been trained yet: the pipeline, tests and serving code are in place and wait for approved maps. Details: [ADR-029](docs/adr/ADR-029-own-model.md), [docs/ml/architecture.md](docs/ml/architecture.md), [ml/README.md](ml/README.md).
+
+## Governance
+
+- **Roles.** Six roles over ten permissions, denied by default (see [Features by role](#features-by-role)).
+- **Site scope.** An admin can limit an account to chosen sites. A resource outside the scope answers 404, the same as one that does not exist. `admin` and `authority` always see every site.
+- **Accounts.** Temporary passwords of at least 12 characters, a forced change on first sign-in, deactivation that ends every session, and no way for an admin to demote or deactivate themselves.
+- **Audit log.** Sign-ins, account changes, every step of a map from creation to approval, finding reviews, permits, missions, satellite actions, passport deletions, retention runs and notices. `authority` reads it on `/dashboard/audit`; the CSV also needs `export`. No endpoint edits or deletes audit rows.
+- **Exports.** CSV files start with a UTF-8 byte order mark for Excel and neutralise cells that start with `=`, `+`, `-` or `@`.
+- **Notices.** An urgent-damage notice the first time a map holds urgent elements, and a reminder for each draft waiting longer than `SADU_APPROVAL_OVERDUE_DAYS` (default 7). Both go to `SADU_ALERT_WEBHOOK_URL` and are recorded in the audit log first, so none is sent twice.
+
+Details: [docs/06-security/roles.md](docs/06-security/roles.md).
+
+## Privacy and PDPL
+
+- Faces are blurred (YuNet) and EXIF removed before any photo is stored or sent to a model, from every source ([ADR-015](docs/adr/ADR-015-privacy-processing.md)).
+- Visitors share location and heading only after consent; without it, they are dropped. Location is discarded once the facade is known.
+- Visitor photos are kept 30 days, or two years when they are evidence for a published finding. A background loop purges expired photos, and a visitor can delete their passport and every non-evidence photo from the passport page.
+- Drone and staff photos lose GPS and faces before storage; the job keeps the GPS reading and capture time so a reviewer can see where the photo was taken.
+- With `SADU_DAMAGE_DETECTOR=qwen` and `llama-server` on the authority's own machine, wall photos are analysed on-premises and do not leave the country. Two exceptions remain: training on Colab sends blurred, rectified wall photos to Google's cloud, and the visitor agents still send blurred photo regions to the hosted model (the assistant sends it only text and tool results).
+
+Threat model: [docs/06-security/threat-model.md](docs/06-security/threat-model.md).
+
+## Visitors
+
+The visitor app opens from a QR code without installing anything. A visitor photographs a facade, hears a sourced story of the place in Arabic, and collects a passport stamp. Agents compare the photo with the facade's baseline, and a change is published only with evidence; uncertain or urgent findings wait in the specialist's review queue. Visitors also get a 3D view of the site on Google Maps and directions to it. Details: [docs/03-architecture.md](docs/03-architecture.md), [ADR-005](docs/adr/ADR-005-damage-pipeline.md), [ADR-022](docs/adr/ADR-022-google-maps-3d-site-view.md).
+
+## Architecture
+
+A modular monolith: one FastAPI deployable split into sixteen modules under `backend/src/sadu/modules/`. Each module exposes one `api.py` that the others may import; inside it, layers point inward (`interface → api → infrastructure → application → domain`). import-linter fails the build on any other import ([ADR-001](docs/adr/ADR-001-modular-monolith.md)).
+
+| Module | Owns |
+|---|---|
+| `admin` | Users, sessions, roles and permissions, site scope, audit log, model cost counter |
+| `agents` | The LangGraph run for each visitor photo, finding reviews, the retention purge |
+| `assistant` | Staff chat: inspection skills, tool calls into other modules, audit files, confirmed sends |
+| `capture` | Upload processing: EXIF strip, face blur, resize, idempotency |
+| `ingest` | Devices, ingest jobs, camera capture, the job worker, GPS facade matching |
+| `inspection` | Photo quality gate, alignment to the baseline, difference map, model judgment |
+| `mapping` | Wall maps, rectification, grid, glossary elements, detector port, corrections, workflow, approval, accuracy |
+| `missions` | Photo missions for coverage gaps and ground checks |
+| `models` | Own-model registry and the training export |
+| `passport` | Anonymous visitor passports and stamps |
+| `reports` | Wall report PDF, elements CSV, site condition summary, PDF and CSV, assistant audit PDF |
+| `sites` | Region packs, sites, facades, baselines, field photography permit |
+| `stories` | Story sources, retrieval and drafted claims for visitors, cached stories |
+| `treatments` | Treatment catalog and plans scaled by damaged area |
+| `verification` | Evidence rule, findings, review queue, pins |
+| `watch` | Sentinel-2 screening, risk score, early warning, alert webhook |
+
+```mermaid
+flowchart LR
+  browser["Browsers<br/>visitor phones, staff laptops"] --> caddy
+  subgraph host["One VM, Docker Compose"]
+    caddy["Caddy<br/>TLS in the prod profile"]
+    web["web<br/>Next.js"]
+    api["api<br/>FastAPI and background loops"]
+    db[("db<br/>Postgres 18, PostGIS, pgvector")]
+    storage[("storage<br/>SeaweedFS S3")]
+  end
+  subgraph outside["Outside services"]
+    claude["Anthropic API"]
+    qwen["llama-server<br/>own model, optional"]
+    stac["Earth Search<br/>Sentinel-2"]
+    speech["Azure Speech, optional"]
+    cameras["Site cameras"]
+    hooks["Webhooks<br/>alerts, specialists"]
+  end
+  caddy --> web
+  caddy -->|/api| api
+  api --> db
+  api --> storage
+  api --> outside
+```
+
+### Stack
+
+| Layer | Technology and version |
+|---|---|
+| API | Python 3.13, FastAPI 0.163.1, Pydantic 2.14.3, Uvicorn 0.54.0, sse-starlette 3.7.0 |
+| Data | PostgreSQL 18 with PostGIS 3.7 and pgvector 0.8.7, SQLAlchemy 2.1.8, GeoAlchemy2 0.21.0, Alembic 1.20.1, psycopg 3.3.9 |
+| Agents and models | LangGraph 1.2.22 with the Postgres checkpointer 3.2.1, Anthropic SDK 2.9.0, httpx 0.28.1 for HTTP and own-model detectors |
+| Vision and imagery | OpenCV 5.0, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5, rasterio 1.5.2 or later, SciPy 1.16 or later |
+| Files and reports | S3 API with boto3 1.44.3 (SeaweedFS 4.54 locally), WeasyPrint 70 or later, Jinja2 3.1.6 or later |
+| Ops | structlog 26.1.0, Sentry SDK 2.75.0, Argon2 (argon2-cffi 25.1.0), Caddy 2.11.9 |
+| Web | Node 24, Next.js 16.4.6, React 19.3.0, TypeScript 5, Tailwind CSS 4.3.3, Radix UI 1.8.1 with shadcn/ui, lucide-react 1.75.0, sonner 2.0.8 |
+| 3D and maps | three.js 0.187.0, React Three Fiber 9.8.2, drei 10.7.9, `@vis.gl/react-google-maps` 1.10.2 |
+| Quality | pytest 9.2.0, ruff 0.17.5, mypy 2.4.1 strict, import-linter 2.16, pip-audit 2.10.1, ESLint 9, Vitest 5.1.1, Playwright 1.65.1 |
+| Own model (Colab) | transformers 5.17.0, Unsloth 2026.11.6, TRL 1.15.0, PEFT 0.21.3; llama.cpp for serving |
+
+Versions come from `backend/pyproject.toml`, `frontend/package.json` and `ml/requirements-colab.txt`. Reasons and alternatives: [docs/04-stack.md](docs/04-stack.md) and the [ADRs](docs/adr/).
+
+## Running it
+
+### Quick start with Docker
 
 You need Docker with Compose v2.
 
 ```bash
-cp .env.example .env          # add keys if you have them; it runs without
-docker compose up --build     # first build takes a few minutes
+cp .env.example .env
+docker compose up --build
 ```
 
-| | URL |
+The `migrate` service applies migrations and the `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades, not a heritage site. `region-packs/riyadh` holds eleven heritage sites in the Riyadh region, including At-Turaif and Al-Faw, with approximate boundaries and no facades yet ([details](region-packs/riyadh/README.md)).
+
+Create a dashboard account. The role is one of `inspector`, `site_manager`, `expert`, `authority`, `ml_engineer` or `admin` (default `inspector`):
+
+```bash
+docker compose run --rm -e SADU_NEW_USER_PASSWORD='choose-12-chars-or-more' api \
+  python -m sadu.cli create-user admin@example.com --role admin
+```
+
+Sign in as that admin to create the other accounts on `/dashboard/users`. Test photos are in `region-packs/demo/test-photos/`.
+
+| What | URL |
 |---|---|
 | Visitor app | http://localhost:3000 |
 | Dashboard | http://localhost:3000/dashboard |
 | Wall damage maps | http://localhost:3000/dashboard/maps |
-| Bulk photo upload | http://localhost:3000/dashboard/uploads |
+| Space watch | http://localhost:3000/dashboard/watch |
+| Bulk upload | http://localhost:3000/dashboard/uploads |
 | Cameras and devices | http://localhost:3000/dashboard/devices |
-| Athar assistant | http://localhost:3000/dashboard/assistant |
-| API docs | http://localhost:8000/api/docs |
+| Assistant | http://localhost:3000/dashboard/assistant |
+| API docs (not served when `SADU_ENV=prod`) | http://localhost:8000/api/docs |
+| Health check | http://localhost:8000/api/v1/healthz |
+| Object store | http://localhost:8333 |
 
-The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/riyadh` holds eleven heritage sites in the Riyadh region, including At-Turaif and Al-Faw at their cited coordinates, with approximate boundaries and no facades yet, so the 3D view, directions and satellite screening cover them ([details](region-packs/riyadh/README.md)). Create a dashboard account with:
+For a public demo on a VM, set `SADU_DOMAIN`, `SADU_ENV=prod`, real secrets and `ANTHROPIC_API_KEY` in `.env`, then run `docker compose --profile prod up -d`. Caddy gets TLS certificates and serves the app on 443.
+
+### Demo mode
+
+For a demo without a network, set these in `.env` before `docker compose up`:
 
 ```bash
-docker compose run --rm -e SADU_NEW_USER_PASSWORD='choose-12-chars-or-more' api \
-  python -m sadu.cli create-user inspector@example.com --role expert
+SADU_DEMO_MODE=true
+SADU_SCENE_SOURCE=sample
 ```
 
-Roles are `inspector`, `expert` (can also review) and `admin`. Test photos are in `region-packs/demo/test-photos/`.
+- Model answers recorded during earlier live runs are replayed first (`demo-cache` volume). Without a recording or a key, a wall map opens empty for the specialist to draw.
+- The demo seed adds a camera that reads a test photo from the API itself.
+- The assistant uses a scripted planner when there is no model key.
+- The satellite page shows synthetic scenes, labelled as sample data.
 
-For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then `docker compose --profile prod up -d`. Caddy gets TLS certificates and serves the app on 443.
+### Local development
 
-## Environment
-
-| Variable | Needed for | Without it |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Damage judgment, wall maps with `claude`, story drafting, claim checks | Changes go to the expert queue unjudged; maps are saved empty for manual labelling |
-| `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification`, `qwen` or `none` | `claude` |
-| `SADU_QWEN_URL`, `SADU_QWEN_MODEL`, `SADU_QWEN_TIMEOUT_S` | Athar's own model behind an OpenAI-compatible server; the model name used until a version is activated; seconds per photo | `http://localhost:8080/v1`, `athar-damage`, 120 |
-| `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
-| `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
-| `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts, urgent-damage notices and overdue-approval reminders | Alerts only show on the dashboard |
-| `SADU_RETENTION_INTERVAL_H` | Hours between purges of visitor photos past their 30-day retention, default 24; `0` turns the purge off | Daily |
-| `SADU_APPROVAL_OVERDUE_DAYS` | Days a draft map may wait for approval before a reminder is sent, default 7; `0` turns reminders off | Weekly |
-| `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts | Alerts only show on the dashboard |
-| `SADU_SPECIALIST_WEBHOOK_URL` | HTTPS webhook that receives audit files the user confirmed in the assistant chat | Confirmed sends are audited but not delivered; the chat asks the user to share the file |
-| `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
-| `SADU_CAMERA_INTERVAL_H` | Hours between automatic captures for cameras without their own interval, default 24; `0` turns scheduled capture off | Daily |
-| `SADU_CAMERA_ALLOWED_HOSTS` | Comma-separated host names and CIDR ranges of cameras on private networks (`nvr.site.local,10.20.0.0/16`) | Only public camera addresses are fetched |
-| `SADU_CAMERA_SECRET_<NAME>` | One per camera password; the device stores only the variable name. With Compose, add each one to the `api` service environment in a `compose.override.yaml` | Cameras are fetched without a password |
-| `SADU_INGEST_CONCURRENCY` | Photos analysed at the same time, default 2 | Two at a time |
-| `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
-| `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
-| `SADU_DEMO_MODE` | `true` serves recorded model answers before calling the API | Live calls; recordings are still used if a call fails |
-| `SADU_DAILY_LLM_BUDGET_USD` | Daily spend cap, default 10 | Calls past the cap fail over to the fallbacks |
-| `GOOGLE_MAPS_API_KEY` | 3D site view and in-app routes (Maps JavaScript API with Map Tiles and Routes enabled; restrict it to your domain) | Visitors see the facade model; the Google Maps directions link still works |
-| `SENTRY_DSN_API` | Error reports | Errors are only in the logs |
-| `POSTGRES_PASSWORD`, `S3_*` | Change for anything public | Dev defaults |
-| `SADU_DOMAIN` | Production profile | `localhost` |
-
-## Tests and checks
-
-Backend, from `backend/` (needs Postgres from compose):
+Start the database and object store, then run the API from `backend/` (it reads `backend/.env`; the defaults match the compose services):
 
 ```bash
+docker compose up -d db storage
+cd backend
 uv sync
-docker compose up -d db
+mkdir -p models && curl -fsSL -o models/face_detection_yunet_2023mar.onnx \
+  https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
+uv run alembic upgrade head
+uv run python -m sadu.cli seed --pack demo
+uv run python -m sadu.cli seed --pack riyadh
+SADU_NEW_USER_PASSWORD='choose-12-chars-or-more' uv run python -m sadu.cli create-user you@example.com --role admin
+uv run uvicorn sadu.main:app --reload --port 8000
+```
+
+Then the web app from `frontend/`:
+
+```bash
+npm ci
+SADU_API_ORIGIN=http://localhost:8000 npm run dev
+```
+
+More in [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md).
+
+## Environment variables
+
+Every variable is optional in development. In production (`SADU_ENV=prod`) the API refuses to start without `ANTHROPIC_API_KEY` and `S3_SECRET_ACCESS_KEY`, or with the dev database password.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `SADU_ENV` | `dev` | `dev`, `test` or `prod`; `prod` enforces the secrets above and hides the API docs |
+| `SADU_PUBLIC_ORIGIN` | `http://localhost:3000` | Origin of the web app, used for CORS and in links sent by notices |
+| `DATABASE_URL` | `postgresql+psycopg://sadu:dev@localhost:5432/sadu` | Database; compose builds it from `POSTGRES_PASSWORD` |
+| `POSTGRES_PASSWORD` | `dev` | Compose only: password of the `db` service; change it for anything public |
+| `S3_ENDPOINT_URL` | `http://localhost:8333` | Object store the API talks to (`http://storage:8333` in compose) |
+| `S3_PUBLIC_ENDPOINT_URL` | none | Object store address used in presigned URLs for the browser |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `devkey`, `devsecret123` | Object store credentials; the secret is required in prod |
+| `S3_BUCKET`, `S3_REGION` | `sadu`, `us-east-1` | Bucket and region |
+| `ANTHROPIC_API_KEY` | none | Hosted model for the grid detector, visitor agents, stories and the assistant; required in prod |
+| `SADU_MODEL_MAIN`, `SADU_MODEL_FAST` | `claude-sonnet-5-5`, `claude-haiku-5-5` | Hosted model names for judgment and for routing |
+| `SADU_DAILY_LLM_BUDGET_USD` | `10` | Daily spend cap; calls past it fail over to the fallbacks |
+| `SADU_DEMO_MODE` | `false` | Replay recorded model answers first, seed the demo camera, scripted assistant without a key |
+| `SADU_DEMO_CACHE_DIR` | `demo-cache` | Where recorded model answers are kept |
+| `SADU_MAX_CONCURRENT_RUNS` | `4` | Visitor photo runs processed at once |
+| `SADU_YUNET_MODEL_PATH` | `models/face_detection_yunet_2023mar.onnx` | Face detection model for the blur |
+| `SADU_REGION_PACKS_DIR` | `../region-packs` (`/region-packs` in Docker) | Region packs, sample events and the treatment catalog |
+| `SADU_DAMAGE_DETECTOR` | `claude` | `claude`, `http_detection`, `http_cell_classification`, `qwen` or `none` |
+| `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN` | none | Endpoint and token of a ready model; required for the two `http_*` detectors |
+| `SADU_DETECTOR_LABELS` | empty | JSON map from model labels to damage types, e.g. `{"spalling": "plaster_loss"}` |
+| `SADU_DETECTOR_MIN_SCORE` | `0.35` | Drop weaker predictions |
+| `SADU_DETECTOR_TIMEOUT_S` | `30` | Seconds per call to a ready model |
+| `SADU_QWEN_URL` | `http://localhost:8080/v1` | OpenAI-compatible server of the own model |
+| `SADU_QWEN_MODEL` | `athar-damage` | Model name used until a version is activated |
+| `SADU_QWEN_TOKEN` | none | Bearer token, only if the server checks one |
+| `SADU_QWEN_TIMEOUT_S` | `120` | Seconds per photo |
+| `SADU_QWEN_JSON_SCHEMA` | `true` | Send the answer schema as `response_format` |
+| `SADU_MAP_ROWS` | `8` | Grid rows per wall map, 2 to 20 |
+| `SADU_TREATMENT_CATALOG` | `region-packs/treatments/earthen-najdi.json` | Treatment catalog file |
+| `SADU_SCENE_SOURCE` | `earth_search` | `earth_search` (Sentinel-2 on AWS), `sample` (synthetic) or `none` |
+| `SADU_SCENE_SEARCH_URL` | Element 84 Earth Search v1 | STAC search endpoint |
+| `SADU_WATCH_INTERVAL_H` | `168` | Hours between automatic scans per site; `0` turns the schedule off |
+| `SADU_WATCH_SAMPLE_EVENTS` | `region-packs/riyadh/sample-events.json` | Events used by the sample scene source |
+| `SADU_ALERT_WEBHOOK_URL` | empty | HTTPS webhook for satellite alerts and governance notices; without it they stay on the dashboard and in the audit log |
+| `SADU_SPECIALIST_WEBHOOK_URL` | empty | HTTPS webhook for audit files confirmed in the assistant; without it the send is audited but not delivered |
+| `SADU_RETENTION_INTERVAL_H` | `24` | Hours between purges of expired visitor photos; `0` turns it off |
+| `SADU_APPROVAL_OVERDUE_DAYS` | `7` | Days before a draft map gets an approval reminder; `0` turns it off |
+| `SADU_CAMERA_INTERVAL_H` | `24` | Hours between captures for cameras without their own interval; `0` turns scheduled capture off |
+| `SADU_CAMERA_ALLOWED_HOSTS` | empty | Host names and CIDR ranges of cameras on private networks, e.g. `nvr.site.local,10.20.0.0/16` |
+| `SADU_CAMERA_SECRET_<NAME>` | none | One per camera password; the device stores only the variable name |
+| `SADU_INGEST_CONCURRENCY` | `2` | Ingest jobs analysed at once, 1 to 8 |
+| `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | none | Arabic audio for visitor stories; without them the story is text only |
+| `SADU_TTS_VOICE` | `ar-SA-HamedNeural` | Speech voice |
+| `SENTRY_DSN_API` | none | Error reports from the API |
+| `GOOGLE_MAPS_API_KEY` | none | Web app: 3D site view and in-app routes; restrict it to your domain |
+| `SADU_API_ORIGIN` | `http://localhost:8000` | Web app in development: where `/api` is proxied |
+| `SADU_DOMAIN` | `localhost` | Domain for Caddy in the `prod` profile |
+| `SADU_NEW_USER_PASSWORD` | prompt | CLI only: password for `create-user` |
+
+`docker-compose.yml` passes most API variables to the `api` service. It does not pass the `SADU_QWEN_*`, `SADU_CAMERA_SECRET_*`, `SADU_MODEL_*` or `SADU_DETECTOR_TIMEOUT_S` variables; add those to the `api` service in a `compose.override.yaml`. Inside the container, `localhost` is the container itself, so point `SADU_QWEN_URL` at the host (for example `http://host.docker.internal:8080/v1`) when `llama-server` runs on the host.
+
+## Testing and quality
+
+Backend, from `backend/`, with Postgres from compose and a test database. Tests default to `sadu_test`, and the integration tests that commit are skipped on any database whose name does not end in `_test`:
+
+```bash
 docker compose exec db createdb -U sadu sadu_test
-DATABASE_URL=postgresql+psycopg://sadu:dev@localhost:5432/sadu_test uv run alembic upgrade head
+export DATABASE_URL=postgresql+psycopg://sadu:dev@localhost:5432/sadu_test
+uv run alembic upgrade head
 uv run pytest
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run lint-imports
 uv run python -m eval.run
-```
-
-Tests use their own `sadu_test` database and refuse to run committing tests against any database whose name does not end in `_test`. The face blur model is downloaded into `backend/models/` by the Docker build and by CI; for local runs, copy the download step from `.github/workflows/ci.yml`.
-
-Score a damage detector on labelled wall photos before the demo:
-
-```bash
-uv run python -m eval.score_maps ../path/to/walls --min-accuracy 0.8
-```
-
-The folder format is in [docs/10-damage-maps.md](docs/10-damage-maps.md).
-
-Replay satellite screening over past dates and measure its precision:
-
-```bash
-uv run python -m eval.backtest_watch run --sites at-turaif,sudus --start 2024-03-01 --end 2026-11-01 --out watch-backtest
-# fill the truth column of watch-backtest/alerts.csv with yes or no from historical imagery
-uv run python -m eval.backtest_watch score watch-backtest/alerts.csv
-```
-
-The score passes at a precision of 0.6 or more with at least three real changes. The same run against live Sentinel-2 can be started by hand from the **Space watch live check** workflow in GitHub Actions; it uploads the table and the evidence images.
-
-The ML scripts' tests need no GPU; from `backend/`:
-
-```bash
 uv run pytest ../ml/tests
 ```
 
@@ -708,46 +467,30 @@ Frontend, from `frontend/`:
 ```bash
 npm ci
 npm run lint && npm run typecheck && npm test && npm run build
-```
-
-End-to-end, with the stack running (`docker compose up -d`, seed, and an expert account):
-
-```bash
 npx playwright install chromium
 E2E_EXPERT_EMAIL=you@example.com E2E_EXPERT_PASSWORD='…' npm run e2e
 ```
 
-CI runs all of the above, including the end-to-end tests against the stack in Docker, plus `pip-audit`, `npm audit`, gitleaks, Semgrep, Trivy and a render of every Mermaid diagram in `docs/`.
+The end-to-end tests need the stack running, seeded, and an expert account.
 
-## Project layout
+Evaluation tools:
 
-```
-backend/                   FastAPI modular monolith (Python 3.13, uv)
-  src/sadu/modules/        sites, capture, inspection, verification, stories, missions,
-                           passport, agents, admin, mapping, treatments, watch, ingest
-                           passport, agents, admin, mapping, treatments, models
-                           passport, agents, admin, mapping, treatments, watch, reports,
-                           assistant (its skills/ folder holds the inspection skills)
-    <module>/api.py        the only file other modules import
-    <module>/domain/       pure rules, no framework imports
-    <module>/application/  use cases and ports (DamageDetector)
-    <module>/infrastructure/  ORM, OpenCV, HTTP clients
-    <module>/interface/    FastAPI routes and schemas
-  src/sadu/shared/         config, database, storage, ports and adapters
-  alembic/                 migrations
-  tests/                   unit and integration tests
-  eval/                    vision and wall map evaluation
-frontend/src/
-  app/<page>/page.tsx      thin route file
-  app/<page>/_components/  components only that page uses
-  components/              shared by two or more pages
-  lib/                     API clients, labels, palette, plurals
-infra/                     database image, storage start script, Caddyfile
-ml/                        own damage model: data, Colab notebook, training, evaluation, serving
-region-packs/demo/         synthetic demo building, baselines, test photos, sources
-region-packs/treatments/   treatment catalog for earthen walls (draft)
-docs/                      scope, research, architecture, ADRs, UML, threat model
-```
+- `uv run python -m eval.score_maps <folder> --min-accuracy 0.8` scores a detector on labelled wall photos ([format](docs/10-damage-maps.md#measuring-accuracy-before-the-demo)).
+- `uv run python -m eval.backtest_watch run …` then `score …` replays satellite screening over past dates and measures its precision against a hand-filled truth column.
+
+Counted on 2026-11-18 on this branch: 398 backend tests, 47 frontend unit tests in 10 files, and 22 ML script tests, all passing.
+
+What CI runs ([.github/workflows/ci.yml](.github/workflows/ci.yml)) on every push to `main` and every pull request:
+
+| Job | Steps |
+|---|---|
+| backend | ruff check and format, mypy strict, import-linter, migrations with `alembic check`, pytest, the vision evaluation on the demo pack, pip-audit |
+| frontend | ESLint, `tsc --noEmit`, Vitest, `next build`, `npm audit` |
+| e2e | The stack in Docker with `SADU_DAMAGE_DETECTOR=none` and sample scenes, seed, an expert account, Playwright |
+| security | gitleaks, Semgrep, Trivy filesystem and IaC scan |
+| docs | Renders every Mermaid diagram under `docs/` |
+
+CI does not run the ML script tests or render the Mermaid in this README. The **Space watch live check** workflow runs the satellite backtest against live Sentinel-2 by hand and uploads the table and evidence images.
 
 ## Documentation
 
@@ -755,21 +498,61 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 |---|---|
 | Scope and requirements | [docs/00-scope.md](docs/00-scope.md) |
 | Research and market comparison | [docs/01-research.md](docs/01-research.md) |
+| Team roles | [docs/02-roles.md](docs/02-roles.md) |
 | Architecture, API contract, data | [docs/03-architecture.md](docs/03-architecture.md) |
 | Stack and versions | [docs/04-stack.md](docs/04-stack.md) |
+| Phases | [docs/05-phases.md](docs/05-phases.md) |
 | Security and threat model | [docs/06-security/threat-model.md](docs/06-security/threat-model.md) |
+| Roles, permissions and governance | [docs/06-security/roles.md](docs/06-security/roles.md) |
+| Infrastructure, monitoring, testing | [docs/07-infra-and-testing.md](docs/07-infra-and-testing.md) |
 | Verification and demo script | [docs/09-verification-and-demo.md](docs/09-verification-and-demo.md) |
 | Wall damage maps | [docs/10-damage-maps.md](docs/10-damage-maps.md) |
-| UML and structure | [docs/11-uml.md](docs/11-uml.md) |
-| Satellite screening | [docs/adr/ADR-025-space-watch.md](docs/adr/ADR-025-space-watch.md), [region-packs/riyadh/README.md](region-packs/riyadh/README.md) |
-| Diriyah procedure, glossary and roles | [docs/adr/ADR-026-diriyah-agent-workflow.md](docs/adr/ADR-026-diriyah-agent-workflow.md) |
-| Cameras, drones and bulk uploads | [docs/adr/ADR-027-ingestion.md](docs/adr/ADR-027-ingestion.md) |
-| Decisions (ADR-001 to ADR-027) | [docs/adr/](docs/adr/) |
-| Own damage model: data, training, evaluation, serving | [docs/ml/architecture.md](docs/ml/architecture.md), [ADR-029](docs/adr/ADR-029-own-model.md) |
-| Decisions | [docs/adr/](docs/adr/) |
-| Athar assistant: skills, tools, confirmed sends | [docs/adr/ADR-028-assistant.md](docs/adr/ADR-028-assistant.md) |
-| Decisions (ADR-001 to ADR-026) | [docs/adr/](docs/adr/) |
+| UML: use cases, components, classes, sequences, states, ER, deployment | [docs/11-uml.md](docs/11-uml.md) |
+| Design contract | [docs/design/DESIGN.md](docs/design/DESIGN.md) |
+| Own damage model | [docs/ml/architecture.md](docs/ml/architecture.md), [ml/README.md](ml/README.md) |
+| Riyadh region pack | [region-packs/riyadh/README.md](region-packs/riyadh/README.md) |
 
-## Privacy
+### Decisions (ADR-001 to ADR-029)
 
-Faces are blurred and EXIF removed before any photo is stored or sent to a model. Location is used only with consent and discarded once the facade is known. Photos from cameras, drones and bulk uploads go through the same blur and strip before they are stored; their GPS and capture time are read first and kept on the job so the wall can be matched. Visitor photos are kept 30 days unless they are evidence for a published finding, and a visitor can delete their passport and every non-evidence photo from the passport page. See [the threat model](docs/06-security/threat-model.md).
+| ADR | Decision |
+|---|---|
+| [001](docs/adr/ADR-001-modular-monolith.md) | Modular monolith with hexagonal module boundaries |
+| [002](docs/adr/ADR-002-langgraph-orchestration.md) | LangGraph orchestrator-worker graph with Postgres checkpointer and interrupts |
+| [003](docs/adr/ADR-003-llm-claude.md) | Claude Sonnet 5.5 and Haiku 5.5 behind an LLM port |
+| [004](docs/adr/ADR-004-postgres-postgis-pgvector.md) | One PostgreSQL 18 database with PostGIS and pgvector |
+| [005](docs/adr/ADR-005-damage-pipeline.md) | Classical alignment, difference map and model judgment with a deterministic label rule |
+| [006](docs/adr/ADR-006-object-storage.md) | S3 API behind a port; SeaweedFS locally instead of MinIO |
+| [007](docs/adr/ADR-007-3d-twin.md) | GLB mesh with facade planes; Gaussian splat optional |
+| [008](docs/adr/ADR-008-background-jobs.md) | In-process background tasks and SSE, no queue in Round 1 |
+| [009](docs/adr/ADR-009-embeddings.md) | BGE-M3 embeddings locally behind a port, with full-text fallback |
+| [010](docs/adr/ADR-010-tts.md) | Azure AI Speech with a Saudi Arabic neural voice, cached |
+| [011](docs/adr/ADR-011-auth.md) | Local dashboard accounts with server sessions; anonymous passport tokens for visitors |
+| [012](docs/adr/ADR-012-frontend.md) | One Next.js app with visitor and dashboard route groups |
+| [013](docs/adr/ADR-013-demo-hosting.md) | One VM running Docker Compose behind Caddy |
+| [014](docs/adr/ADR-014-observability.md) | Langfuse for model traces, Sentry for errors, structlog for logs |
+| [015](docs/adr/ADR-015-privacy-processing.md) | Process before store: EXIF strip and face blur before storage or any model call |
+| [016](docs/adr/ADR-016-build-time-changes.md) | Changes made while building Round 1 |
+| [017](docs/adr/ADR-017-diriyah-challenge-alignment.md) | Aim Round 1 at the Diriyah wall damage challenge |
+| [018](docs/adr/ADR-018-damage-detector-port.md) | Damage detection behind a port: hosted model or a ready model |
+| [019](docs/adr/ADR-019-rectified-grid-damage-map.md) | Damage map as a grid on the rectified wall |
+| [020](docs/adr/ADR-020-treatment-catalog.md) | Treatments come from a reviewed catalog, not from the model |
+| [021](docs/adr/ADR-021-frontend-page-folders.md) | Each page keeps its own components |
+| [022](docs/adr/ADR-022-google-maps-3d-site-view.md) | Show the site in 3D on Google Maps, with directions |
+| [023](docs/adr/ADR-023-sites-without-facades.md) | A site can exist before its facades |
+| [024](docs/adr/ADR-024-wall-report-pdf.md) | Wall reports are PDFs rendered on the server |
+| [025](docs/adr/ADR-025-space-watch.md) | Screen site surroundings from Sentinel-2 and send alerts to the ground |
+| [026](docs/adr/ADR-026-diriyah-agent-workflow.md) | The Diriyah ten-step workflow, the unified glossary and role permissions |
+| [027](docs/adr/ADR-027-ingestion.md) | Bring photos in from site cameras, drones and bulk uploads |
+| [028](docs/adr/ADR-028-assistant.md) | «مساعد أثر», a staff chat that inspects files with skills and drafts audit files |
+| [029](docs/adr/ADR-029-own-model.md) | Athar's own damage model on Qwen3.5 |
+
+## Limitations
+
+- **Accuracy on real walls is not measured yet.** No detector has been scored against specialists on real Najdi walls, and the treatment catalog has not been reviewed by a conservator ([docs/10-damage-maps.md](docs/10-damage-maps.md)). The tools to measure it (`eval.score_maps`, the accuracy card) are ready.
+- **Sample satellite data in the demo.** An offline demo uses synthetic scenes with invented events. They are labelled as sample data and say nothing about the real sites.
+- **The own model is not trained.** The pipeline waits for approved maps; until then the hosted grid detector or manual drawing produce the maps.
+- **PDFs in the assistant are stored, not read.** They are listed as references in the audit file; the user summarises what matters in the chat.
+- **RTSP needs ffmpeg.** The API image does not include it, so only cameras with an HTTP snapshot URL work in the Docker deployment.
+- **One API process.** The schedulers (satellite scans, camera captures, the ingest worker, missions, retention, overdue reminders) run inside the API process. A second process would duplicate scheduled captures until a lease is added.
+- **The hosted model is still required in production.** Even with the own model as the wall detector, visitor agents, stories and the assistant use the hosted model, and `SADU_ENV=prod` requires its key.
+- **Visitor findings are not site-scoped.** Finding detail, pins and the visitor review queue are visible to every staff account with the right permission ([roles.md §5](docs/06-security/roles.md#5-نطاق-المواقع--site-scope)).
