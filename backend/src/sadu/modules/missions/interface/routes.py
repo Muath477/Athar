@@ -62,6 +62,8 @@ async def nearby_missions(
 ) -> list[MissionOut]:
     found: list[MissionOut] = []
     for site in await sites.find_sites_near(session, lat, lon, radius_m=300):
+        if not site.field_photography_permitted:
+            continue
         found.extend(mission_out(m) for m in await missions.list_missions(session, site_id=site.id))
     return found
 

@@ -32,7 +32,7 @@ Athar had a grid of cells with seven damage types, approval right after expert c
   - A map is now a list of elements: polygons, polylines or points in wall-relative coordinates.
   - Elements are measured in metres from the wall size: area, length and count.
   - Each element carries an optional class allowed by its type, a severity, a confidence and its source.
-  - The model still answers on the grid. Connected cells of one type become one element: a convex hull for areas, a path through cell centres for lines, and one point per cell for holes. The specialist then reshapes, adds or removes elements with the editor.
+  - The model still answers on the grid. Connected cells of one type become one element: the exact outline of the patch for areas, a path through cell centres for lines (diagonal neighbours count, so a stepped crack stays one line), and one point per cell for holes. The specialist then changes an element's type, severity or class, confirms it, deletes it, or draws a new one. Changing a shape means deleting it and drawing it again, so the log keeps both versions. Once elements are edited by hand, grid corrections are refused (409) so they cannot overwrite those edits.
 - **Edits.** Every element edit is logged with before, after, editor and time. The log is shown on the map and counted in the PDF.
 - **Treatment plans.** Plans are built per element. Each plan item lists the elements and reference cells it applies to ("where on the facade"). Lines and points use a nominal footprint (0.1 m band, 0.04 m² per hole) for material quantities, and the quantities are labelled as estimates.
 - **The ten steps.** They are computed from the map's state and shown on the map page with actor, state, output and criterion.

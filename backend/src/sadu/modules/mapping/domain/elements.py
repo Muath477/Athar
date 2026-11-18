@@ -1,6 +1,6 @@
 import itertools
 import math
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -81,7 +81,7 @@ def location_label(element: Element, grid: Grid) -> str:
 
 def elements_from_cells(cells: Iterable[MapCell], grid: Grid) -> tuple[Element, ...]:
     elements: list[Element] = []
-    for cluster in _clusters(cells):
+    for cluster in _clusters(cells, lambda t: entry_for(t).geometry is Geometry.LINE):
         damage_type = cluster[0].damage_type
         severity = max((c.severity for c in cluster), key=lambda s: s.rank)
         confidence = min((c.confidence for c in cluster), key=_CONFIDENCE_ORDER.index)
@@ -95,7 +95,7 @@ def elements_from_cells(cells: Iterable[MapCell], grid: Grid) -> tuple[Element, 
         elif geometry is Geometry.LINE:
             shapes = [_cell_path(refs, grid)]
         else:
-            shapes = [_hull([corner for ref in refs for corner in _corners(ref, grid)])]
+            shapes = [_outline(refs, grid)]
         for shape in shapes:
             elements.append(
                 Element(f"E{len(elements) + 1}", damage_type, shape, severity, confidence, source)
@@ -122,10 +122,13 @@ class EditResult:
     log: tuple[dict[str, object], ...] = field(default=())
 
 
-def apply_edits(elements: Sequence[Element], edits: Iterable[ElementEdit]) -> EditResult:
+def apply_edits(
+    elements: Sequence[Element], edits: Iterable[ElementEdit], used_ids: Iterable[str] = ()
+) -> EditResult:
     current = {e.id: e for e in elements}
     log: list[dict[str, object]] = []
-    next_number = max((int(e.id[1:]) for e in elements if e.id[1:].isdigit()), default=0) + 1
+    known = [*current, *used_ids]
+    next_number = max((int(i[1:]) for i in known if i[1:].isdigit()), default=0) + 1
     for edit in edits:
         if edit.action is EditAction.ADD:
             if edit.element is None:
@@ -144,6 +147,8 @@ def apply_edits(elements: Sequence[Element], edits: Iterable[ElementEdit]) -> Ed
             continue
         if edit.element is None:
             raise ValueError("An updated element needs its new shape")
+        if edit.element.geometry is not before.geometry:
+            raise ValueError("An update cannot change an element's geometry")
         after = _relabel(edit.element, before.id)
         current[before.id] = after
         log.append(
@@ -187,6 +192,8 @@ def element_from_json(item: dict[str, object]) -> Element:
 
 
 _CONFIDENCE_ORDER = (ModelConfidence.LOW, ModelConfidence.MEDIUM, ModelConfidence.HIGH)
+_FOUR = ((1, 0), (-1, 0), (0, 1), (0, -1))
+_EIGHT = (*_FOUR, (1, 1), (1, -1), (-1, 1), (-1, -1))
 
 
 def _relabel(element: Element, element_id: str) -> Element:
@@ -201,7 +208,7 @@ def _relabel(element: Element, element_id: str) -> Element:
     )
 
 
-def _clusters(cells: Iterable[MapCell]) -> list[list[MapCell]]:
+def _clusters(cells: Iterable[MapCell], diagonal: Callable[[DamageType], bool]) -> list[list[MapCell]]:
     by_ref = {cell.ref: cell for cell in cells}
     seen: set[CellRef] = set()
     clusters = []
@@ -209,12 +216,13 @@ def _clusters(cells: Iterable[MapCell]) -> list[list[MapCell]]:
         if ref in seen:
             continue
         damage_type = by_ref[ref].damage_type
+        steps = _EIGHT if diagonal(damage_type) else _FOUR
         stack, cluster = [ref], []
         seen.add(ref)
         while stack:
             current = stack.pop()
             cluster.append(by_ref[current])
-            for d_row, d_col in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            for d_row, d_col in steps:
                 neighbour = CellRef(current.row + d_row, current.col + d_col)
                 cell = by_ref.get(neighbour)
                 if cell is not None and neighbour not in seen and cell.damage_type is damage_type:
@@ -228,51 +236,67 @@ def _centre(ref: CellRef, grid: Grid) -> Point:
     return (ref.col + 0.5) / grid.cols, (ref.row + 0.5) / grid.rows
 
 
-def _corners(ref: CellRef, grid: Grid) -> list[Point]:
-    x0, x1 = ref.col / grid.cols, (ref.col + 1) / grid.cols
-    y0, y1 = ref.row / grid.rows, (ref.row + 1) / grid.rows
-    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
-
-
 def _cell_path(refs: list[CellRef], grid: Grid) -> tuple[Point, ...]:
-    tall = (max(r.row for r in refs) - min(r.row for r in refs)) >= (
-        max(r.col for r in refs) - min(r.col for r in refs)
-    )
-    ordered = sorted(refs, key=lambda r: (r.row, r.col) if tall else (r.col, r.row))
-    path = [_centre(r, grid) for r in ordered]
+    rows = {r.row for r in refs}
+    cols = {r.col for r in refs}
+    tall = len(rows) >= len(cols)
+    if tall:
+        path = [
+            (
+                sum(r.col + 0.5 for r in refs if r.row == row)
+                / sum(1 for r in refs if r.row == row)
+                / grid.cols,
+                (row + 0.5) / grid.rows,
+            )
+            for row in sorted(rows)
+        ]
+    else:
+        path = [
+            (
+                (col + 0.5) / grid.cols,
+                sum(r.row + 0.5 for r in refs if r.col == col)
+                / sum(1 for r in refs if r.col == col)
+                / grid.rows,
+            )
+            for col in sorted(cols)
+        ]
     if len(path) == 1:
         x, y = path[0]
         half = 0.4 / grid.rows if tall else 0.4 / grid.cols
-        return (
-            ((x, max(0.0, y - half)), (x, min(1.0, y + half)))
-            if tall
-            else (
-                (max(0.0, x - half), y),
-                (min(1.0, x + half), y),
-            )
-        )
+        if tall:
+            return (x, max(0.0, y - half)), (x, min(1.0, y + half))
+        return (max(0.0, x - half), y), (min(1.0, x + half), y)
     return tuple(path)
 
 
-def _hull(points: list[Point]) -> tuple[Point, ...]:
-    unique = sorted(set(points))
-    if len(unique) < 3:
-        return tuple(unique)
+def _outline(refs: list[CellRef], grid: Grid) -> tuple[Point, ...]:
+    edges: set[tuple[tuple[int, int], tuple[int, int]]] = set()
+    for ref in refs:
+        x, y = ref.col, ref.row
+        corners = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+        for a, b in zip(corners, corners[1:] + corners[:1], strict=True):
+            if (b, a) in edges:
+                edges.remove((b, a))
+            else:
+                edges.add((a, b))
+    following = {a: b for a, b in edges}
+    loops: list[list[tuple[int, int]]] = []
+    unvisited = set(following)
+    while unvisited:
+        start = min(unvisited)
+        loop, point = [], start
+        while point in unvisited:
+            unvisited.remove(point)
+            loop.append(point)
+            point = following[point]
+        loops.append(loop)
+    outer = max(loops, key=lambda loop: abs(_polygon_area([(float(a), float(b)) for a, b in loop])))
+    corners = [p for i, p in enumerate(outer) if not _collinear(outer[i - 1], p, outer[(i + 1) % len(outer)])]
+    return tuple((x / grid.cols, y / grid.rows) for x, y in corners)
 
-    def cross(o: Point, a: Point, b: Point) -> float:
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
-    lower: list[Point] = []
-    for p in unique:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
-            lower.pop()
-        lower.append(p)
-    upper: list[Point] = []
-    for p in reversed(unique):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
-            upper.pop()
-        upper.append(p)
-    return tuple(lower[:-1] + upper[:-1])
+def _collinear(a: tuple[int, int], b: tuple[int, int], c: tuple[int, int]) -> bool:
+    return (b[0] - a[0]) * (c[1] - b[1]) == (b[1] - a[1]) * (c[0] - b[0])
 
 
 def _polygon_area(points: list[tuple[float, float]]) -> float:

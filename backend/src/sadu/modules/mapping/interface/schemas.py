@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -32,7 +32,9 @@ class CorrectionsIn(BaseModel):
 
 class ElementIn(BaseModel):
     damage_type: DamageType
-    points: list[list[float]] = Field(min_length=1, max_length=200)
+    points: list[Annotated[list[float], Field(min_length=2, max_length=2)]] = Field(
+        min_length=1, max_length=200
+    )
     severity: Severity = Severity.WATCH
     damage_class: str | None = Field(default=None, max_length=20)
 

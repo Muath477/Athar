@@ -139,3 +139,23 @@ def test_approval_waits_for_a_field_inspection():
     assert steps[8].state is StepState.BLOCKED
     inspected = workflow(WorkflowFacts(**{**facts.__dict__, "field_inspected": True}))
     assert inspected[8].state is StepState.WAITING
+
+
+def test_an_l_shaped_patch_keeps_its_exact_area():
+    patch = [cell(0, 0, DamageType.SALT_EFFLORESCENCE), cell(1, 0, DamageType.SALT_EFFLORESCENCE)]
+    patch.append(cell(1, 1, DamageType.SALT_EFFLORESCENCE))
+    [salt] = elements_from_cells(patch, GRID)
+    assert measure(salt, WALL).area_m2 == pytest.approx(6.0)
+
+
+def test_a_diagonal_crack_stays_one_line():
+    stair = [cell(0, 0, DamageType.CRACK), cell(1, 1, DamageType.CRACK), cell(2, 2, DamageType.CRACK)]
+    [crack] = elements_from_cells(stair, GRID)
+    assert len(crack.points) == 3
+
+
+def test_deleted_ids_are_never_handed_out_again():
+    original = elements_from_cells([cell(0, 0, DamageType.PLASTER_LOSS)], GRID)
+    added = element(DamageType.CAVITY, [(0.9, 0.9)], "small")
+    result = apply_edits(original, [ElementEdit(EditAction.ADD, None, added)], used_ids=["E1", "E2"])
+    assert [e.id for e in result.elements] == ["E1", "E3"]

@@ -314,6 +314,9 @@ async def test_expert_draws_glossary_elements_and_every_edit_is_logged(client, d
     assert (
         await client.post(f"/maps/{body['id']}/elements", json=edits, headers=inspector)
     ).status_code == 403
+    grid_fix = {"corrections": [{"cell": "A1", "damage_type": "none"}]}
+    stale = await client.post(f"/maps/{body['id']}/cells", json=grid_fix, headers=expert)
+    assert stale.status_code == 409 and "elements_already_edited" in stale.text
 
 
 async def test_low_confidence_elements_block_approval_until_the_specialist_confirms_them(client, detector):

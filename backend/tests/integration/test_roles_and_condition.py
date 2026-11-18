@@ -59,6 +59,9 @@ async def test_visitor_missions_need_the_sites_photography_permit(client, site_m
     refused = await client.post("/missions", json={"facade_id": other}, headers=expert)
     assert refused.status_code == 409 and refused.json()["code"] == "field_photography_not_permitted"
 
+    nearby = await client.get("/missions/nearby?lat=24.7136&lon=46.6753")
+    assert nearby.status_code == 200 and nearby.json() == []
+
 
 async def test_site_condition_summarises_every_wall_for_the_manager(client, detector, site_manager):
     detector.cells = [
@@ -77,8 +80,7 @@ async def test_site_condition_summarises_every_wall_for_the_manager(client, dete
     assert len(walls) == len(site["facades"])
     north = walls[facade_id]
     assert north["status"] == "draft" and north["urgent"] == 1 and north["elements"] == 2
-    assert condition["urgent"] == 1 and condition["awaiting_approval"] == 1
+    assert condition["urgent"] == 0 and condition["awaiting_approval"] == 1
     assert {w["status"] for fid, w in walls.items() if fid != facade_id} == {"not_surveyed"}
     assert condition["walls_due"] == len(site["facades"]) - 1
-    assert {t["damage_type"] for t in condition["totals"]} == {"basal_erosion", "crack"}
-    assert condition["materials"] == []
+    assert condition["totals"] == [] and condition["materials"] == []

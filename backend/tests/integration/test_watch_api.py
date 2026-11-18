@@ -167,21 +167,22 @@ async def test_failed_sites_are_retried_after_a_pause_not_a_week(app, client, st
         assert [str(s) for s in await watch.due_sites(session, week, now=later)] == [site["site_id"]]
 
 
-async def test_alerts_reach_specialists_and_stay_pending_until_acknowledged(app, client, notifier):
+async def test_alerts_reach_specialists_once_and_stay_pending_until_acknowledged(app, client, notifier):
     headers = await login(client, "inspector@example.org")
     [site] = (await client.get("/watch/sites")).json()["sites"]
     first = await scan(app, client, site["site_id"], headers)
-    second = await scan(app, client, site["site_id"], headers)
+    assert first["level"] == "urgent"
 
     overview = (await client.get("/watch/sites")).json()
     [ranked] = overview["sites"]
-    assert ranked["confidence"] == "confirmed" and ranked["alert"] is True
-    assert {(t["threat"], t["zone"]) for t in ranked["confirmed_threats"]} >= {("water", "inside")}
+    assert ranked["alert"] is True and ranked["confidence"] == "first_sighting"
     assert overview["alerts_pending"] == 1
-    assert len(notifier.messages) == 2 if first["level"] == "urgent" else len(notifier.messages) == 1
-    message = notifier.messages[-1]
+    [message] = notifier.messages
     assert message.link == f"https://athar.test/dashboard/watch/{site['site_id']}"
     assert "مياه راكدة" in message.threats_ar
+
+    second = await scan(app, client, site["site_id"], headers)
+    assert len(notifier.messages) == 1
 
     expert = await login(client, "expert@example.org")
     await client.post(f"/watch/scans/{second['id']}/acknowledge", headers=expert)

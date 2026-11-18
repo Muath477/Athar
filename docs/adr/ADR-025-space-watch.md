@@ -38,8 +38,9 @@ The Heritage Commission challenge asks how heritage can be seen from space. Fiel
 - **Schedule.** Scans run in a background queue (two at a time, one per site), outside any database transaction while imagery is read. "Scan now" returns 202 and the dashboard polls. A loop queues sites whose last completed scan is older than `SADU_WATCH_INTERVAL_H` (default weekly), and retries a failed scan after 6 hours. Setting the interval to 0 turns the loop off.
 - **Failures.** A scan that could not reach the imagery or had too few clear looks is stored, but the ranking and the site page keep showing the last completed scan and mention the failed attempt next to it.
 - **Early warning.**
-  - A moderate change becomes an alert only when the same threat in the same zone shows on two consecutive completed scans. An urgent change alerts at once.
-  - The dashboard shows whether a change is confirmed or a first sighting, and the trend since the previous scan (rising, steady or falling, in steps of 10 points).
+  - A moderate change becomes an alert only when the same threat in the same zone shows on two completed scans whose recent windows end at least 5 days apart, so that a rescan of the same imagery never counts as confirmation. Sentinel-2 revisits every 5 days. An urgent change alerts at once.
+  - Specialists get one notice when a site starts alerting, not one per scan while the alert stands.
+  - The dashboard shows whether a change is confirmed or a first sighting, and the trend since the previous independent scan (rising, steady or falling, in steps of 10 points).
   - Alerts count as pending until an expert acknowledges them.
   - If `SADU_ALERT_WEBHOOK_URL` is set (HTTPS only), each alert is posted there with an Arabic summary and a link to the site page. This suits a Slack or Teams channel, or a ticketing system. A failing webhook is logged and never breaks the scan.
 - **Evidence.**

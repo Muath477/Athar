@@ -29,6 +29,7 @@ class WallConditionOut(BaseModel):
     damaged_area_m2: float
     needs_specialist: bool
     survey_due: bool
+    pending_draft_id: str | None
 
 
 class TypeTotalOut(BaseModel):
@@ -88,6 +89,7 @@ async def site_condition(site_id: UUID, _: Staff, session: Session, state: State
                 damaged_area_m2=w.damaged_area_m2,
                 needs_specialist=w.needs_specialist,
                 survey_due=w.survey_due,
+                pending_draft_id=str(w.pending_draft) if w.pending_draft else None,
             )
             for w in condition.walls
         ],

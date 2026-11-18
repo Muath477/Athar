@@ -27,6 +27,7 @@ class WallCondition:
     damaged_area_m2: float
     needs_specialist: bool
     survey_due: bool
+    pending_draft: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -55,7 +56,7 @@ class SiteCondition:
 
     @property
     def urgent(self) -> int:
-        return sum(w.urgent for w in self.walls)
+        return sum(w.urgent for w in self.walls if w.status == mapping.MapStatus.APPROVED)
 
     @property
     def walls_due(self) -> int:
@@ -63,7 +64,7 @@ class SiteCondition:
 
     @property
     def awaiting_approval(self) -> int:
-        return sum(1 for w in self.walls if w.status == mapping.MapStatus.DRAFT)
+        return sum(1 for w in self.walls if w.status == mapping.MapStatus.DRAFT or w.pending_draft)
 
 
 async def site_condition(
@@ -71,9 +72,12 @@ async def site_condition(
 ) -> SiteCondition:
     site = await sites.get_site(session, site_id)
     latest: dict[str, mapping.MapSummary] = {}
-    for summary in await mapping.list_maps(session, site_id=site_id):
+    approved: dict[str, mapping.MapSummary] = {}
+    for summary in await mapping.list_maps(session, site_id=site_id, limit=None):
         key = str(summary.facade_id) if summary.facade_id else summary.wall_name
         latest.setdefault(key, summary)
+        if summary.status is mapping.MapStatus.APPROVED:
+            approved.setdefault(key, summary)
 
     walls: list[WallCondition] = []
     totals: dict[str, list[float]] = defaultdict(lambda: [0, 0.0, 0])
@@ -81,19 +85,21 @@ async def site_condition(
     for facade in await sites.list_facades(session, site_id):
         if str(facade.id) not in latest:
             walls.append(_unsurveyed(facade))
-    for summary in latest.values():
-        view = await mapping.get_map(session, summary.id)
+    for key, summary in latest.items():
+        record = approved.get(key, summary)
+        view = await mapping.get_map(session, record.id)
         plan = mapping.treatment_plan(view, catalog)
-        walls.append(_wall(view, plan, now))
+        walls.append(_wall(view, plan, now, pending_draft=summary.id if summary.id != record.id else None))
+        if view.status is not mapping.MapStatus.APPROVED:
+            continue
         for element in view.elements:
             total = totals[element.damage_type]
             total[0] += 1
             total[1] += mapping.measure(element, view.wall).footprint_m2
             total[2] += element.severity == "urgent"
-        if view.status is mapping.MapStatus.APPROVED:
-            for item in plan.items:
-                for need in item.materials:
-                    materials[(need.name_ar, need.unit_ar)] += need.quantity
+        for item in plan.items:
+            for need in item.materials:
+                materials[(need.name_ar, need.unit_ar)] += need.quantity
 
     return SiteCondition(
         site=site,
@@ -126,7 +132,9 @@ def _unsurveyed(facade: sites.FacadeView) -> WallCondition:
     )
 
 
-def _wall(view: mapping.MapView, plan: treatments.TreatmentPlan, now: datetime) -> WallCondition:
+def _wall(
+    view: mapping.MapView, plan: treatments.TreatmentPlan, now: datetime, *, pending_draft: UUID | None
+) -> WallCondition:
     return WallCondition(
         name_ar=view.wall_name,
         facade_id=view.facade_id,
@@ -141,4 +149,5 @@ def _wall(view: mapping.MapView, plan: treatments.TreatmentPlan, now: datetime) 
         damaged_area_m2=view.damaged_area_m2,
         needs_specialist=plan.needs_specialist,
         survey_due=now - view.created_at > SURVEY_DUE_AFTER,
+        pending_draft=pending_draft,
     )

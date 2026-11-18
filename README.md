@@ -76,7 +76,7 @@ The map page shows the authority's ten steps with their state, output and criter
   - Cracks (with width class) and rain gullies are drawn as lines.
   - Holes and burrows are points.
   - All are measured in metres from the wall size.
-- **Editing:** the model proposes elements from the grid. The specialist reshapes, adds or deletes them with the editor, and every change goes into the correction log.
+- **Editing:** the model proposes elements from the grid. The specialist changes their type, severity or class, confirms, deletes, or draws new ones (with the mouse, or with arrow keys and Space), and every change goes into the correction log.
 - **Approval:** a map is approved only after a recorded field inspection, and only when no low-confidence model element is left unreviewed.
 - **Roles:**
   - The field surveyor photographs and scans.

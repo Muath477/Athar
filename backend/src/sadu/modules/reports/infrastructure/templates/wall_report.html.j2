@@ -109,7 +109,7 @@
     {% endfor %}
     </tbody>
   </table>
-  <p class="meta">يحمل كل عنصر رقم الجدار وتاريخ المسح ومعدّه ودرجة شدته. سجل التصحيحات: {{ digits(r.corrections_logged) }} تعديل.{% if r.field_notes %} ملاحظات الفحص الميداني: {{ r.field_notes }}{% endif %}</p>
+  <p class="meta">يحمل كل عنصر رقم الجدار وتاريخ المسح ومصدره (النموذج أو المختص) ودرجة شدته، ويُحفظ اسم المحرر في سجل التصحيحات. سجل التصحيحات: {{ digits(r.corrections_logged) }} تعديل.{% if r.field_notes %} ملاحظات الفحص الميداني: {{ r.field_notes }}{% endif %}</p>
   {% else %}
   <p>لا يظهر في هذا المخطط تلف على الجدار.</p>
   {% endif %}

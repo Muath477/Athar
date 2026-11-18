@@ -77,7 +77,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             Actor.AGENT,
             Criterion.ACCURACY,
             StepState.DONE,
-            f"{_ar(facts.elements)} عنصر تلف مصنف من المسرد",
+            f"عناصر تلف مصنفة من المسرد: {_ar(facts.elements)}",
         ),
         Step(
             4,
@@ -86,7 +86,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             Actor.AGENT,
             Criterion.REVIEWABILITY,
             StepState.FLAGGED if facts.low_confidence else StepState.DONE,
-            f"{_ar(facts.low_confidence)} عنصر منخفض الثقة ينتظر المختص"
+            f"عناصر منخفضة الثقة تنتظر المختص: {_ar(facts.low_confidence)}"
             if facts.low_confidence
             else "كل العناصر بثقة كافية",
         ),
@@ -97,7 +97,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             Actor.AGENT,
             Criterion.ACCURACY,
             StepState.FLAGGED if facts.treatments_unmatched else StepState.DONE,
-            f"{_ar(facts.treatments_matched)} معالجة من المكتبة المعتمدة"
+            f"معالجات من المكتبة المعتمدة: {_ar(facts.treatments_matched)}"
             + (
                 f"، و{_ar(facts.treatments_unmatched)} بلا معالجة في المكتبة"
                 if facts.treatments_unmatched
@@ -111,7 +111,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             Actor.AGENT,
             Criterion.ACCURACY,
             StepState.DONE,
-            f"{_ar(facts.material_lines)} بند مواد مرتبط بمواقع التلف",
+            f"بنود مواد مرتبطة بمواقع التلف: {_ar(facts.material_lines)}",
         ),
         Step(
             7,
@@ -129,7 +129,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             Actor.SPECIALIST,
             Criterion.REVIEWABILITY,
             review_state,
-            f"{_ar(facts.corrections)} تصحيح محفوظ في السجل",
+            f"تصحيحات محفوظة في السجل: {_ar(facts.corrections)}",
         ),
         Step(
             9,

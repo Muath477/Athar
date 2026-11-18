@@ -22,7 +22,7 @@ from sadu.modules.watch.application.screening import BUFFER_M, Periods, Screenin
 from sadu.modules.watch.domain.change import THREAT_COLORS, ChangeRules, Signal, Threat, Zone
 from sadu.modules.watch.domain.geometry import LatLon, window_for
 from sadu.modules.watch.domain.risk import Risk, RiskLevel, priority
-from sadu.modules.watch.domain.warning import Confidence, Reading, Trend, Warning, warn
+from sadu.modules.watch.domain.warning import Confidence, Reading, Trend, Warning, needs_notice, warn
 from sadu.modules.watch.infrastructure.disabled_source import DisabledSceneSource
 from sadu.modules.watch.infrastructure.earth_search import EarthSearchSceneSource
 from sadu.modules.watch.infrastructure.evidence import render
@@ -152,12 +152,20 @@ def build_notifier(settings: Settings) -> AlertNotifier:
 
 
 def site_warning(history: list[ScanView]) -> Warning | None:
-    readings = [
-        Reading(scan.score, scan.level, frozenset((s.threat, s.zone) for s in scan.signals))
+    return warn(_readings(history))
+
+
+def _readings(history: list[ScanView]) -> list[Reading]:
+    return [
+        Reading(
+            scan.score,
+            scan.level,
+            frozenset((s.threat, s.zone) for s in scan.signals),
+            scan.periods.recent_end,
+        )
         for scan in history
         if scan.status is ScanStatus.OK
     ]
-    return warn(readings)
 
 
 def build_scene_source(settings: Settings) -> SceneSource:
@@ -235,8 +243,9 @@ class ScanQueue:
     async def _warn(self, site_id: UUID, scan: ScanView) -> None:
         async with self._unit_of_work() as session:
             site = await sites.get_site(session, site_id)
-            warning = site_warning(await site_scans(session, site_id, limit=RECENT_SCANS))
-        if warning is None or not warning.alert:
+            history = await site_scans(session, site_id, limit=RECENT_SCANS)
+        warning = site_warning(history)
+        if warning is None or not needs_notice(_readings(history)):
             return
         await self._notifier.notify(
             AlertMessage(

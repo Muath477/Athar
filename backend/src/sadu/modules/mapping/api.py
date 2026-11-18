@@ -162,7 +162,6 @@ class MapView:
     created_at: datetime
     approved_at: datetime | None
     elements: tuple[Element, ...] = ()
-    model_elements: tuple[Element, ...] = ()
     elements_edited: bool = False
     correction_log: tuple[dict[str, Any], ...] = ()
     field_inspected_at: datetime | None = None
@@ -285,7 +284,11 @@ async def get_map(session: AsyncSession, map_id: UUID) -> MapView:
 
 
 async def list_maps(
-    session: AsyncSession, *, site_id: UUID | None = None, facade_id: UUID | None = None
+    session: AsyncSession,
+    *,
+    site_id: UUID | None = None,
+    facade_id: UUID | None = None,
+    limit: int | None = DEFAULT_LIST_LIMIT,
 ) -> list[MapSummary]:
     damaged = (
         select(
@@ -300,7 +303,7 @@ async def list_maps(
         select(DamageMapRow, func.coalesce(damaged.c.damaged, 0), func.coalesce(damaged.c.urgent, 0))
         .outerjoin(damaged, damaged.c.map_id == DamageMapRow.id)
         .order_by(DamageMapRow.created_at.desc())
-        .limit(DEFAULT_LIST_LIMIT)
+        .limit(limit)
     )
     if site_id is not None:
         query = query.where(DamageMapRow.site_id == site_id)
@@ -314,8 +317,10 @@ async def list_maps(
             wall_name=row.wall_name,
             status=MapStatus(row.status),
             detector_status=DetectorStatus(row.detector_status),
-            damaged_cells=int(count),
-            urgent_cells=int(urgent),
+            damaged_cells=len(row.elements) if row.elements else int(count),
+            urgent_cells=sum(1 for e in row.elements if e.get("severity") == Severity.URGENT)
+            if row.elements
+            else int(urgent),
             total_cells=row.rows * row.cols,
             rectified_key=row.rectified_key,
             created_at=row.created_at,
@@ -328,6 +333,8 @@ async def correct_cells(
     session: AsyncSession, map_id: UUID, corrections: Iterable[CellCorrection]
 ) -> MapView:
     row = await _draft_row(session, map_id)
+    if row.elements_edited:
+        raise Conflict("elements_already_edited")
     grid = Grid(row.rows, row.cols)
     try:
         cells = apply_corrections(await _cells(session, map_id), corrections, grid)
@@ -348,7 +355,8 @@ async def edit_elements(
     cells = await _cells(session, map_id)
     current = _view(row, cells).elements
     try:
-        result = apply_edits(current, edits)
+        used = [str(entry.get("element_id", "")) for entry in row.correction_log]
+        result = apply_edits(current, edits, used)
     except ValueError as error:
         raise SaduError("validation_failed", status=422) from error
     stamp = {"at": datetime.now(UTC).isoformat(), "by": str(editor_id)}
@@ -547,7 +555,6 @@ def _view(row: DamageMapRow, cells: tuple[MapCell, ...]) -> MapView:
         created_at=row.created_at,
         approved_at=row.approved_at,
         elements=_elements(row, cells),
-        model_elements=elements_from_cells(_cells_from_json(row.model_cells), Grid(row.rows, row.cols)),
         elements_edited=bool(row.elements_edited),
         correction_log=tuple(row.correction_log or ()),
         field_inspected_at=row.field_inspected_at,
