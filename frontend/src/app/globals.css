@@ -36,3 +36,20 @@ body {
   outline: 3px solid var(--color-sadu);
   outline-offset: 2px;
 }
+
+@media print {
+  header,
+  .sadu-band,
+  .no-print {
+    display: none !important;
+  }
+
+  html {
+    background: white;
+  }
+
+  article,
+  figure {
+    break-inside: avoid;
+  }
+}

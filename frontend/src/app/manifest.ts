@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "سدو",
-    short_name: "سدو",
+    name: "أثر",
+    short_name: "أثر",
     description: "صوّر واجهة المبنى التراثي واسمع حكايته الموثقة.",
     lang: "ar",
     dir: "rtl",
