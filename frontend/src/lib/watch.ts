@@ -110,7 +110,7 @@ export const levelClass: Record<RiskLevel, string> = {
   unknown: "bg-clay/25 text-ink",
   stable: "bg-ink/10 text-ink",
   watch: "bg-watch text-ink",
-  moderate: "bg-moderate text-white",
+  moderate: "bg-moderate text-ink",
   urgent: "bg-urgent text-white",
 };
 

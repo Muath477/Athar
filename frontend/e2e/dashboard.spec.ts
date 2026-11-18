@@ -34,3 +34,28 @@ test("an expert maps a wall, approves it and downloads the PDF report", async ({
   const pdf = await readFile(await download.path());
   expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
 });
+
+test("an expert screens a Riyadh site from space and asks for a ground check", async ({ page }) => {
+  test.skip(!EXPERT_PASSWORD, "set E2E_EXPERT_PASSWORD to run the dashboard flow");
+
+  await page.goto("/dashboard/login");
+  await page.getByLabel("البريد الإلكتروني").fill(EXPERT_EMAIL);
+  await page.getByLabel("كلمة المرور").fill(EXPERT_PASSWORD);
+  await page.locator("form button").click();
+  await page.waitForURL("**/dashboard");
+
+  await page.goto("/dashboard/watch");
+  await expect(page.getByRole("heading", { name: "رصد محيط المواقع من الفضاء" })).toBeVisible();
+  await page.getByRole("link", { name: "قرية أشيقر التراثية" }).first().click();
+  await page.getByRole("button", { name: "افحص الآن" }).click();
+  await expect(page.getByText("مياه راكدة").first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("بيانات تجريبية", { exact: true })).toBeVisible();
+
+  await page.getByRole("tab", { name: "خريطة التغيّر" }).click();
+  await expect(page.getByRole("img", { name: /المناطق المتغيرة/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "اطلب تحققًا ميدانيًا" }).click();
+  await expect(page.getByRole("status")).toContainText("زيارة مفتش");
+  await page.getByRole("button", { name: "اعتمد أنك راجعت التنبيه" }).click();
+  await expect(page.getByRole("button", { name: "اعتمد أنك راجعت التنبيه" })).toHaveCount(0);
+});

@@ -94,6 +94,8 @@ jobs:
     needs: [backend, frontend]
     env:
       SADU_DAMAGE_DETECTOR: none
+      SADU_SCENE_SOURCE: sample
+      SADU_WATCH_INTERVAL_H: "0"
       E2E_EXPERT_EMAIL: e2e-expert@example.org
       E2E_EXPERT_PASSWORD: e2e-only-password-not-secret
     steps:
