@@ -18,7 +18,7 @@ from sadu.modules.verification import api as verification
 from sadu.shared.adapters.azure_speech import NoSpeech
 from sadu.shared.errors import NotFound
 from tests.fakes import FakeLLM
-from tests.integration.conftest import DIRIYAH_PACK_DIR, PACK_DIR
+from tests.integration.conftest import PACK_DIR, RIYADH_PACK_DIR
 
 
 def scripted_model(confidence: str = "high"):
@@ -196,7 +196,7 @@ async def test_forgetting_a_visitor_removes_their_plain_photos(session, store, d
 
 
 async def test_site_without_facades_stamps_the_passport_without_the_model(session, store, runner_for):
-    await sites.import_region_pack(session, store, DIRIYAH_PACK_DIR)
+    await sites.import_region_pack(session, store, RIYADH_PACK_DIR)
     turaif = await sites.get_site_by_slug(session, "at-turaif")
     passport_id, _ = await passport.create(session)
     meta = capture.CaptureMeta(

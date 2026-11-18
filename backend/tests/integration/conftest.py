@@ -16,7 +16,7 @@ from sadu.shared.web import UnitOfWork
 from tests.fakes import MemoryStore
 
 PACK_DIR = Path(__file__).resolve().parents[3] / "region-packs" / "demo"
-DIRIYAH_PACK_DIR = PACK_DIR.parent / "diriyah"
+RIYADH_PACK_DIR = PACK_DIR.parent / "riyadh"
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:

@@ -10,7 +10,7 @@ The 3D view and directions need only a site's location and boundary, but the reg
 ## Decision
 
 - `facade_map_file` and `baselines` are optional in a pack. Baselines without a facade map are rejected.
-- `region-packs/diriyah` adds At-Turaif District at UNESCO's coordinates. Its boundary is a circle with UNESCO's 28.78 ha area, marked as an approximation in the pack's README.
+- `region-packs/riyadh` (formerly `region-packs/diriyah`) adds At-Turaif District at UNESCO's coordinates. Its boundary is a circle with UNESCO's 28.78 ha area, marked as an approximation in the pack's README. The pack now holds ten more Riyadh-region sites on the same terms ([ADR-025](ADR-025-space-watch.md)).
 - When a visitor photographs a site that has no facades, the plan is guide only, without calling the model: the observation is linked to the site, the passport is stamped, and the result links to the site page. No damage comparison runs.
 - The site page hides the facade model when there are no facades.
 

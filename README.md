@@ -539,7 +539,7 @@ docker compose up --build     # first build takes a few minutes
 | Wall damage maps | http://localhost:3000/dashboard/maps |
 | API docs | http://localhost:8000/api/docs |
 
-The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/diriyah` holds At-Turaif District at UNESCO's coordinates, with an approximate boundary and no facades yet, so the 3D view and directions point at Diriyah ([details](region-packs/diriyah/README.md)). Create a dashboard account with:
+The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/riyadh` holds eleven heritage sites in the Riyadh region, including At-Turaif and Al-Faw at their cited coordinates, with approximate boundaries and no facades yet, so the 3D view, directions and satellite screening cover them ([details](region-packs/riyadh/README.md)). Create a dashboard account with:
 
 ```bash
 docker compose run --rm -e SADU_NEW_USER_PASSWORD='choose-12-chars-or-more' api \

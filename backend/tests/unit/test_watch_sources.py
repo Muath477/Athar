@@ -225,3 +225,35 @@ async def test_sample_events_are_found_by_the_detector(tmp_path, threat, east_m,
     assert strongest is not None
     assert (strongest.threat, strongest.zone) == (threat, zone)
     assert screening.risk.level is not RiskLevel.STABLE
+
+
+RIYADH_PACK = Path(__file__).resolve().parents[3] / "region-packs" / "riyadh"
+
+
+def pack_area(site: dict) -> WatchArea:
+    centre = LatLon(site["location"][1], site["location"][0])
+    boundary = [LatLon(lat, lon) for lon, lat in site["boundary"]]
+    return WatchArea(uuid4(), site["slug"], centre, boundary, window_for(boundary, centre, BUFFER_M))
+
+
+def test_riyadh_pack_marks_both_world_heritage_properties():
+    sites = json.loads((RIYADH_PACK / "pack.json").read_text(encoding="utf-8"))["sites"]
+    assert len(sites) == 11
+    assert {s["slug"] for s in sites if s["building_type"] == "world_heritage"} == {"at-turaif", "al-faw"}
+    for site in sites:
+        lon, lat = site["location"]
+        assert 19 < lat < 27.5 and 42 < lon < 48.5
+
+
+async def test_every_riyadh_sample_event_is_found_where_it_was_placed():
+    sites = {
+        s["slug"]: s for s in json.loads((RIYADH_PACK / "pack.json").read_text(encoding="utf-8"))["sites"]
+    }
+    events_path = RIYADH_PACK / "sample-events.json"
+    events = json.loads(events_path.read_text(encoding="utf-8"))["events"]
+    source = SampleSceneSource(events_path)
+    for slug, [event] in events.items():
+        screening = await screen(source, pack_area(sites[slug]), date(2026, 11, 18), ChangeRules())
+        strongest = screening.report.strongest()
+        assert strongest is not None, slug
+        assert strongest.threat == Threat(event["threat"]), slug
