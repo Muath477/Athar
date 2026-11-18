@@ -28,6 +28,14 @@ async def test_sites_are_found_by_distance(session, demo):
     assert demo.site.id not in {s.id for s in far}
 
 
+async def test_site_carries_its_location_and_boundary(session, demo):
+    site = await sites.get_site(session, demo.site.id)
+    assert site.location == sites.LatLon(lat=pytest.approx(24.7136), lon=pytest.approx(46.6753))
+    assert len(site.boundary) == 5
+    assert site.boundary[0] == site.boundary[-1]
+    assert all(24.7132 < p.lat < 24.7140 and 46.6749 < p.lon < 46.6757 for p in site.boundary)
+
+
 def photo_bytes(name: str) -> bytes:
     return (PACK_DIR / "test-photos" / name).read_bytes()
 

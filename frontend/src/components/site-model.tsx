@@ -14,12 +14,12 @@ const SEVERITY_COLOR: Record<Finding["severity"], string> = {
 
 type Props = {
   facades: Facade[];
-  findings: Finding[];
-  selectedId: string | null;
-  onSelect: (findingId: string) => void;
+  findings?: Finding[];
+  selectedId?: string | null;
+  onSelect?: (findingId: string) => void;
 };
 
-export function SiteModel({ facades, findings, selectedId, onSelect }: Props) {
+export function SiteModel({ facades, findings = [], selectedId = null, onSelect }: Props) {
   return (
     <Canvas camera={{ position: [14, 9, 14], fov: 45 }} className="rounded-xl bg-[#d9c7aa]">
       <ambientLight intensity={0.7} />
@@ -35,7 +35,7 @@ export function SiteModel({ facades, findings, selectedId, onSelect }: Props) {
           position={finding.pin_xyz as [number, number, number]}
           onClick={(event) => {
             event.stopPropagation();
-            onSelect(finding.id);
+            onSelect?.(finding.id);
           }}
         >
           <sphereGeometry args={[finding.id === selectedId ? 0.32 : 0.22, 24, 24]} />

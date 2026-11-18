@@ -15,6 +15,6 @@ Athar (أثر) turns many visitors' photos into one living picture of each herit
 | 9 · Verification evidence and demo script | [09-verification-and-demo.md](09-verification-and-demo.md) |
 | 10 · Wall damage maps (Diriyah challenge) | [10-damage-maps.md](10-damage-maps.md) |
 | 11 · UML and structure | [11-uml.md](11-uml.md) |
-| Decisions | [adr/](adr/) (ADR-001 to ADR-021) |
+| Decisions | [adr/](adr/) (ADR-001 to ADR-022) |
 
 CI renders every Mermaid diagram with mermaid-cli 12.0.1 on each push.

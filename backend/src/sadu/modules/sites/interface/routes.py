@@ -22,6 +22,11 @@ class FacadeOut(BaseModel):
     default_camera: dict[str, Any]
 
 
+class LatLonOut(BaseModel):
+    lat: float
+    lon: float
+
+
 class SiteOut(BaseModel):
     id: str
     slug: str
@@ -29,6 +34,8 @@ class SiteOut(BaseModel):
     name_en: str
     building_type: str
     model_url: str | None
+    location: LatLonOut
+    boundary: list[LatLonOut]
     facades: list[FacadeOut]
 
 
@@ -41,6 +48,8 @@ async def site_out(session: Session, state: State, site: sites.SiteView) -> Site
         name_en=site.name_en,
         building_type=site.building_type,
         model_url=state.store.presigned_url(site.model_key) if site.model_key else None,
+        location=LatLonOut(lat=site.location.lat, lon=site.location.lon),
+        boundary=[LatLonOut(lat=p.lat, lon=p.lon) for p in site.boundary],
         facades=[
             FacadeOut(
                 id=str(f.id),

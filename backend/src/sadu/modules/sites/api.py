@@ -1,10 +1,12 @@
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from geoalchemy2.functions import ST_DWithin, ST_GeogFromText
-from sqlalchemy import select
+from geoalchemy2 import Geometry
+from geoalchemy2.functions import ST_X, ST_Y, ST_AsGeoJSON, ST_DWithin, ST_GeogFromText
+from sqlalchemy import Row, Select, cast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.sites.domain.geometry import FacadePlane, Vec3, image_point_to_uv
@@ -17,6 +19,12 @@ DEFAULT_SEARCH_RADIUS_M = 200
 
 
 @dataclass(frozen=True)
+class LatLon:
+    lat: float
+    lon: float
+
+
+@dataclass(frozen=True)
 class SiteView:
     id: UUID
     slug: str
@@ -24,6 +32,8 @@ class SiteView:
     name_en: str
     building_type: str
     model_key: str | None
+    location: LatLon
+    boundary: list[LatLon]
 
 
 @dataclass(frozen=True)
@@ -62,27 +72,21 @@ async def find_sites_near(
     session: AsyncSession, lat: float, lon: float, radius_m: int = DEFAULT_SEARCH_RADIUS_M
 ) -> list[SiteView]:
     point = ST_GeogFromText(f"SRID=4326;POINT({float(lon)} {float(lat)})")
-    rows = await session.scalars(select(SiteRow).where(ST_DWithin(SiteRow.boundary, point, radius_m)))
+    rows = await session.execute(_select_sites().where(ST_DWithin(SiteRow.boundary, point, radius_m)))
     return [_site_view(row) for row in rows]
 
 
 async def list_sites(session: AsyncSession) -> list[SiteView]:
-    rows = await session.scalars(select(SiteRow).order_by(SiteRow.slug))
+    rows = await session.execute(_select_sites().order_by(SiteRow.slug))
     return [_site_view(row) for row in rows]
 
 
 async def get_site(session: AsyncSession, site_id: UUID) -> SiteView:
-    row = await session.get(SiteRow, site_id)
-    if row is None:
-        raise NotFound("not_found")
-    return _site_view(row)
+    return await _one_site(session, _select_sites().where(SiteRow.id == site_id))
 
 
 async def get_site_by_slug(session: AsyncSession, slug: str) -> SiteView:
-    row = await session.scalar(select(SiteRow).where(SiteRow.slug == slug))
-    if row is None:
-        raise NotFound("not_found")
-    return _site_view(row)
+    return await _one_site(session, _select_sites().where(SiteRow.slug == slug))
 
 
 async def list_facades(session: AsyncSession, site_id: UUID) -> list[FacadeView]:
@@ -115,8 +119,31 @@ async def import_region_pack(session: AsyncSession, store: ObjectStore, pack_dir
     return await pack_import.import_pack(session, store, pack_dir)
 
 
-def _site_view(row: SiteRow) -> SiteView:
-    return SiteView(row.id, row.slug, row.name_ar, row.name_en, row.building_type, row.model_key)
+def _select_sites() -> Select[SiteRow, float, float, str]:
+    location = cast(SiteRow.location, Geometry)
+    return select(SiteRow, ST_Y(location), ST_X(location), ST_AsGeoJSON(SiteRow.boundary))
+
+
+async def _one_site(session: AsyncSession, query: Select[SiteRow, float, float, str]) -> SiteView:
+    row = (await session.execute(query)).one_or_none()
+    if row is None:
+        raise NotFound("not_found")
+    return _site_view(row)
+
+
+def _site_view(row: Row[SiteRow, float, float, str]) -> SiteView:
+    site, lat, lon, boundary_geojson = row
+    ring = json.loads(boundary_geojson)["coordinates"][0]
+    return SiteView(
+        site.id,
+        site.slug,
+        site.name_ar,
+        site.name_en,
+        site.building_type,
+        site.model_key,
+        LatLon(float(lat), float(lon)),
+        [LatLon(float(point[1]), float(point[0])) for point in ring],
+    )
 
 
 def _facade_view(row: FacadeRow) -> FacadeView:

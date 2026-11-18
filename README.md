@@ -41,7 +41,7 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate De
 | Conservation experts | A damage map of each wall from one photo: seven damage types (crack, plaster loss, moisture, basal erosion, surface erosion, partial collapse, graffiti), colour by type, strength by severity. They paint corrections with a brush and approve. |
 | Site managers | A treatment plan per map: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. Each new map lists what changed since the last approved one. |
 | The authority | Model accuracy measured against expert decisions, cell by cell, so nobody has to take the model's word for it. |
-| Visitors | A verified story of the place read aloud in Arabic and a passport stamp. Their photos keep the condition record current. |
+| Visitors | A verified story of the place read aloud in Arabic and a passport stamp. A 3D view of the site on Google Maps, with walking or driving directions. Their photos keep the condition record current. |
 
 ## How it works
 
@@ -96,7 +96,8 @@ Every external call has a timeout, retries and a fallback; status updates stream
 | Speech | Azure AI Speech REST, `ar-SA-HamedNeural` | | Saudi Arabic voice for the visitor story |
 | Web | Next.js App Router, React, TypeScript strict, Tailwind CSS | 16.4.6 · 19.3 · 5 · 4.3 | Arabic RTL PWA and dashboard; each page keeps its own components |
 | 3D | three.js, React Three Fiber, drei | 0.187 · 9.8 · 10.7 | Facade pins on the site model |
-| Quality | pytest, ruff, mypy strict, import-linter, ESLint | 9.2 · 0.17 · 2.4 · 2.16 | 152 backend tests; module boundaries checked in CI |
+| Maps | Google Maps JavaScript API (3D Maps, Routes), `@vis.gl/react-google-maps` | 1.10.2 | The site in 3D with its boundary, an orbit, and a drawn route; directions open in Google Maps |
+| Quality | pytest, ruff, mypy strict, import-linter, ESLint | 9.2 · 0.17 · 2.4 · 2.16 | 153 backend tests; module boundaries checked in CI |
 | Security | gitleaks, pip-audit, npm audit, Semgrep, Trivy, Argon2id | | Scans on every push; hashed passwords and session tokens |
 | Ops | Docker Compose, Caddy, Sentry, structlog | 2.11.9 (Caddy) | One VM with automatic TLS, error reports, JSON logs |
 
@@ -559,6 +560,7 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
 | `SADU_DEMO_MODE` | `true` serves recorded model answers before calling the API | Live calls; recordings are still used if a call fails |
 | `SADU_DAILY_LLM_BUDGET_USD` | Daily spend cap, default 10 | Calls past the cap fail over to the fallbacks |
+| `GOOGLE_MAPS_API_KEY` | 3D site view and in-app routes (Maps JavaScript API with Map Tiles and Routes enabled; restrict it to your domain) | Visitors see the facade model; the Google Maps directions link still works |
 | `SENTRY_DSN_API` | Error reports | Errors are only in the logs |
 | `POSTGRES_PASSWORD`, `S3_*` | Change for anything public | Dev defaults |
 | `SADU_DOMAIN` | Production profile | `localhost` |
@@ -634,7 +636,7 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Verification and demo script | [docs/09-verification-and-demo.md](docs/09-verification-and-demo.md) |
 | Wall damage maps | [docs/10-damage-maps.md](docs/10-damage-maps.md) |
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
-| Decisions (ADR-001 to ADR-021) | [docs/adr/](docs/adr/) |
+| Decisions (ADR-001 to ADR-022) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 
