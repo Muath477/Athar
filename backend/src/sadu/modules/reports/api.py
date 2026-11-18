@@ -12,8 +12,10 @@ from sadu.modules.reports.application.exports import (
     condition_rows,
     element_rows,
 )
+from sadu.modules.reports.application.quality import quality_report
 from sadu.modules.reports.application.site_condition import SiteCondition, site_condition
 from sadu.modules.reports.domain.audit_report import AuditElement, AuditPhoto, AuditReport, AuditTreatment
+from sadu.modules.reports.domain.quality import EVIDENCE_TARGET, QualityReport, Ratio
 from sadu.modules.reports.domain.wall_report import WallReport
 from sadu.modules.reports.infrastructure.pdf import (
     audit_report_html,
@@ -28,15 +30,19 @@ from sadu.shared.storage import ObjectStore
 __all__ = [
     "CONDITION_HEADER",
     "ELEMENTS_HEADER",
+    "EVIDENCE_TARGET",
     "AuditElement",
     "AuditPhoto",
     "AuditReport",
     "AuditTreatment",
+    "QualityReport",
+    "Ratio",
     "SiteCondition",
     "WallReport",
     "audit_report_pdf",
     "condition_rows",
     "element_rows",
+    "quality_report",
     "site_condition",
     "site_condition_pdf",
     "wall_report",

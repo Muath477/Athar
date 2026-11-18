@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.admin import api as admin
@@ -79,6 +79,7 @@ __all__ = [
     "GLOSSARY",
     "MAP_DAMAGE_TYPES",
     "SEVERITY_OPACITY",
+    "ApprovalCounts",
     "CellChange",
     "CellCorrection",
     "CellRef",
@@ -581,6 +582,34 @@ async def announce_overdue_approvals(
         )
         notices.append(approval_overdue_notice(row.wall_name, waiting_days, _map_link(origin, row.id)))
     return notices
+
+
+@dataclass(frozen=True)
+class ApprovalCounts:
+    approved: int
+    approved_with_evidence: int
+    corrected_by_specialist: int
+
+
+async def approval_counts(session: AsyncSession) -> ApprovalCounts:
+    approved = DamageMapRow.status == MapStatus.APPROVED
+    with_evidence = and_(
+        approved,
+        DamageMapRow.approved_by.is_not(None),
+        DamageMapRow.field_inspected_at.is_not(None),
+        DamageMapRow.photo_key != "",
+        DamageMapRow.rectified_key != "",
+    )
+    row = (
+        await session.execute(
+            select(
+                func.count().filter(approved),
+                func.count().filter(with_evidence),
+                func.count().filter(approved, DamageMapRow.elements_edited.is_(True)),
+            )
+        )
+    ).one()
+    return ApprovalCounts(approved=row[0], approved_with_evidence=row[1], corrected_by_specialist=row[2])
 
 
 async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapScore:

@@ -341,3 +341,27 @@ async def test_low_confidence_elements_block_approval_until_the_specialist_confi
     confirmed = (await client.post(f"/maps/{body['id']}/elements", json=confirm, headers=expert)).json()
     assert not confirmed["elements"][0]["needs_review"]
     assert (await client.post(f"/maps/{body['id']}/approve", headers=expert)).json()["status"] == "approved"
+
+
+async def test_quality_report_counts_approved_maps_and_their_evidence(
+    client, detector, committed_unit_of_work
+):
+    async with committed_unit_of_work() as session:
+        await admin.create_user(session, "authority@example.org", LONG_TEST_PHRASE, admin.Role.AUTHORITY)
+    detector.cells = [("A1", DamageType.CRACK, Severity.MODERATE)]
+    inspector = await login(client, "inspector@example.org")
+    assert (await client.get("/reports/quality")).status_code == 403
+
+    created = await create_map(client, inspector, {"facade_id": await north_facade_id(client)})
+    map_id = created.json()["id"]
+    expert = await login(client, "expert@example.org")
+    await client.post(f"/maps/{map_id}/field-inspection", json={"notes": "زيارة"}, headers=expert)
+    await client.post(f"/maps/{map_id}/approve", headers=expert)
+
+    await login(client, "authority@example.org")
+    quality = await client.get("/reports/quality")
+    assert quality.status_code == 200, quality.text
+    body = quality.json()
+    assert body["maps_with_evidence"] == {"hits": 1, "total": 1, "value": 1.0}
+    assert body["maps_corrected_by_specialist"]["total"] == 1
+    assert body["every_report_has_evidence"] is True

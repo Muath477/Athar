@@ -22,6 +22,7 @@ import {
 } from "@/lib/governance";
 import { countAr } from "@/lib/plural";
 import { useMeState } from "@/lib/use-me";
+import { QualityCard } from "./quality-card";
 
 function momentAr(value: string): string {
   return new Date(value).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" });
@@ -95,6 +96,8 @@ export function AuditLog() {
           </a>
         )}
       </header>
+
+      <QualityCard />
 
       <form
         onSubmit={applyFilters}

@@ -27,11 +27,28 @@ export type AuditEntry = {
   request_id: string | null;
 };
 
-export type AuditPage = { entries: AuditEntry[]; total: number; page: number; page_size: number };
+export type AuditPage = {
+  entries: AuditEntry[];
+  total: number;
+  page: number;
+  page_size: number;
+};
 
-export type AuditFilters = { actor: string; action: string; target_type: string; from: string; to: string };
+export type AuditFilters = {
+  actor: string;
+  action: string;
+  target_type: string;
+  from: string;
+  to: string;
+};
 
-export const EMPTY_FILTERS: AuditFilters = { actor: "", action: "", target_type: "", from: "", to: "" };
+export const EMPTY_FILTERS: AuditFilters = {
+  actor: "",
+  action: "",
+  target_type: "",
+  from: "",
+  to: "",
+};
 
 export const permissionAr: Record<Permission, string> = {
   read: "الاطلاع على المواقع والمخططات",
@@ -153,19 +170,37 @@ export const listUsers = () => request<ManagedUser[]>("/admin/users");
 
 export const roleMatrix = () => request<RoleMatrixRow[]>("/auth/roles");
 
-export type NewUser = { email: string; display_name: string; role: Role; password: string; site_ids: string[] };
+export type NewUser = {
+  email: string;
+  display_name: string;
+  role: Role;
+  password: string;
+  site_ids: string[];
+};
 
 export const createUser = (user: NewUser) =>
-  request<ManagedUser>("/admin/users", { method: "POST", body: JSON.stringify(user) });
+  request<ManagedUser>("/admin/users", {
+    method: "POST",
+    body: JSON.stringify(user),
+  });
 
 export const changeRole = (id: string, role: Role) =>
-  request<ManagedUser>(`/admin/users/${id}/role`, { method: "POST", body: JSON.stringify({ role }) });
+  request<ManagedUser>(`/admin/users/${id}/role`, {
+    method: "POST",
+    body: JSON.stringify({ role }),
+  });
 
 export const assignSites = (id: string, siteIds: string[]) =>
-  request<ManagedUser>(`/admin/users/${id}/sites`, { method: "POST", body: JSON.stringify({ site_ids: siteIds }) });
+  request<ManagedUser>(`/admin/users/${id}/sites`, {
+    method: "POST",
+    body: JSON.stringify({ site_ids: siteIds }),
+  });
 
 export const setActive = (id: string, active: boolean) =>
-  request<ManagedUser>(`/admin/users/${id}/active`, { method: "POST", body: JSON.stringify({ active }) });
+  request<ManagedUser>(`/admin/users/${id}/active`, {
+    method: "POST",
+    body: JSON.stringify({ active }),
+  });
 
 export const resetPassword = (id: string, temporaryPassword: string) =>
   request<ManagedUser>(`/admin/users/${id}/password`, {
@@ -192,4 +227,25 @@ export const auditEntries: Forms = {
 
 export function seesEverySite(role: Role): boolean {
   return role === "admin" || role === "authority";
+}
+
+export type QualityRatio = {
+  hits: number;
+  total: number;
+  value: number | null;
+};
+
+export type QualityReport = {
+  findings_with_evidence: QualityRatio;
+  maps_with_evidence: QualityRatio;
+  photos_held_back: QualityRatio;
+  findings_held_for_specialist: QualityRatio;
+  specialist_rejections: QualityRatio;
+  maps_corrected_by_specialist: QualityRatio;
+  every_report_has_evidence: boolean | null;
+  evidence_target: number;
+};
+
+export function getQualityReport(): Promise<QualityReport> {
+  return request<QualityReport>("/reports/quality");
 }

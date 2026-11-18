@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import Exporter, Staff
+from sadu.modules.admin.interface.auth import AuditReader, Exporter, Staff
 from sadu.modules.mapping import api as mapping
 from sadu.modules.reports import api as reports
 from sadu.modules.treatments import api as treatments
@@ -62,6 +62,42 @@ class SiteConditionOut(BaseModel):
     walls: list[WallConditionOut]
     totals: list[TypeTotalOut]
     materials: list[MaterialTotalOut]
+
+
+class RatioOut(BaseModel):
+    hits: int
+    total: int
+    value: float | None
+
+
+class QualityOut(BaseModel):
+    findings_with_evidence: RatioOut
+    maps_with_evidence: RatioOut
+    photos_held_back: RatioOut
+    findings_held_for_specialist: RatioOut
+    specialist_rejections: RatioOut
+    maps_corrected_by_specialist: RatioOut
+    every_report_has_evidence: bool | None
+    evidence_target: float
+
+
+def _ratio_out(ratio: reports.Ratio) -> RatioOut:
+    return RatioOut(hits=ratio.hits, total=ratio.total, value=ratio.value)
+
+
+@router.get("/reports/quality")
+async def quality(_: AuditReader, session: Session) -> QualityOut:
+    report = await reports.quality_report(session)
+    return QualityOut(
+        findings_with_evidence=_ratio_out(report.findings_with_evidence),
+        maps_with_evidence=_ratio_out(report.maps_with_evidence),
+        photos_held_back=_ratio_out(report.photos_held_back),
+        findings_held_for_specialist=_ratio_out(report.findings_held_for_specialist),
+        specialist_rejections=_ratio_out(report.specialist_rejections),
+        maps_corrected_by_specialist=_ratio_out(report.maps_corrected_by_specialist),
+        every_report_has_evidence=report.every_report_has_evidence,
+        evidence_target=reports.EVIDENCE_TARGET,
+    )
 
 
 @router.get("/sites/{site_id}/condition")

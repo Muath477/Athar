@@ -224,3 +224,8 @@ def _request_hash(raw_photo: bytes, meta: CaptureMeta) -> str:
     digest = hashlib.sha256(raw_photo)
     digest.update(repr(sorted(vars(meta).items())).encode())
     return digest.hexdigest()
+
+
+async def outcome_counts(session: AsyncSession) -> dict[ObservationStatus, int]:
+    rows = await session.execute(select(ObservationRow.status, func.count()).group_by(ObservationRow.status))
+    return {ObservationStatus(status): count for status, count in rows.all()}
