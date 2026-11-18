@@ -19,6 +19,12 @@ class DetectorKind(StrEnum):
     NONE = "none"
 
 
+class SceneSourceKind(StrEnum):
+    EARTH_SEARCH = "earth_search"
+    SAMPLE = "sample"
+    NONE = "none"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -81,6 +87,17 @@ class Settings(BaseSettings):
     @property
     def is_prod(self) -> bool:
         return self.sadu_env is Environment.PROD
+
+    sadu_scene_source: SceneSourceKind = SceneSourceKind.EARTH_SEARCH
+    sadu_scene_search_url: str = "https://earth-search.aws.element84.com/v1/search"
+    sadu_watch_interval_h: int = Field(default=168, ge=0)
+    sadu_watch_sample_events: str = ""
+
+    @property
+    def watch_sample_events_path(self) -> Path:
+        if self.sadu_watch_sample_events:
+            return Path(self.sadu_watch_sample_events)
+        return Path(self.sadu_region_packs_dir) / "riyadh" / "sample-events.json"
 
     @property
     def treatment_catalog_path(self) -> Path:

@@ -5,7 +5,7 @@ import pytest
 from sadu.modules.capture import api as capture
 from sadu.modules.sites import api as sites
 from sadu.shared.errors import Conflict
-from tests.integration.conftest import DIRIYAH_PACK_DIR, PACK_DIR
+from tests.integration.conftest import PACK_DIR, RIYADH_PACK_DIR
 
 
 async def test_pack_import_creates_site_facades_and_baselines(session, store, demo):
@@ -78,7 +78,7 @@ async def test_location_is_dropped_once_the_facade_is_known(session, store, demo
 
 
 async def test_at_turaif_sits_at_the_unesco_point_with_an_area_sized_boundary(session, store):
-    await sites.import_region_pack(session, store, DIRIYAH_PACK_DIR)
+    await sites.import_region_pack(session, store, RIYADH_PACK_DIR)
     turaif = await sites.get_site_by_slug(session, "at-turaif")
     assert turaif.location == sites.LatLon(lat=pytest.approx(24.734133), lon=pytest.approx(46.572467))
     assert await sites.list_facades(session, turaif.id) == []

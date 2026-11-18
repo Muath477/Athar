@@ -7,6 +7,7 @@ from sadu.modules.passport.infrastructure import orm as passport_orm
 from sadu.modules.sites.infrastructure import orm as sites_orm
 from sadu.modules.stories.infrastructure import orm as stories_orm
 from sadu.modules.verification.infrastructure import orm as verification_orm
+from sadu.modules.watch.infrastructure import orm as watch_orm
 from sadu.shared.db import Base
 
 ALL_ORM_MODULES = (
@@ -19,5 +20,6 @@ ALL_ORM_MODULES = (
     sites_orm,
     stories_orm,
     verification_orm,
+    watch_orm,
 )
 metadata = Base.metadata

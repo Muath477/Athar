@@ -33,6 +33,7 @@ Rules: a module owns its tables and no other module reads them; other modules ca
 | **Passport** (`passport`) | passports, passport_entries; anonymous token handling, deletion | `create()`, `resolve(token)`, `record_entry(passport_id, site_id, obs_id)`, `summary(passport_id)`, `delete(passport_id)` | `PassportDeleted` | `FindingPublished` (contribution status) | none |
 | **Agents** (`agents`) | LangGraph checkpoints, agent run log; plans and routing | `start_run(obs_id)`, `resume(obs_id, value)`, `dispatch_missions(site_id)` | none | `ObservationReceived` | capture, sites, inspection, verification, stories, missions, passport |
 | **Reports** (`reports`) | PDFs. Built: the wall condition report (map on the rectified photo, damage totals, changes since the last approved map, treatment plan, materials, model agreement, sources), rendered with WeasyPrint. Round 2: site reports as jobs | `wall_report(session, store, map_id, catalog)`, `wall_report_pdf(report)` | none | none | mapping, treatments, sites |
+| **Space watch** (`watch`) | site_scans; Sentinel-2 composites, change classes (water, vegetation loss, construction, sand, earthworks), risk score, evidence images, scene source port (Earth Search, sample, none) ([ADR-025](adr/ADR-025-space-watch.md)) | `build_scene_source(settings)`, `ScanQueue(unit_of_work, store, source)`, `scan_site(unit_of_work, store, source, site_id)`, `site_scans(site_id)`, `rank_sites()`, `due_sites(interval)`, `acknowledge(scan_id, user)`, `request_ground_check(scan_id)` | none | none | sites, missions |
 | **Wall maps** (`mapping`) | damage_maps, damage_map_cells; wall rectification, grid, detector port (Claude or a ready model over HTTP), corrections, approval, change between maps, model accuracy against approved maps | `prepare_wall(photo, quad, wall, rows)`, `detect_damage(detector, prepared)`, `save_map(...)`, `get_map(id)`, `list_maps(...)`, `correct_cells(id, corrections)`, `approve_map(id, reviewer)`, `previous_approved(map)`, `treatment_plan(map, catalog)`, `accuracy(site_id?)` | none | none | sites, capture, treatments |
 | **Treatments** (`treatments`) | treatment catalog file (per damage type and severity, with materials per m², tools, steps and sources); planning by damaged area | `catalog_at(path)`, `plan_treatments(areas, catalog)` | none | none | none |
 | **Admin** (`admin`) | users, sessions, audit_log, llm_calls (cost counter) | `authenticate(...)`, `record_llm_call(...)`, `audit(...)`, `costs(...)` | none | `PassportDeleted` (audit) | none (other modules call it) |
@@ -58,6 +59,8 @@ flowchart TD
   reports --> sites
   reports --> mapping
   reports --> treatments
+  watch --> sites
+  watch --> missions
   mapping --> sites
   mapping --> capture
   mapping --> treatments
@@ -196,6 +199,10 @@ REST under `/api/v1`, documented by FastAPI's generated OpenAPI 3.1 at `/api/v1/
 | `GET /sites/{id}/coverage` | inspector+ | Days since last usable photo per facade, open missions. |
 | `POST /missions` · `GET /missions?site_id=` | inspector+ | Manual dispatch; list. |
 | `GET /maps/{id}/report.pdf` | inspector+ | Arabic A4 PDF of one wall map, drafts marked as drafts. 30 per user per hour. |
+| `GET /watch/sites` | inspector+ | Sites ranked by satellite risk with their latest scan, the scene source and whether it is sample data. |
+| `GET /watch/sites/{id}/scans` · `POST /watch/sites/{id}/scans` | inspector+ | Scan history; scan now as a background job, `202` (30 per user per hour, audited). |
+| `POST /watch/scans/{id}/ground-check` | inspector+ | Opens `satellite_alert` photo missions on the site's facades, or reports that an inspector visit is needed. `409 scan_has_no_alert`, `scan_superseded`. 30 per user per hour. |
+| `POST /watch/scans/{id}/acknowledge` | expert | Marks the alert as reviewed (audited). |
 | `POST /sites/{id}/reports` · `GET /reports/{id}` | inspector+ | Round 2: 202 + job; site-wide PDF when ready. |
 | `POST /maps` | inspector+ | Multipart: `photo` (or `meta.observation_id` to reuse a visitor photo), `meta` JSON (facade_id? or wall_name + width_m + height_m, corners? as four `[x, y]` in 0..1, clockwise from top-left). Returns `201` with the full map. `422 photo_unusable`, `invalid_corners`, `wall_size_required`. |
 | `GET /maps?site_id=&facade_id=` · `GET /maps/{id}` | inspector+ | Map list; one map with cells, treatment plan and changes since the previous approved map of the same wall. |

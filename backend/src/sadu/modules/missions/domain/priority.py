@@ -12,6 +12,7 @@ COVERAGE_MAX_AGE = timedelta(days=30)
 class MissionReason(StrEnum):
     CONFIRM_FINDING = "confirm_finding"
     COVERAGE_GAP = "coverage_gap"
+    SATELLITE_ALERT = "satellite_alert"
 
 
 @dataclass(frozen=True)

@@ -19,12 +19,28 @@ from sadu.modules.sites import api as sites
 from sadu.modules.verification import api as verification
 from sadu.shared.errors import Conflict, NotFound
 
+__all__ = [
+    "MissionReason",
+    "MissionStatus",
+    "MissionView",
+    "create_mission",
+    "expire_missions",
+    "fulfill",
+    "get_mission",
+    "list_missions",
+    "plan_missions",
+]
+
 MISSION_LIFETIME = timedelta(days=7)
 
 INSTRUCTIONS_AR = {
     MissionReason.CONFIRM_FINDING: "صوّر {facade} من الأمام مثل الصورة المرجعية، لنتأكد من ضرر رُصد سابقًا.",
     MissionReason.COVERAGE_GAP: "لم تُصوَّر {facade} منذ مدة. صوّرها من الأمام مثل الصورة المرجعية.",
+    MissionReason.SATELLITE_ALERT: (
+        "رصدت صور الأقمار الصناعية تغيّرًا حول المبنى. صوّر {facade} من الأمام لنعرف ما حدث."
+    ),
 }
+URGENT_REASONS = {MissionReason.CONFIRM_FINDING, MissionReason.SATELLITE_ALERT}
 
 
 class MissionStatus(StrEnum):
@@ -159,7 +175,7 @@ async def _open(
         status=MissionStatus.OPEN,
         instruction_ar=INSTRUCTIONS_AR[reason].format(facade=facade_name_ar),
         reference_baseline_id=baseline.id,
-        priority="high" if reason is MissionReason.CONFIRM_FINDING else "normal",
+        priority="high" if reason in URGENT_REASONS else "normal",
         expires_at=now + MISSION_LIFETIME,
     )
     session.add(row)

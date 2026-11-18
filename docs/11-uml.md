@@ -372,6 +372,38 @@ frontend/src/
   lib/                       API clients, labels, palette, hooks
 region-packs/
   demo/                      sites, facades, baselines, test photos
+  riyadh/                    eleven Riyadh-region heritage sites, sample satellite events
   treatments/                treatment catalog (draft)
 docs/                        scope, research, architecture, ADRs, UML
+```
+
+## 11. A satellite alert, from orbit to the wall
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Cron as Scan schedule
+  participant Watch as watch module
+  participant STAC as Earth Search STAC
+  participant COG as Sentinel-2 COGs (S3)
+  participant DB as Postgres
+  actor Inspector
+  participant Missions as missions module
+  actor Visitor
+
+  Cron->>Watch: due_sites(7 days), queue each
+  Watch->>STAC: per time slice, search sentinel-2-c1-l2a over the site, cloud < 40 %
+  STAC-->>Watch: items with asset hrefs
+  Watch->>COG: windowed GTiff reads, 6 bands + SCL
+  Watch->>Watch: median composites, z-score change, classify, score
+  Watch->>DB: site_scans row + before/after/change PNGs
+  Inspector->>Watch: open /dashboard/watch, pick the site
+  Inspector->>Watch: POST /watch/scans/{id}/ground-check
+  alt the site has facades
+    Watch->>Missions: create_mission(facade, satellite_alert) x up to 3
+    Missions-->>Visitor: high-priority photo mission nearby
+    Visitor->>Missions: photo of the facade
+  else no facades yet
+    Watch-->>Inspector: inspector visit needed
+  end
 ```
