@@ -538,7 +538,7 @@ docker compose up --build     # first build takes a few minutes
 | Wall damage maps | http://localhost:3000/dashboard/maps |
 | API docs | http://localhost:8000/api/docs |
 
-The `seed` service loads the demo region pack (`region-packs/demo`), a synthetic test building with four facades. It is not a heritage site. Create a dashboard account with:
+The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/diriyah` holds At-Turaif District at UNESCO's coordinates, with an approximate boundary and no facades yet, so the 3D view and directions point at Diriyah ([details](region-packs/diriyah/README.md)). Create a dashboard account with:
 
 ```bash
 docker compose run --rm -e SADU_NEW_USER_PASSWORD='choose-12-chars-or-more' api \
@@ -636,7 +636,7 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Verification and demo script | [docs/09-verification-and-demo.md](docs/09-verification-and-demo.md) |
 | Wall damage maps | [docs/10-damage-maps.md](docs/10-damage-maps.md) |
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
-| Decisions (ADR-001 to ADR-022) | [docs/adr/](docs/adr/) |
+| Decisions (ADR-001 to ADR-023) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 

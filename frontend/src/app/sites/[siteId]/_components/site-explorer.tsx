@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { request, type Site } from "@/lib/api";
 import type { TravelMode } from "@/lib/directions";
 import { DirectionsPanel } from "./directions-panel";
+import { SiteOutline } from "./site-outline";
 import { Place3D } from "./place-3d";
 import { type View, ViewSwitch } from "./view-switch";
 import { VIEWPORT_CLASS } from "./viewport";
@@ -20,6 +21,7 @@ export function SiteExplorer({ siteId, mapsApiKey }: Props) {
   const [site, setSite] = useState<Site | null>(null);
   const [failed, setFailed] = useState(false);
   const [view, setView] = useState<View>(mapsApiKey ? "place" : "model");
+  const hasFacades = Boolean(site?.facades.length);
   const [mode, setMode] = useState<TravelMode>("walking");
 
   useEffect(() => {
@@ -38,16 +40,20 @@ export function SiteExplorer({ siteId, mapsApiKey }: Props) {
         </p>
       </header>
 
-      {mapsApiKey && <ViewSwitch value={view} onChange={setView} />}
+      {mapsApiKey && hasFacades && <ViewSwitch value={view} onChange={setView} />}
 
       {mapsApiKey && (
         <div id="view-place" role="tabpanel" aria-labelledby="tab-place" hidden={view !== "place"}>
           <Place3D site={site} apiKey={mapsApiKey} mode={mode} />
         </div>
       )}
-      <div id="view-model" role="tabpanel" aria-labelledby="tab-model" hidden={view !== "model"} className={VIEWPORT_CLASS}>
-        {view === "model" && <SiteModel facades={site.facades} />}
-      </div>
+      {hasFacades ? (
+        <div id="view-model" role="tabpanel" aria-labelledby="tab-model" hidden={view !== "model"} className={VIEWPORT_CLASS}>
+          {view === "model" && <SiteModel facades={site.facades} />}
+        </div>
+      ) : (
+        !mapsApiKey && <SiteOutline site={site} />
+      )}
 
       <DirectionsPanel site={site} mode={mode} onModeChange={setMode} />
     </div>
