@@ -35,6 +35,7 @@ Rules: a module owns its tables and no other module reads them; other modules ca
 | **Reports** (`reports`) | PDFs. Built: the wall condition report (map on the rectified photo, damage totals, changes since the last approved map, treatment plan, materials, model agreement, sources), rendered with WeasyPrint. Round 2: site reports as jobs | `wall_report(session, store, map_id, catalog)`, `wall_report_pdf(report)` | none | none | mapping, treatments, sites |
 | **Space watch** (`watch`) | site_scans; Sentinel-2 composites, change classes (water, vegetation loss, construction, sand, earthworks), risk score, evidence images, scene source port (Earth Search, sample, none) ([ADR-025](adr/ADR-025-space-watch.md)) | `build_scene_source(settings)`, `ScanQueue(unit_of_work, store, source)`, `scan_site(unit_of_work, store, source, site_id)`, `site_scans(site_id)`, `rank_sites()`, `due_sites(interval)`, `acknowledge(scan_id, user)`, `request_ground_check(scan_id)` | none | none | sites, missions |
 | **Wall maps** (`mapping`) | damage_maps, damage_map_cells; wall rectification, grid, detector port (Claude or a ready model over HTTP), corrections, approval, change between maps, model accuracy against approved maps | `prepare_wall(photo, quad, wall, rows)`, `detect_damage(detector, prepared)`, `save_map(...)`, `get_map(id)`, `list_maps(...)`, `correct_cells(id, corrections)`, `approve_map(id, reviewer)`, `previous_approved(map)`, `treatment_plan(map, catalog)`, `accuracy(site_id?)` | none | none | sites, capture, treatments |
+| **Model registry** (`models`) | ml_models; versions of the own damage model (candidate, active, retired, one active at a time), training export of approved maps ([ADR-029](adr/ADR-029-own-model.md)) | `list_models()`, `register_model(model, by)`, `activate_model(id)`, `retire_model(id)`, `active_model()`, `training_export(store, weak)` | none | none | mapping |
 | **Treatments** (`treatments`) | treatment catalog file (per damage type and severity, with materials per m², tools, steps and sources); planning by damaged area | `catalog_at(path)`, `plan_treatments(areas, catalog)` | none | none | none |
 | **Admin** (`admin`) | users, sessions, audit_log, llm_calls (cost counter) | `authenticate(...)`, `record_llm_call(...)`, `audit(...)`, `costs(...)` | none | `PassportDeleted` (audit) | none (other modules call it) |
 
@@ -64,6 +65,7 @@ flowchart TD
   mapping --> sites
   mapping --> capture
   mapping --> treatments
+  models --> mapping
   capture -.->|record_llm_call, audit| admin
   inspection -.-> admin
   verification -.-> admin
@@ -145,6 +147,7 @@ PostgreSQL 18 with PostGIS and pgvector, one database ([ADR-004](adr/ADR-004-pos
 | passport_entries | passport | id, passport_id, site_id, observation_id?, created_at | |
 | damage_maps | mapping | id, site_id?, facade_id?, wall_name, width_m, height_m, rows, cols, corners jsonb, photo_key, rectified_key, detector, detector_status, summary_ar, model_cells jsonb, status, created_by, approved_by, approved_at, created_at | `model_cells` keeps the detector's answer unchanged so accuracy can be measured after the expert corrects the map. CHECK: approved maps name their reviewer. |
 | damage_map_cells | mapping | map_id, row, col, damage_type, severity, confidence, source | one row per damaged cell; sound cells have no row |
+| ml_models | models | id, name, version, base_model, adapter_uri, metrics jsonb, status, created_by, activated_at, created_at | UNIQUE (name, version); partial unique index keeps one `active` row |
 | users, sessions, audit_log, llm_calls | admin | users(email, password_hash, role, failed_logins, locked_until); sessions(id_hash, user_id, expires_at); audit_log(actor_id, action, target, details, request_id, at); llm_calls(observation_id?, agent, model, input_tokens, output_tokens, cost_usd, latency_ms, status, trace_id, at) | |
 | checkpoints* | agents | managed by `langgraph-checkpoint-postgres` `setup()` | thread_id = observation id |
 
