@@ -12,12 +12,13 @@ from sadu.modules.agents.api import AgentRunner, Dependencies
 from sadu.modules.capture import api as capture
 from sadu.modules.capture.api import ObservationStatus
 from sadu.modules.passport import api as passport
+from sadu.modules.sites import api as sites
 from sadu.modules.stories import api as stories
 from sadu.modules.verification import api as verification
 from sadu.shared.adapters.azure_speech import NoSpeech
 from sadu.shared.errors import NotFound
 from tests.fakes import FakeLLM
-from tests.integration.conftest import PACK_DIR
+from tests.integration.conftest import DIRIYAH_PACK_DIR, PACK_DIR
 
 
 def scripted_model(confidence: str = "high"):
@@ -192,3 +193,31 @@ async def test_forgetting_a_visitor_removes_their_plain_photos(session, store, d
     assert object_key not in store.objects
     with pytest.raises(NotFound):
         await capture.get_observation(session, observation_id)
+
+
+async def test_site_without_facades_stamps_the_passport_without_the_model(session, store, runner_for):
+    await sites.import_region_pack(session, store, DIRIYAH_PACK_DIR)
+    turaif = await sites.get_site_by_slug(session, "at-turaif")
+    passport_id, _ = await passport.create(session)
+    meta = capture.CaptureMeta(
+        captured_at=datetime(2026, 11, 18, tzinfo=UTC),
+        lat=turaif.location.lat,
+        lon=turaif.location.lon,
+        passport_id=passport_id,
+    )
+    raw = (PACK_DIR / "test-photos" / "north-crack.jpg").read_bytes()
+    observation, _ = await capture.create_observation(
+        session, store, raw_photo=raw, meta=meta, idempotency_key="turaif-1"
+    )
+    model = FakeLLM(scripted_model())
+    runner = runner_for(model)
+
+    runner.start(observation.id)
+    await runner.wait()
+
+    done = await capture.get_observation(session, observation.id)
+    assert done.status is ObservationStatus.DONE, done.status_payload
+    assert done.site_id == turaif.id and done.facade_id is None
+    assert not done.has_location
+    assert done.status_payload["passport_stamped"] and done.status_payload["findings"] == []
+    assert [r.agent for r in model.requests] == []

@@ -6,7 +6,7 @@ from uuid import UUID
 import cv2
 import numpy as np
 import structlog
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,9 +63,15 @@ class SiteSpec(Strict):
     location: list[float] = Field(min_length=2, max_length=2, description="[lon, lat]")
     boundary: list[list[float]] = Field(min_length=4)
     model_file: str | None = None
-    facade_map_file: str
-    baselines: list[BaselineSpec]
+    facade_map_file: str | None = None
+    baselines: list[BaselineSpec] = []
     sources_file: str | None = None
+
+    @model_validator(mode="after")
+    def baselines_need_facades(self) -> "SiteSpec":
+        if self.baselines and self.facade_map_file is None:
+            raise ValueError("baseline photos need a facade map")
+        return self
 
 
 class PackSpec(Strict):
@@ -97,12 +103,19 @@ async def _upsert_pack(session: AsyncSession, spec: PackSpec) -> RegionPackRow:
     return pack
 
 
-async def _import_site(
-    session: AsyncSession, store: ObjectStore, pack_dir: Path, pack_id: Any, spec: SiteSpec
-) -> None:
+def _facades_for(pack_dir: Path, spec: SiteSpec) -> list[FacadeSpec]:
+    if spec.facade_map_file is None:
+        return []
     facade_map = FacadeMap.model_validate_json((pack_dir / spec.facade_map_file).read_text(encoding="utf-8"))
     if facade_map.site_slug != spec.slug:
         raise ValueError(f"Facade map is for {facade_map.site_slug}, not {spec.slug}")
+    return facade_map.facades
+
+
+async def _import_site(
+    session: AsyncSession, store: ObjectStore, pack_dir: Path, pack_id: Any, spec: SiteSpec
+) -> None:
+    facades = _facades_for(pack_dir, spec)
 
     await session.execute(delete(SiteRow).where(SiteRow.slug == spec.slug))
     model_key = None
@@ -124,7 +137,7 @@ async def _import_site(
     await session.flush()
 
     facade_ids: dict[str, UUID] = {}
-    for facade in facade_map.facades:
+    for facade in facades:
         row = FacadeRow(
             site_id=site.id,
             code=facade.code,
