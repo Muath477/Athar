@@ -1,5 +1,6 @@
+import itertools
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -22,9 +23,9 @@ from sadu.modules.watch.infrastructure.earth_search import (
     EarthSearchSceneSource,
     StacItem,
     parse_item,
-    pick_items,
     read_item,
     search_body,
+    time_bins,
 )
 from sadu.modules.watch.infrastructure.sample_source import SampleSceneSource
 
@@ -96,13 +97,33 @@ def test_items_missing_a_band_are_skipped():
     assert parse_item(broken) is None
 
 
-def test_picking_keeps_the_clearest_pass_per_day_and_respects_the_limit():
-    items = [
-        parse_item(feature(day, cloud))
-        for day, cloud in [("2026-10-01", 20), ("2026-10-01", 2), ("2026-10-06", 30), ("2026-10-11", 5)]
+def test_time_bins_split_the_period_evenly_without_overlap():
+    bins = time_bins(date(2025, 10, 18), date(2026, 10, 17), 16)
+    assert len(bins) == 16
+    assert bins[0][0] == date(2025, 10, 18) and bins[-1][1] == date(2026, 10, 17)
+    assert all(later[0] == earlier[1] + timedelta(days=1) for earlier, later in itertools.pairwise(bins))
+    assert time_bins(date(2026, 10, 1), date(2026, 10, 3), 6) == [
+        (date(2026, 10, 1), date(2026, 10, 1)),
+        (date(2026, 10, 2), date(2026, 10, 2)),
+        (date(2026, 10, 3), date(2026, 10, 3)),
     ]
-    picked = pick_items([i for i in items if i is not None], limit=2)
-    assert [(i.acquired_on.day, i.cloud_cover) for i in picked] == [(1, 2.0), (11, 5.0)]
+
+
+async def test_each_time_bin_contributes_its_clearest_scene():
+    source = EarthSearchSceneSource(
+        "https://catalog.test/search",
+        reader=fake_scene,
+        transport=catalog(
+            [
+                feature("2026-01-05", 30),
+                feature("2026-01-20", 2),
+                feature("2026-07-03", 0.1),
+                feature("2026-07-04", 0.2),
+            ]
+        ),
+    )
+    scenes = await source.scenes(AREA, date(2026, 1, 1), date(2026, 12, 31), limit=2)
+    assert [s.acquired_on for s in scenes] == [date(2026, 1, 20), date(2026, 7, 3)]
 
 
 def fake_scene(item: StacItem, area: WatchArea) -> Scene:
@@ -113,8 +134,11 @@ def fake_scene(item: StacItem, area: WatchArea) -> Scene:
 
 def catalog(features: list[dict], status: int = 200) -> httpx.MockTransport:
     def handle(request: httpx.Request) -> httpx.Response:
-        assert json.loads(request.content)["collections"] == [COLLECTION]
-        return httpx.Response(status, json={"type": "FeatureCollection", "features": features})
+        body = json.loads(request.content)
+        assert body["collections"] == [COLLECTION]
+        start, end = (part[:10] for part in body["datetime"].split("/"))
+        inside = [f for f in features if start <= f["properties"]["datetime"][:10] <= end]
+        return httpx.Response(status, json={"type": "FeatureCollection", "features": inside})
 
     return httpx.MockTransport(handle)
 

@@ -391,8 +391,8 @@ sequenceDiagram
   participant Missions as missions module
   actor Visitor
 
-  Cron->>Watch: due_sites(7 days)
-  Watch->>STAC: search sentinel-2-c1-l2a over the site, cloud < 40 %
+  Cron->>Watch: due_sites(7 days), queue each
+  Watch->>STAC: per time slice, search sentinel-2-c1-l2a over the site, cloud < 40 %
   STAC-->>Watch: items with asset hrefs
   Watch->>COG: windowed GTiff reads, 6 bands + SCL
   Watch->>Watch: median composites, z-score change, classify, score

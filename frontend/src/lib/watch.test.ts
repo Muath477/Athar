@@ -39,7 +39,9 @@ function site(lat: number, lon: number): SiteRisk {
     location: { lat, lon },
     facades: 0,
     priority: 0,
+    scanning: false,
     latest: null,
+    failed_attempt: null,
   };
 }
 

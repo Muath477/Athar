@@ -16,6 +16,7 @@ import {
   getOverview,
   levelAr,
   levelClass,
+  latestOk,
   listScans,
   requestGroundCheck,
   scanSite,
@@ -74,7 +75,9 @@ export function SiteWatch() {
   }
   if (!site) return <p className="pt-6">هذا الموقع غير موجود في الرصد.</p>;
 
-  const latest = scans[0] ?? null;
+  const latest = latestOk(scans);
+  const lastAttempt = scans[0] ?? null;
+  const failedSince = lastAttempt && lastAttempt.status !== "ok" ? lastAttempt : null;
   const level = latest?.level ?? "unknown";
   const canAcknowledge = me.role !== "inspector";
   const hasSignals = latest?.status === "ok" && latest.signals.length > 0;
@@ -135,7 +138,7 @@ export function SiteWatch() {
             disabled={busy !== null}
             className="rounded-full border border-ink/30 px-5 py-2 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
           >
-            {busy === "ack" ? "يُحفظ…" : "اعتمد أنك راجعت التنبيه"}
+            {busy === "ack" ? "يُحفظ…" : "أكّد أنك راجعت التنبيه"}
           </button>
         )}
       </div>
@@ -143,8 +146,10 @@ export function SiteWatch() {
       {check && (
         <p role="status" className="rounded-lg bg-white/75 px-4 py-3">
           {check.inspector_visit
-            ? "لا توجد واجهات مسجلة لهذا الموقع، لذلك يحتاج زيارة مفتش."
-            : `فُتحت ${countAr(check.mission_ids.length, missions)} للزوار حول الواجهات.`}{" "}
+            ? "لا توجد واجهات بصور مرجعية لهذا الموقع، لذلك يحتاج زيارة مفتش."
+            : check.mission_ids.length === 0
+              ? "مهام التصوير مفتوحة مسبقًا على واجهات هذا الموقع."
+              : `فُتحت ${countAr(check.mission_ids.length, missions)} للزوار حول الواجهات.`}{" "}
           {!check.inspector_visit && (
             <Link href="/dashboard" className="font-bold text-sadu underline">
               تابع المهام
@@ -157,8 +162,15 @@ export function SiteWatch() {
         <p className="text-sm text-mud">طُلب التحقق الميداني في {dateAr(latest.ground_check_at)}.</p>
       )}
 
-      {latest === null && <p className="rounded-xl bg-white/75 p-4">لم يُفحص هذا الموقع بعد. ابدأ بفحص الآن.</p>}
-      {latest && latest.status !== "ok" && <p className="rounded-xl bg-white/75 p-4">{statusAr[latest.status]}.</p>}
+      {failedSince && (
+        <p className="rounded-xl bg-white/75 p-4">
+          آخر محاولة في {dateAr(failedSince.created_at)}: {statusAr[failedSince.status]}.
+          {latest && " نعرض أدناه آخر فحص مكتمل."}
+        </p>
+      )}
+      {latest === null && !failedSince && (
+        <p className="rounded-xl bg-white/75 p-4">لم يُفحص هذا الموقع بعد. ابدأ بفحص الآن.</p>
+      )}
 
       {latest?.status === "ok" && (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
@@ -201,13 +213,13 @@ export function SiteWatch() {
         </div>
       )}
 
-      {scans.length > 1 && (
+      {scans.some((scan) => scan.id !== latest?.id) && (
         <section className="flex flex-col gap-2" aria-labelledby="history-title">
           <h2 id="history-title" className="text-lg font-bold">
             الفحوص السابقة
           </h2>
           <ol className="flex flex-col divide-y divide-clay/30 rounded-xl bg-white/60">
-            {scans.slice(1).map((scan) => {
+            {scans.filter((scan) => scan.id !== latest?.id).map((scan) => {
               const strongest = strongestSignal(scan);
               return (
                 <li key={scan.id} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">

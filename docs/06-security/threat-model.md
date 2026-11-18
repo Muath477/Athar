@@ -92,12 +92,12 @@ Entry points: `POST /observations` (files + metadata), `POST /observations/{id}/
 
 | Threat | Example | Mitigation |
 |---|---|---|
-| **S**poofing | A rogue catalog answer points the reader at an attacker's server. | Asset hrefs must be HTTPS on `e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com` and end in `.tif`; anything else drops the item. The search URL comes from settings, never from requests. |
+| **S**poofing | A rogue catalog answer points the reader at an attacker's server. | Asset hrefs must be HTTPS on `e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com` and end in `.tif`; anything else drops the item. The search URL comes from settings, never from requests. Residual risk: GDAL's `/vsicurl/` follows HTTP redirects and has no option to stop it, so a compromised bucket could redirect reads; the GTiff-only driver limits what such a file can reach. |
 | **T**ampering | A crafted raster exploits a GDAL driver (GDAL 3.12.2 bundled with rasterio has open CVEs in HDF-EOS, netCDF, MiraMon and zlib `infback9`). | rasterio opens with the GTiff driver only; `CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif`; `GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR`; pip-audit in CI; upgrade when wheels ship GDAL 3.13+. |
 | **R**epudiation | Disputed who asked for a ground check or dismissed an alert. | `watch.scan` and `watch.ground_check` audit rows; acknowledgement stores the expert and time. |
 | **I**nformation disclosure | Evidence images leak. | They show public satellite imagery of public sites; stored in the private bucket behind 5-minute presigned URLs like other evidence. |
-| **D**enial of service | Repeated scans hammer Earth Search and the API threads. | 30 scans per user per hour; reads run on a 4-thread limiter with HTTP timeouts and 3 retries; the scheduler scans only sites past their interval. |
-| **E**levation of privilege | An inspector acknowledges alerts. | Acknowledge is expert-only; a test checks the 403. |
+| **D**enial of service | Repeated scans hammer Earth Search, the API threads or the database pool. | 30 scans and 30 ground checks per user per hour; scans run in a queue of two, one per site, with no database transaction open while imagery is read; reads use a 4-thread limiter with HTTP timeouts and 3 retries; the scheduler scans only sites past their interval. |
+| **E**levation of privilege | An inspector acknowledges alerts, or opens urgent visitor missions from a stale or quiet scan. | Acknowledge is expert-only and audited; a ground check is accepted only on the site's latest completed scan with signals; tests check the 403 and the 409s. |
 
 ## 4. Controls mapped to OWASP Top 10 (2021) and ASVS L1
 

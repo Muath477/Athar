@@ -13,6 +13,7 @@ from sadu.shared.web import Session, State
 router = APIRouter(tags=["watch"])
 
 SCANS_PER_USER_PER_HOUR = 30
+GROUND_CHECKS_PER_USER_PER_HOUR = 30
 
 
 class SignalOut(BaseModel):
@@ -62,7 +63,9 @@ class SiteRiskOut(BaseModel):
     location: LatLonOut
     facades: int
     priority: float
+    scanning: bool
     latest: ScanOut | None
+    failed_attempt: ScanOut | None
 
 
 class WatchOverviewOut(BaseModel):
@@ -70,6 +73,11 @@ class WatchOverviewOut(BaseModel):
     is_sample: bool
     threat_colors: dict[str, str]
     sites: list[SiteRiskOut]
+
+
+class ScanQueuedOut(BaseModel):
+    site_id: str
+    queued: bool
 
 
 class GroundCheckOut(BaseModel):
@@ -119,8 +127,9 @@ def scan_out(view: watch.ScanView, store: ObjectStore) -> ScanOut:
 
 @router.get("/watch/sites")
 async def watch_overview(_: Inspector, session: Session, state: State, request: Request) -> WatchOverviewOut:
-    source: watch.SceneSource = request.app.state.scene_source
-    ranked = await watch.rank_sites(session)
+    queue: watch.ScanQueue = request.app.state.scan_queue
+    source = queue.source
+    ranked = await watch.rank_sites(session, queue)
     return WatchOverviewOut(
         source=source.name,
         is_sample=source.is_sample,
@@ -135,7 +144,9 @@ async def watch_overview(_: Inspector, session: Session, state: State, request: 
                 location=LatLonOut(lat=r.site.location.lat, lon=r.site.location.lon),
                 facades=r.facades,
                 priority=round(r.priority, 1),
+                scanning=r.scanning,
                 latest=scan_out(r.latest, state.store) if r.latest else None,
+                failed_attempt=scan_out(r.failed_attempt, state.store) if r.failed_attempt else None,
             )
             for r in ranked
         ],
@@ -147,32 +158,47 @@ async def list_scans(site_id: UUID, _: Inspector, session: Session, state: State
     return [scan_out(v, state.store) for v in await watch.site_scans(session, site_id)]
 
 
-@router.post("/watch/sites/{site_id}/scans", status_code=201)
+@router.post("/watch/sites/{site_id}/scans", status_code=202)
 async def scan_now(
     site_id: UUID, user: Inspector, session: Session, state: State, request: Request
-) -> ScanOut:
+) -> ScanQueuedOut:
     state.rate_limiter.check(f"watch-scan:{user.id}", SCANS_PER_USER_PER_HOUR, 3600)
-    view = await watch.scan_site(session, state.store, request.app.state.scene_source, site_id)
+    await watch.watch_area(session, site_id)
+    queue: watch.ScanQueue = request.app.state.scan_queue
+    queued = queue.start(site_id)
     await admin.audit(
         session,
         actor_id=user.id,
         action="watch.scan",
         target_type="site",
         target_id=str(site_id),
+        details={"queued": queued},
         request_id=getattr(request.state, "request_id", None),
     )
-    return scan_out(view, state.store)
+    return ScanQueuedOut(site_id=str(site_id), queued=queued)
 
 
 @router.post("/watch/scans/{scan_id}/acknowledge")
-async def acknowledge(scan_id: UUID, user: Expert, session: Session, state: State) -> ScanOut:
-    return scan_out(await watch.acknowledge(session, scan_id, user.id), state.store)
+async def acknowledge(
+    scan_id: UUID, user: Expert, session: Session, state: State, request: Request
+) -> ScanOut:
+    view = await watch.acknowledge(session, scan_id, user.id)
+    await admin.audit(
+        session,
+        actor_id=user.id,
+        action="watch.acknowledge",
+        target_type="site_scan",
+        target_id=str(scan_id),
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return scan_out(view, state.store)
 
 
 @router.post("/watch/scans/{scan_id}/ground-check")
 async def ground_check(
     scan_id: UUID, user: Inspector, session: Session, state: State, request: Request
 ) -> GroundCheckOut:
+    state.rate_limiter.check(f"watch-ground:{user.id}", GROUND_CHECKS_PER_USER_PER_HOUR, 3600)
     result = await watch.request_ground_check(session, scan_id)
     await admin.audit(
         session,

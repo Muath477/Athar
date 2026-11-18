@@ -2,7 +2,7 @@
 
 Eleven heritage sites in the Riyadh region, two of them UNESCO World Heritage properties (`building_type: world_heritage`, which raises their priority in satellite screening). It replaces the earlier `diriyah` pack; At-Turaif keeps its slug and boundary.
 
-Every coordinate below was copied from the cited page. **All boundaries except At-Turaif's area are approximations**: circles sized by building type around the cited point. Replace them with surveyed boundaries from the Heritage Commission before any real decision rests on them. No site has facades or baseline photos yet ([ADR-023](../../docs/adr/ADR-023-sites-without-facades.md)), so a satellite alert opens an inspector visit rather than visitor photo missions.
+Every coordinate below was copied from the cited page. **All boundaries except At-Turaif's area are approximations**: circles sized by building type around the cited point. Replace them with surveyed boundaries from the Heritage Commission before any real decision rests on them. No site has facades or baseline photos yet ([ADR-023](../../docs/adr/ADR-023-sites-without-facades.md)), so a ground check on a satellite alert tells the inspector a site visit is needed instead of opening visitor photo missions.
 
 | Site | Point (lat, lon) and source | Boundary | Documented threats |
 |---|---|---|---|

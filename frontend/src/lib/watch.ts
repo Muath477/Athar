@@ -47,7 +47,9 @@ export type SiteRisk = {
   location: LatLon;
   facades: number;
   priority: number;
+  scanning: boolean;
   latest: Scan | null;
+  failed_attempt: Scan | null;
 };
 
 export type WatchOverview = {
@@ -67,8 +69,16 @@ export function listScans(siteId: string): Promise<Scan[]> {
   return request<Scan[]>(`/watch/sites/${siteId}/scans`);
 }
 
-export function scanSite(siteId: string): Promise<Scan> {
-  return request<Scan>(`/watch/sites/${siteId}/scans`, { method: "POST" });
+const POLL_MS = 2000;
+const POLL_LIMIT = 120;
+
+export async function scanSite(siteId: string): Promise<void> {
+  await request<{ site_id: string; queued: boolean }>(`/watch/sites/${siteId}/scans`, { method: "POST" });
+  for (let attempt = 0; attempt < POLL_LIMIT; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    const overview = await getOverview();
+    if (!overview.sites.find((s) => s.site_id === siteId)?.scanning) return;
+  }
 }
 
 export function acknowledgeScan(scanId: string): Promise<Scan> {
@@ -115,6 +125,10 @@ export const levelClass: Record<RiskLevel, string> = {
 };
 
 export const LEVEL_ORDER: RiskLevel[] = ["urgent", "moderate", "watch", "stable", "unknown"];
+
+export function latestOk(scans: Scan[]): Scan | null {
+  return scans.find((scan) => scan.status === "ok") ?? null;
+}
 
 export function strongestSignal(scan: Scan | null): Signal | null {
   if (!scan || scan.signals.length === 0) return null;

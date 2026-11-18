@@ -19,7 +19,7 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
         <h2 id={`${sliderId}-title`} className="text-lg font-bold">
           الصور
         </h2>
-        <div role="tablist" aria-label="طريقة العرض" className="flex gap-1 rounded-full bg-white/60 p-1">
+        <div role="group" aria-label="طريقة العرض" className="flex gap-1 rounded-full bg-white/60 p-1">
           {(
             [
               ["compare", "قبل وبعد"],
@@ -29,8 +29,7 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
             <button
               key={value}
               type="button"
-              role="tab"
-              aria-selected={view === value}
+              aria-pressed={view === value}
               onClick={() => setView(value)}
               className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
                 view === value ? "bg-ink text-sand" : "hover:bg-clay/20"

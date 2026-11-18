@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,11 +24,13 @@ from sadu.modules.watch.infrastructure.sample_source import SampleSceneSource
 from sadu.shared.config import SceneSourceKind, Settings
 from sadu.shared.errors import Conflict, NotFound
 from sadu.shared.storage import ObjectStore, new_object_key
+from sadu.shared.web import UnitOfWork
 
 __all__ = [
     "THREAT_COLORS",
     "GroundCheck",
     "RiskLevel",
+    "ScanQueue",
     "ScanStatus",
     "ScanView",
     "SceneSource",
@@ -41,10 +44,16 @@ __all__ = [
     "request_ground_check",
     "scan_site",
     "site_scans",
+    "watch_area",
 ]
+
+log = structlog.get_logger()
 
 WORLD_HERITAGE_TYPE = "world_heritage"
 GROUND_CHECK_FACADES = 3
+RETRY_FAILED_AFTER = timedelta(hours=6)
+RECENT_SCANS = 10
+CONCURRENT_SCANS = 2
 LEVEL_RANK = {
     RiskLevel.UNKNOWN: 0,
     RiskLevel.STABLE: 1,
@@ -97,7 +106,9 @@ class SiteRisk:
     site: sites.SiteView
     facades: int
     latest: ScanView | None
+    failed_attempt: ScanView | None
     priority: float
+    scanning: bool
 
 
 @dataclass(frozen=True)
@@ -118,13 +129,59 @@ def build_scene_source(settings: Settings) -> SceneSource:
 
 
 async def due_sites(session: AsyncSession, interval: timedelta, now: datetime | None = None) -> list[UUID]:
-    cutoff = (now or datetime.now(UTC)) - interval
+    now = now or datetime.now(UTC)
     due = []
     for site in await sites.list_sites(session):
-        latest = next(iter(await site_scans(session, site.id, limit=1)), None)
-        if latest is None or latest.created_at <= cutoff:
+        history = await site_scans(session, site.id, limit=RECENT_SCANS)
+        latest_ok = _latest_ok(history)
+        fresh = latest_ok is not None and latest_ok.created_at > now - interval
+        retried_lately = bool(history) and history[0].created_at > now - RETRY_FAILED_AFTER
+        if not fresh and not retried_lately:
             due.append(site.id)
     return due
+
+
+class ScanQueue:
+    def __init__(
+        self,
+        unit_of_work: UnitOfWork,
+        store: ObjectStore,
+        source: SceneSource,
+        concurrency: int = CONCURRENT_SCANS,
+    ) -> None:
+        self._unit_of_work = unit_of_work
+        self._store = store
+        self._source = source
+        self._slots = asyncio.Semaphore(concurrency)
+        self._running: dict[UUID, asyncio.Task[ScanView | None]] = {}
+
+    @property
+    def source(self) -> SceneSource:
+        return self._source
+
+    def running(self, site_id: UUID) -> bool:
+        return site_id in self._running
+
+    def start(self, site_id: UUID) -> bool:
+        if site_id in self._running:
+            return False
+        task = asyncio.create_task(self._scan(site_id))
+        self._running[site_id] = task
+        task.add_done_callback(lambda _: self._running.pop(site_id, None))
+        return True
+
+    async def join(self) -> None:
+        await asyncio.gather(*self._running.values(), return_exceptions=True)
+
+    async def _scan(self, site_id: UUID) -> ScanView | None:
+        async with self._slots:
+            try:
+                scan = await scan_site(self._unit_of_work, self._store, self._source, site_id)
+            except Exception:
+                log.exception("site_scan_failed", site_id=str(site_id))
+                return None
+        log.info("site_scanned", site_id=str(site_id), status=scan.status, level=scan.level)
+        return scan
 
 
 async def watch_area(session: AsyncSession, site_id: UUID) -> WatchArea:
@@ -135,7 +192,7 @@ async def watch_area(session: AsyncSession, site_id: UUID) -> WatchArea:
 
 
 async def scan_site(
-    session: AsyncSession,
+    unit_of_work: UnitOfWork,
     store: ObjectStore,
     source: SceneSource,
     site_id: UUID,
@@ -143,14 +200,17 @@ async def scan_site(
     today: date | None = None,
     rules: ChangeRules | None = None,
 ) -> ScanView:
-    area = await watch_area(session, site_id)
+    async with unit_of_work() as session:
+        area = await watch_area(session, site_id)
     today = today or datetime.now(UTC).date()
     try:
         screening = await screen(source, area, today, rules or ChangeRules())
     except SceneSourceUnavailable:
-        return await _save_unavailable(session, source, site_id, Periods.ending(today))
+        async with unit_of_work() as session:
+            return await _save_unavailable(session, source, site_id, Periods.ending(today))
     keys = await _store_evidence(store, screening)
-    return await _save(session, source, site_id, screening, keys)
+    async with unit_of_work() as session:
+        return await _save(session, source, site_id, screening, keys)
 
 
 async def site_scans(session: AsyncSession, site_id: UUID, limit: int = 20) -> list[ScanView]:
@@ -163,24 +223,29 @@ async def site_scans(session: AsyncSession, site_id: UUID, limit: int = 20) -> l
     return [_view(row) for row in rows]
 
 
-async def rank_sites(session: AsyncSession) -> list[SiteRisk]:
+async def rank_sites(session: AsyncSession, queue: ScanQueue | None = None) -> list[SiteRisk]:
     ranked = []
     for site in await sites.list_sites(session):
-        latest = next(iter(await site_scans(session, site.id, limit=1)), None)
+        history = await site_scans(session, site.id, limit=RECENT_SCANS)
+        latest = _latest_ok(history)
+        failed = history[0] if history and history[0] is not latest else None
         score = 0.0
-        if latest is not None and latest.status is ScanStatus.OK:
+        if latest is not None:
             score = priority_of(latest, world_heritage=site.building_type == WORLD_HERITAGE_TYPE)
         facades = len(await sites.list_facades(session, site.id))
-        ranked.append(SiteRisk(site, facades, latest, score))
+        scanning = queue is not None and queue.running(site.id)
+        ranked.append(SiteRisk(site, facades, latest, failed, score, scanning))
     return sorted(
         ranked, key=lambda r: (-_level_rank(r.latest), -r.priority, r.latest is None, r.site.name_ar)
     )
 
 
+def _latest_ok(history: list[ScanView]) -> ScanView | None:
+    return next((scan for scan in history if scan.status is ScanStatus.OK), None)
+
+
 def _level_rank(scan: ScanView | None) -> int:
-    if scan is None or scan.status is not ScanStatus.OK:
-        return 0
-    return LEVEL_RANK[scan.level]
+    return LEVEL_RANK[scan.level] if scan is not None else 0
 
 
 def priority_of(scan: ScanView, *, world_heritage: bool) -> float:
@@ -197,19 +262,28 @@ async def acknowledge(session: AsyncSession, scan_id: UUID, user_id: UUID) -> Sc
 
 async def request_ground_check(session: AsyncSession, scan_id: UUID) -> GroundCheck:
     row = await _row(session, scan_id)
+    scan = _view(row)
+    if scan.status is not ScanStatus.OK or not scan.signals:
+        raise Conflict("scan_has_no_alert")
+    latest = _latest_ok(await site_scans(session, row.site_id, limit=RECENT_SCANS))
+    if latest is None or latest.id != scan.id:
+        raise Conflict("scan_superseded")
     opened = []
-    facades = await sites.list_facades(session, row.site_id)
-    for facade in facades[:GROUND_CHECK_FACADES]:
+    covered = 0
+    for facade in (await sites.list_facades(session, row.site_id))[:GROUND_CHECK_FACADES]:
         try:
             opened.append(
                 await missions.create_mission(session, facade.id, missions.MissionReason.SATELLITE_ALERT)
             )
+            covered += 1
         except Conflict:
+            covered += 1
+        except NotFound:
             continue
     row.ground_check_at = datetime.now(UTC)
     row.mission_ids = [*row.mission_ids, *(str(m.id) for m in opened)]
     await session.flush()
-    return GroundCheck(_view(row), tuple(opened), inspector_visit=not facades)
+    return GroundCheck(_view(row), tuple(opened), inspector_visit=covered == 0)
 
 
 async def _store_evidence(store: ObjectStore, screening: Screening) -> tuple[str, str, str] | None:

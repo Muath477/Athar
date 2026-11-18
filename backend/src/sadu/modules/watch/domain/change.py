@@ -128,17 +128,20 @@ def keep_clusters(mask: Mask, minimum_pixels: int) -> Mask:
 def _classify(baseline: Composite, recent: Composite, valid: Mask, rules: ChangeRules) -> dict[Threat, Mask]:
     before, after = baseline.bands, recent.bands
     with np.errstate(invalid="ignore", divide="ignore"):
-        water = (indices.mndwi(after) > rules.water_mndwi_after) & (
-            indices.mndwi(before) < rules.water_mndwi_before
+        changed = change_magnitude(baseline, recent, rules.spread_floor) >= rules.change_z
+        water = (
+            changed
+            & (indices.mndwi(after) > rules.water_mndwi_after)
+            & (indices.mndwi(before) < rules.water_mndwi_before)
         )
         ndvi_before = indices.ndvi(before)
         ndvi_drop = indices.ndvi(after) - ndvi_before
         vegetation_loss = (
-            (ndvi_before >= rules.vegetation_baseline_ndvi)
+            changed
+            & (ndvi_before >= rules.vegetation_baseline_ndvi)
             & (ndvi_drop <= -rules.vegetation_ndvi_drop)
             & (ndvi_drop / ndvi_before <= -rules.vegetation_relative_drop)
         )
-        changed = change_magnitude(baseline, recent, rules.spread_floor) >= rules.change_z
         brightness_after = indices.brightness(after)
         brightness_change = brightness_after - indices.brightness(before)
         asphalt = (brightness_after < rules.asphalt_brightness) & (

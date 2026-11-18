@@ -69,10 +69,10 @@ Model labels map to damage types with `SADU_DETECTOR_LABELS`, for example `{"spa
 
 ### From orbit to the wall
 
-1. Each week, and on demand, the API pulls Sentinel-2 scenes for every site from Element 84 Earth Search and builds two median composites: the last 30 days and the year before.
+1. Each week, and on demand as a background job, the API pulls Sentinel-2 scenes for every site from Element 84 Earth Search and builds two median composites: the last 30 days and the year before, taking the clearest scene from each slice of the year so no season dominates.
 2. Pixels that moved more than three times their usual spread, in clusters of at least three, are labelled water, vegetation loss, construction, sand or earthworks, inside the site or in its 150 m ring.
 3. A risk score ranks the sites, with World Heritage properties first within a level. The dashboard at `/dashboard/watch` shows the ranking on a region map and, per site, a before/after slider and a change map.
-4. **Ground check** opens high-priority photo missions on the site's facades, so the next visitors photograph the walls the satellite cannot see. Sites without facades get an inspector visit.
+4. **Ground check** opens high-priority photo missions on the site's facades, so the next visitors photograph the walls the satellite cannot see. For a site without registered facades, the dashboard tells the inspector a visit is needed.
 5. 10 m pixels catch changes around a site, not cracks. The satellite layer screens; the wall maps and visitor photos confirm. Details and limits in [ADR-025](docs/adr/ADR-025-space-watch.md).
 
 Without internet access to the imagery, `SADU_SCENE_SOURCE=sample` serves labelled synthetic scenes with the invented events in `region-packs/riyadh/sample-events.json`. Every scan from it is marked as sample data.

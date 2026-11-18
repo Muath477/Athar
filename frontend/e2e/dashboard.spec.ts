@@ -51,11 +51,11 @@ test("an expert screens a Riyadh site from space and asks for a ground check", a
   await expect(page.getByText("مياه راكدة").first()).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("بيانات تجريبية", { exact: true })).toBeVisible();
 
-  await page.getByRole("tab", { name: "خريطة التغيّر" }).click();
+  await page.getByRole("button", { name: "خريطة التغيّر" }).click();
   await expect(page.getByRole("img", { name: /المناطق المتغيرة/ })).toBeVisible();
 
   await page.getByRole("button", { name: "اطلب تحققًا ميدانيًا" }).click();
   await expect(page.getByRole("status")).toContainText("زيارة مفتش");
-  await page.getByRole("button", { name: "اعتمد أنك راجعت التنبيه" }).click();
-  await expect(page.getByRole("button", { name: "اعتمد أنك راجعت التنبيه" })).toHaveCount(0);
+  await page.getByRole("button", { name: "أكّد أنك راجعت التنبيه" }).click();
+  await expect(page.getByRole("button", { name: "أكّد أنك راجعت التنبيه" })).toHaveCount(0);
 });

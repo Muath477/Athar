@@ -15,12 +15,12 @@ The Heritage Commission challenge asks how heritage can be seen from space. Fiel
   - Clear pixels are SCL classes 4, 5 and 6.
   - The source sits behind a `SceneSource` port. A sample source makes labelled synthetic scenes for demos, tests and machines without internet. `SADU_SCENE_SOURCE` picks `earth_search`, `sample` or `none`.
 - **Composites.**
-  - Baseline: the per-pixel median and robust spread (1.4826 × MAD) of up to 16 clear scenes over the 365 days before the last 30. Each pixel needs at least 8 clear looks.
-  - Recent: up to 6 scenes from the last 30 days, with at least 3 clear looks per pixel.
+  - Baseline: the per-pixel median and robust spread (1.4826 × MAD) of up to 16 scenes over the 365 days ending the day before the recent window. The year is cut into 16 equal slices and each slice gives its clearest scene, so the dry season cannot crowd out winter. Each pixel needs at least 8 clear looks.
+  - Recent: the clearest scene from each of 6 slices of the last 30 days, with at least 3 clear looks per pixel.
   - If less than 60 % of the watched area is valid, the scan reports `insufficient_data` rather than a verdict.
 - **Change.**
   - A pixel changed when the RMS of per-band z-scores against the baseline spread reaches 3. Only clusters of 3 or more 8-connected pixels count.
-  - Each pixel gets one label, first match wins:
+  - Only changed pixels are labelled. Each gets one label, first match wins:
     1. Water: MNDWI rises above 0 from below −0.1.
     2. Vegetation loss: NDVI was at least 0.3 and drops by 0.15 and 30 %.
     3. Construction: NDBI rises by 0.10, or the surface darkens to asphalt.
@@ -32,10 +32,11 @@ The Heritage Commission challenge asks how heritage can be seen from space. Fiel
   - The score is capped at 100. Levels are watch at 10, moderate at 30 and urgent at 60.
   - Ranking puts the level first. Within a level, World Heritage properties get a 1.25 priority boost.
 - **Action.**
-  - An inspector can request a ground check. It opens up to three `satellite_alert` photo missions on the site's facades, which are high priority for visitors nearby.
-  - If the site has no facades yet, the dashboard asks for an inspector visit.
+  - An inspector can request a ground check on the latest completed scan if it has signals. It opens up to three `satellite_alert` photo missions on the site's facades, which are high priority for visitors nearby. Facades without a baseline photo are skipped.
+  - If no facade can take a mission, the dashboard tells the inspector a site visit is needed. No visit record is created yet.
   - Experts acknowledge alerts. Scans, ground checks and acknowledgements are audited.
-- **Schedule.** A background loop rescans sites whose last scan is older than `SADU_WATCH_INTERVAL_H` (default weekly). Setting it to 0 turns the loop off.
+- **Schedule.** Scans run in a background queue (two at a time, one per site), outside any database transaction while imagery is read. "Scan now" returns 202 and the dashboard polls. A loop queues sites whose last completed scan is older than `SADU_WATCH_INTERVAL_H` (default weekly), and retries a failed scan after 6 hours. Setting the interval to 0 turns the loop off.
+- **Failures.** A scan that could not reach the imagery or had too few clear looks is stored, but the ranking and the site page keep showing the last completed scan and mention the failed attempt next to it.
 - **Evidence.**
   - Each scan stores before, after and change PNGs, with the site outline and the ring.
   - The dashboard shows them with a before/after slider and credits "Contains modified Copernicus Sentinel data".

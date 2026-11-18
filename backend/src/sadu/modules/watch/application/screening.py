@@ -9,7 +9,7 @@ from sadu.modules.watch.domain.scene import Composite, median_composite
 
 BUFFER_M = 150.0
 RECENT_DAYS = 30
-BASELINE_GAP_DAYS = 0
+BASELINE_GAP_DAYS = 1
 BASELINE_DAYS = 365
 BASELINE_SCENES = 16
 RECENT_SCENES = 6

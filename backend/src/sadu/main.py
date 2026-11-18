@@ -35,7 +35,7 @@ from sadu.shared.errors import install_error_handlers
 from sadu.shared.logging import configure_logging, request_id_middleware
 from sadu.shared.ports.llm import LLMPort
 from sadu.shared.ports.speech import TextToSpeechPort
-from sadu.shared.storage import ObjectStore, get_object_store
+from sadu.shared.storage import get_object_store
 from sadu.shared.web import API_PREFIX, AppState, Session, public, security_headers_middleware
 
 log = structlog.get_logger()
@@ -106,7 +106,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await store.ensure_bucket()
     llm = build_llm(settings)
     app.state.damage_detector = mapping.build_detector(settings, llm)
-    app.state.scene_source = watch.build_scene_source(settings)
+    app.state.scan_queue = watch.ScanQueue(unit_of_work, store, watch.build_scene_source(settings))
     deps = agents.Dependencies(
         unit_of_work=unit_of_work,
         store=store,
@@ -120,13 +120,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.sadu = AppState(settings=settings, unit_of_work=unit_of_work, store=store, runner=runner)
         await runner.recover()
         dispatcher = asyncio.create_task(dispatch_missions_forever())
-        watcher = asyncio.create_task(scan_sites_forever(settings, store, app.state.scene_source))
+        watcher = asyncio.create_task(scan_sites_forever(settings, app.state.scan_queue))
         log.info(
             "api_started",
             env=settings.sadu_env,
             demo_mode=settings.sadu_demo_mode,
             damage_detector=app.state.damage_detector.name,
-            scene_source=app.state.scene_source.name,
+            scene_source=app.state.scan_queue.source.name,
         )
         try:
             yield
@@ -161,7 +161,7 @@ async def dispatch_missions_forever() -> None:
         await asyncio.sleep(MISSION_DISPATCH_INTERVAL_S)
 
 
-async def scan_sites_forever(settings: Settings, store: ObjectStore, source: watch.SceneSource) -> None:
+async def scan_sites_forever(settings: Settings, queue: watch.ScanQueue) -> None:
     if settings.sadu_watch_interval_h == 0 or settings.sadu_scene_source is SceneSourceKind.NONE:
         return
     interval = timedelta(hours=settings.sadu_watch_interval_h)
@@ -170,11 +170,10 @@ async def scan_sites_forever(settings: Settings, store: ObjectStore, source: wat
             async with unit_of_work() as session:
                 due = await watch.due_sites(session, interval)
             for site_id in due:
-                async with unit_of_work() as session:
-                    scan = await watch.scan_site(session, store, source, site_id)
-                log.info("site_scanned", site_id=str(site_id), status=scan.status, level=scan.level)
+                queue.start(site_id)
+            await queue.join()
         except Exception:
-            log.exception("site_scan_failed")
+            log.exception("site_scan_round_failed")
         await asyncio.sleep(WATCH_POLL_INTERVAL_S)
 
 

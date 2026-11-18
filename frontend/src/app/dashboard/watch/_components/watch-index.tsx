@@ -102,8 +102,8 @@ export function WatchIndex() {
               key={site.site_id}
               rank={index + 1}
               site={site}
-              busy={scanning === site.site_id}
-              disabled={scanning !== null}
+              busy={scanning === site.site_id || site.scanning}
+              disabled={scanning !== null || site.scanning}
               onScan={() => scan(site.site_id)}
             />
           ))}
@@ -140,13 +140,15 @@ function SiteRow({
           {site.name_ar}
         </Link>
         <p className="text-sm text-mud">
-          {scan === null && "لم يُفحص بعد"}
-          {scan !== null && scan.status !== "ok" && statusAr[scan.status]}
-          {scan?.status === "ok" && strongest === null && "لا تغيّر ملحوظ"}
+          {scan === null && (site.failed_attempt ? statusAr[site.failed_attempt.status] : "لم يُفحص بعد")}
+          {scan !== null && strongest === null && "لا تغيّر ملحوظ"}
           {strongest && (
             <>
               {threatAr[strongest.threat]} {zoneAr[strongest.zone]} · {areaAr(strongest.area_m2)}
             </>
+          )}
+          {scan !== null && site.failed_attempt && (
+            <span className="block text-xs">آخر محاولة: {statusAr[site.failed_attempt.status]}</span>
           )}
         </p>
       </div>
@@ -156,6 +158,7 @@ function SiteRow({
         onClick={onScan}
         disabled={disabled}
         aria-busy={busy}
+        aria-label={busy ? `يُفحص ${site.name_ar}` : `افحص ${site.name_ar} الآن`}
         className="rounded-full border border-ink/30 px-4 py-1.5 text-sm transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
       >
         {busy ? "يُفحص…" : "افحص الآن"}

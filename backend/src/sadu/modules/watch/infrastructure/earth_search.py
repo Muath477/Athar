@@ -1,6 +1,6 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -21,7 +21,7 @@ COLLECTION = "sentinel-2-c1-l2a"
 SCENE_CLASSIFICATION = "scl"
 CLEAR_CLASSES = (4, 5, 6)
 MAX_CLOUD_COVER = 40
-SEARCH_PAGE = 100
+BIN_PAGE = 10
 DEFAULT_SCALE = 0.0001
 DEFAULT_OFFSET = -0.1
 ALLOWED_ASSET_HOSTS = frozenset({"e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com"})
@@ -82,7 +82,7 @@ class EarthSearchSceneSource:
         return False
 
     async def scenes(self, area: WatchArea, start: date, end: date, limit: int) -> list[Scene]:
-        items = pick_items(await self._search(area, start, end), limit)
+        items = await self._clearest_per_bin(area, time_bins(start, end, limit))
         scenes: list[Scene] = []
         failures = 0
 
@@ -90,7 +90,7 @@ class EarthSearchSceneSource:
             nonlocal failures
             try:
                 scenes.append(await anyio.to_thread.run_sync(self._reader, item, area, limiter=self._limiter))
-            except (RasterioError, ValueError):
+            except (RasterioError, ValueError, OSError):
                 failures += 1
 
         async with anyio.create_task_group() as group:
@@ -100,19 +100,30 @@ class EarthSearchSceneSource:
             raise SceneSourceUnavailable(f"Could not read any of {failures} Sentinel-2 scenes")
         return sorted(scenes, key=lambda scene: scene.acquired_on)
 
-    async def _search(self, area: WatchArea, start: date, end: date) -> list[StacItem]:
-        body = search_body(area, start, end)
+    async def _clearest_per_bin(self, area: WatchArea, bins: list[tuple[date, date]]) -> list[StacItem]:
+        picked: dict[date, StacItem] = {}
+        async with httpx.AsyncClient(timeout=self._timeout_s, transport=self._transport) as client:
+            for start, end in bins:
+                for item in await self._search(client, area, start, end):
+                    if item.acquired_on not in picked:
+                        picked[item.acquired_on] = item
+                        break
+        return sorted(picked.values(), key=lambda item: item.acquired_on)
+
+    async def _search(
+        self, client: httpx.AsyncClient, area: WatchArea, start: date, end: date
+    ) -> list[StacItem]:
         try:
-            async with httpx.AsyncClient(timeout=self._timeout_s, transport=self._transport) as client:
-                response = await client.post(self._search_url, json=body)
-                response.raise_for_status()
-                payload = response.json()
+            response = await client.post(self._search_url, json=search_body(area, start, end))
+            response.raise_for_status()
+            payload = response.json()
         except (httpx.HTTPError, ValueError) as error:
             raise SceneSourceUnavailable(f"Earth Search did not answer: {error}") from error
         features = payload.get("features") if isinstance(payload, dict) else None
         if not isinstance(features, list):
             raise SceneSourceUnavailable("Earth Search returned no feature list")
-        return [item for feature in features if (item := parse_item(feature)) is not None]
+        items = [item for feature in features if (item := parse_item(feature)) is not None]
+        return sorted(items, key=lambda item: item.cloud_cover)
 
 
 def search_body(area: WatchArea, start: date, end: date) -> dict[str, Any]:
@@ -122,7 +133,7 @@ def search_body(area: WatchArea, start: date, end: date) -> dict[str, Any]:
         "datetime": f"{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z",
         "query": {"eo:cloud_cover": {"lt": MAX_CLOUD_COVER}},
         "sortby": [{"field": "properties.eo:cloud_cover", "direction": "asc"}],
-        "limit": SEARCH_PAGE,
+        "limit": BIN_PAGE,
     }
 
 
@@ -153,12 +164,11 @@ def parse_item(feature: object) -> StacItem | None:
     )
 
 
-def pick_items(items: list[StacItem], limit: int) -> list[StacItem]:
-    clearest_per_day: dict[date, StacItem] = {}
-    for item in sorted(items, key=lambda item: item.cloud_cover):
-        clearest_per_day.setdefault(item.acquired_on, item)
-    clearest = sorted(clearest_per_day.values(), key=lambda item: item.cloud_cover)[:limit]
-    return sorted(clearest, key=lambda item: item.acquired_on)
+def time_bins(start: date, end: date, count: int) -> list[tuple[date, date]]:
+    days = (end - start).days + 1
+    count = max(1, min(count, days))
+    edges = [start + timedelta(days=days * i // count) for i in range(count + 1)]
+    return [(edges[i], edges[i + 1] - timedelta(days=1)) for i in range(count)]
 
 
 def read_item(item: StacItem, area: WatchArea) -> Scene:
