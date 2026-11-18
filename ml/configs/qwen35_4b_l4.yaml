@@ -28,4 +28,5 @@ data:
   train: ml/data/build/train.jsonl
   val: ml/data/build/val.jsonl
   test: ml/data/build/test.jsonl
+  public_test: ml/data/build/public_test.jsonl
 output_dir: ml/outputs/qwen35-4b-l4

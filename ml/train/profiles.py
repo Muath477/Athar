@@ -48,6 +48,7 @@ class DataSettings:
     train: str
     val: str
     test: str
+    public_test: str = "ml/data/build/public_test.jsonl"
 
 
 @dataclass(frozen=True)

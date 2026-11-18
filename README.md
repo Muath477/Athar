@@ -251,12 +251,12 @@ Details, privacy and failure modes: [ADR-028](docs/adr/ADR-028-assistant.md).
 Approved maps train a damage model the authority owns, so it does not depend on a paid API. It is Qwen3.5-4B (Apache-2.0, natively multimodal) fine-tuned with bf16 LoRA. It reads the rectified photo and answers with glossary elements: type, shape, severity, class and confidence.
 
 1. A model engineer downloads approved maps from `GET /api/v1/ml/training-export` (`manage_models`). Faces were blurred at upload, and no user or visitor data is exported.
-2. `ml/data/build_dataset.py` adds licence-checked public crack and heritage-surface sets and splits by site, so test scores come from walls the model never saw.
-3. `ml/notebooks/train_qwen35_damage.ipynb` runs on Google Colab. It reads the GPU and picks the profile: Qwen3.5-4B in bf16 LoRA on a 22 GB L4, 9B on an A100, 2B below 16 GB. It evaluates with the same cell matching as the accuracy card and exports GGUF files.
+2. `ml/data/collect.py` fetches nine licence-checked public sets on its own (heritage walls in Cairo, the Kasbah of Algiers and Darbhanga Fort, brick masonry, concrete crack sets and crack masks) from Zenodo, Mendeley Data and the Hugging Face Hub; `ml/data/build_dataset.py` splits Athar maps by site and holds out 10% of the public close-ups, so test scores come from walls and photos the model never saw.
+3. `ml/notebooks/train_qwen35_damage.ipynb` runs on Google Colab. It reads the GPU and picks the profile: Qwen3.5-4B in bf16 LoRA on a 22 GB L4, 9B on an A100, 2B below 16 GB. It scores the base model first, then the fine-tuned model on the same held-out rows, evaluates wall maps with the same cell matching as the accuracy card, and exports GGUF files.
 4. Inference runs on a 16 GB machine with llama.cpp `llama-server` and the Q4_K_M GGUF plus its vision projector, about 5 GB in use.
 5. The version is registered with its metrics and activated on `/dashboard/models`. With `SADU_DAMAGE_DETECTOR=qwen`, new maps use the active version and the audit log records it.
 
-The model has not been trained yet: the pipeline, tests and serving code are in place and wait for approved maps. Details: [ADR-029](docs/adr/ADR-029-own-model.md), [docs/ml/architecture.md](docs/ml/architecture.md), [ml/README.md](ml/README.md).
+The model has not been trained yet. It can be trained now on the public close-ups, which gives a before/after number on held-out heritage photos; the wall-map score waits for approved maps. Details: [ADR-029](docs/adr/ADR-029-own-model.md), [docs/ml/architecture.md](docs/ml/architecture.md), [ml/README.md](ml/README.md).
 
 ## Governance
 
@@ -513,7 +513,7 @@ Evaluation tools:
 - `uv run python -m eval.backtest_watch run …` then `score …` replays satellite screening over past dates and measures its precision against a hand-filled truth column.
 - `uv run python -m sadu.cli quality` reads the live database and prints the share of published findings and approved maps that carry full evidence, photos sent back, findings held for a specialist, specialist rejections and corrected maps. It exits non-zero when anything reached the dashboard without evidence. The same report is `GET /api/v1/reports/quality` (`read_audit`) and the card on the audit page.
 
-Counted on 2026-11-18 on this branch: 403 backend tests, 48 frontend unit tests in 10 files, and 22 ML script tests, all passing.
+Counted on 2026-11-18 on this branch: 403 backend tests, 48 frontend unit tests in 10 files, and 45 ML script tests (one more runs where pyarrow is installed), all passing.
 
 What CI runs ([.github/workflows/ci.yml](.github/workflows/ci.yml)) on every push to `main` and every pull request:
 

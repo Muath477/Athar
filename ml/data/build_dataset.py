@@ -12,7 +12,10 @@ from ml.data.target import Task, chat, crack_lines_target, patch_tags_target, wa
 
 DATA_DIR = Path(__file__).resolve().parent
 SPLITS = ("train", "val", "test")
+PUBLIC_TEST = "public_test"
 DEFAULT_RATIOS = {"train": 0.8, "val": 0.1, "test": 0.1}
+PUBLIC_TEST_SHARE = 0.1
+PUBLIC_VAL_SHARE = 0.05
 SELF_TRAINING_DETECTORS = frozenset({"qwen"})
 
 Row = dict[str, Any]
@@ -87,6 +90,29 @@ def public_rows(manifest: Path, cap: int, seed: str) -> list[Row]:
     return [_public_row(record) for record in damaged[:damaged_taken] + sound[:sound_taken]]
 
 
+def split_public(rows: list[Row], seed: str) -> dict[str, list[Row]]:
+    parts: dict[str, list[Row]] = {"train": [], "val": [], PUBLIC_TEST: []}
+    for row in rows:
+        if row["task"] != Task.PATCH_TAGS.value:
+            parts["train"].append(row)
+            continue
+        share = int(hashlib.sha256(f"{seed}:{row['id']}".encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
+        if share < PUBLIC_TEST_SHARE:
+            parts[PUBLIC_TEST].append(row)
+        elif share < PUBLIC_TEST_SHARE + PUBLIC_VAL_SHARE:
+            parts["val"].append(row)
+        else:
+            parts["train"].append(row)
+    return parts
+
+
+def read_manifest(athar_dir: Path) -> list[Row]:
+    manifest = athar_dir / "manifest.jsonl"
+    if not manifest.exists():
+        return []
+    return [json.loads(line) for line in manifest.read_text().splitlines() if line.strip()]
+
+
 def _public_row(record: Row) -> Row:
     task = Task(record["task"])
     if task is Task.CRACK_LINES:
@@ -99,7 +125,7 @@ def _public_row(record: Row) -> Row:
         "label_quality": "public",
         "group": record["group"],
         "messages": chat(task, record["image"], target),
-        "meta": {"source": record["source"]},
+        "meta": {"source": record["source"], "damage_types": record.get("damage_types", [])},
     }
 
 
@@ -107,6 +133,7 @@ def balance_report(splits: dict[str, list[Row]]) -> dict[str, Any]:
     report: dict[str, Any] = {}
     for split, rows in splits.items():
         elements: Counter[str] = Counter()
+        tags: Counter[str] = Counter()
         tasks: Counter[str] = Counter()
         quality: Counter[str] = Counter()
         for row in rows:
@@ -114,22 +141,33 @@ def balance_report(splits: dict[str, list[Row]]) -> dict[str, Any]:
             quality[row["label_quality"]] += 1
             for element in row["meta"].get("elements", []):
                 elements[element["damage_type"]] += 1
+            if row["task"] == Task.PATCH_TAGS.value:
+                tags.update(row["meta"]["damage_types"] or ["sound"])
         report[split] = {
             "examples": len(rows),
             "sites": len({row["group"] for row in rows if row["task"] == Task.WALL_MAP.value}),
             "tasks": dict(tasks),
             "label_quality": dict(quality),
             "elements_by_type": dict(sorted(elements.items())),
+            "patch_tags": dict(sorted(tags.items())),
         }
     return report
 
 
 def report_markdown(report: dict[str, Any]) -> str:
     types = sorted({t for split in report.values() for t in split["elements_by_type"]})
-    lines = ["| split | examples | sites | " + " | ".join(types) + " |", "|" + "---|" * (len(types) + 3)]
+    header = ["split", "examples", "sites", *types]
+    lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
     for split, data in report.items():
-        counts = " | ".join(str(data["elements_by_type"].get(t, 0)) for t in types)
-        lines.append(f"| {split} | {data['examples']} | {data['sites']} | {counts} |")
+        counts = [str(data["elements_by_type"].get(t, 0)) for t in types]
+        lines.append("| " + " | ".join([split, str(data["examples"]), str(data["sites"]), *counts]) + " |")
+    tag_types = sorted({t for split in report.values() for t in split["patch_tags"]})
+    if tag_types:
+        lines += ["", "| split | public close-ups | " + " | ".join(tag_types) + " |"]
+        lines.append("|" + "---|" * (len(tag_types) + 2))
+        for split, data in report.items():
+            counts = " | ".join(str(data["patch_tags"].get(t, 0)) for t in tag_types)
+            lines.append(f"| {split} | {data['tasks'].get(Task.PATCH_TAGS.value, 0)} | {counts} |")
     return "\n".join(lines) + "\n"
 
 
@@ -141,13 +179,17 @@ def write_jsonl(path: Path, rows: list[Row]) -> None:
 def build(
     athar_dir: Path, public_manifests: list[Path], out_dir: Path, *, cap: int, seed: str
 ) -> dict[str, Any]:
-    manifest = athar_dir / "manifest.jsonl"
-    records = [json.loads(line) for line in manifest.read_text().splitlines() if line.strip()]
+    records = read_manifest(athar_dir)
     image_root = os.path.relpath(athar_dir, DATA_DIR)
     athar_splits = split_athar(records, DEFAULT_RATIOS, seed)
     splits = {split: wall_map_rows(rows, image_root) for split, rows in athar_splits.items()}
+    athar_val_empty = not splits["val"]
+    splits[PUBLIC_TEST] = []
     for public in public_manifests:
-        splits["train"] += public_rows(public, cap, seed)
+        parts = split_public(public_rows(public, cap, seed), seed)
+        splits["train"] += parts["train"]
+        splits[PUBLIC_TEST] += parts[PUBLIC_TEST]
+        splits["val" if athar_val_empty else "train"] += parts["val"]
     random.Random(seed).shuffle(splits["train"])
     for split, rows in splits.items():
         write_jsonl(out_dir / f"{split}.jsonl", rows)
