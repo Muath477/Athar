@@ -12,7 +12,7 @@ const STATE_AR: Record<Step["state"], string> = { running: "جارٍ", done: "ت
 
 export function ReplyTimeline({ progress }: { progress: ReplyProgress }) {
   return (
-    <div aria-live="polite" aria-atomic="false" className="flex flex-col gap-2 rounded-xl border border-clay/40 bg-white/75 p-3">
+    <div aria-live="polite" aria-atomic="false" className="flex flex-col gap-2 rounded-sm border border-line bg-white p-3">
       <p className="text-sm font-bold text-mud">المساعد يعمل{progress.skill ? <> · <bdi>{progress.skill}</bdi></> : null}</p>
       <ol aria-label="خطوات الرد" className="flex flex-col gap-1 text-sm">
         {progress.steps.map((step) => (

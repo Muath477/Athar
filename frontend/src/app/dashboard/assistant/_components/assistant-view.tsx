@@ -179,7 +179,7 @@ export function AssistantView() {
   if (!me) return <AssistantSkeleton />;
   if (!allowed) {
     return (
-      <p role="alert" className="rounded-xl bg-white/75 p-4">
+      <p role="alert" className="rounded-sm bg-white p-4">
         لا تملك صلاحية استخدام مساعد أثر. اطلبها من مسؤول النظام.
       </p>
     );
@@ -212,7 +212,7 @@ export function AssistantView() {
 
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <ConversationList conversations={conversations} activeId={activeId} onStartNew={startNew} disabled={busy} />
-        <section aria-label="المحادثة" className="flex min-w-0 flex-col gap-3 rounded-xl bg-white/60 p-3">
+        <section aria-label="المحادثة" className="flex min-w-0 flex-col gap-3 rounded-sm bg-white/60 p-3">
           {opening ? (
             <PageSkeleton />
           ) : (
@@ -226,7 +226,7 @@ export function AssistantView() {
             />
           )}
           {sendError && (
-            <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
+            <p role="alert" className="rounded-sm border border-urgent/40 bg-urgent/10 p-3 text-sm">
               {sendError}
             </p>
           )}
@@ -251,10 +251,10 @@ function finishLastStep(steps: Step[], message: Message): Step[] {
 export function AssistantSkeleton() {
   return (
     <PageSkeleton>
-      <div className="h-9 w-56 rounded-xl bg-clay/25" />
+      <div className="h-9 w-56 rounded-sm bg-clay/25" />
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <div className="h-64 rounded-xl bg-clay/20" />
-        <div className="h-96 rounded-xl bg-clay/20" />
+        <div className="h-64 rounded-sm bg-clay/60" />
+        <div className="h-96 rounded-sm bg-clay/60" />
       </div>
     </PageSkeleton>
   );

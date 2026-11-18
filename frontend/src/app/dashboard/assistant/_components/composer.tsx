@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { type DragEvent, type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ACCEPTED_TYPES, type FileProblem, PHOTO_TYPES, checkFiles } from "@/lib/assistant";
+import { buttonVariants } from "@/components/ui/button";
 
 type Draft = { file: File; preview: string | null };
 
@@ -81,8 +82,8 @@ export function Composer({ busy, onSend }: { busy: boolean; onSend: (text: strin
       onDragLeave={() => setDropping(false)}
       onDrop={onDrop}
       aria-label="اكتب رسالتك"
-      className={`flex flex-col gap-2 rounded-xl border-2 p-2 transition-colors ${
-        dropping ? "border-dashed border-sadu bg-white/75" : "border-transparent"
+      className={`flex flex-col gap-2 rounded-sm border-2 p-2 transition-colors ${
+        dropping ? "border-dashed border-sadu bg-white" : "border-transparent"
       }`}
     >
       <label htmlFor="assistant-message" className="sr-only">
@@ -98,7 +99,7 @@ export function Composer({ busy, onSend }: { busy: boolean; onSend: (text: strin
         maxLength={4000}
         placeholder="مثل: حلّل صورة الواجهة الشمالية واكتب ملف التدقيق"
         aria-describedby="assistant-message-hint"
-        className="min-h-11 w-full resize-y rounded-lg border border-mud/60 bg-white p-3 text-base"
+        className="min-h-11 w-full resize-y rounded-sm border border-mud/60 bg-white p-3 text-base"
       />
       <p id="assistant-message-hint" className="text-sm text-mud">
         Enter للإرسال، وShift+Enter لسطر جديد. يمكنك سحب الصور أو ملفات PDF وإفلاتها هنا.
@@ -107,7 +108,7 @@ export function Composer({ busy, onSend }: { busy: boolean; onSend: (text: strin
       {drafts.length > 0 && (
         <ul aria-label="مرفقات الرسالة" className="flex flex-wrap gap-2">
           {drafts.map((draft, index) => (
-            <li key={`${draft.file.name}-${index}`} className="flex items-center gap-2 rounded-lg bg-white p-1.5 text-sm">
+            <li key={`${draft.file.name}-${index}`} className="flex items-center gap-2 rounded-sm bg-white p-1.5 text-sm">
               {draft.preview ? (
                 <Image src={draft.preview} alt="" width={48} height={48} unoptimized className="size-12 rounded object-cover" />
               ) : (
@@ -120,7 +121,7 @@ export function Composer({ busy, onSend }: { busy: boolean; onSend: (text: strin
                 type="button"
                 onClick={() => removeDraft(index)}
                 aria-label={`أزل ${draft.file.name}`}
-                className="min-h-11 min-w-11 rounded-full hover:bg-sand"
+                className={buttonVariants({ variant: "ghost", size: "icon" })}
               >
                 ×
               </button>
@@ -140,7 +141,7 @@ export function Composer({ busy, onSend }: { busy: boolean; onSend: (text: strin
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-ink/30 px-4 text-sm hover:bg-ink hover:text-sand has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-sadu">
+        <label className={buttonVariants({ variant: "outline", className: "cursor-pointer has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-sadu" })}>
           أرفق صورًا أو PDF
           <input
             type="file"
@@ -157,7 +158,7 @@ export function Composer({ busy, onSend }: { busy: boolean; onSend: (text: strin
         <button
           type="submit"
           disabled={busy || sending || empty}
-          className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
+          className={buttonVariants()}
         >
           {busy ? "المساعد يرد…" : "أرسل"}
         </button>

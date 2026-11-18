@@ -7,6 +7,7 @@ import { type Attachment, type ElementRow, type Message, type PendingAction, ele
 import { classAr } from "@/lib/elements";
 import { confidenceAr, damageTypeAr, severityAr } from "@/lib/labels";
 import { type ReplyProgress, ReplyTimeline } from "./reply-progress";
+import { buttonVariants } from "@/components/ui/button";
 
 export type FacadeOption = { id: string; label: string };
 
@@ -17,7 +18,7 @@ type Handlers = {
   onDecide: (actionId: string, confirm: boolean) => Promise<void>;
 };
 
-const SECONDARY_CLASS = "min-h-11 rounded-full border border-ink/30 px-4 text-sm hover:bg-ink hover:text-sand disabled:opacity-50";
+const SECONDARY_CLASS = buttonVariants({ variant: "outline" });
 
 export function MessageLog({
   messages,
@@ -55,7 +56,7 @@ function MessageItem({ message, ...handlers }: { message: Message } & Handlers) 
 
 function UserMessage({ message, ...handlers }: { message: Message } & Handlers) {
   return (
-    <article aria-label="رسالتك" className="ms-auto flex max-w-[85%] flex-col gap-2 rounded-xl bg-ink/10 p-3">
+    <article aria-label="رسالتك" className="ms-auto flex max-w-[85%] flex-col gap-2 rounded-sm bg-ink/10 p-3">
       {message.text && <p className="whitespace-pre-line">{message.text}</p>}
       {message.attachments.length > 0 && (
         <ul aria-label="المرفقات" className="flex flex-wrap gap-3">
@@ -94,7 +95,7 @@ function PhotoAttachment({ attachment, facades, busy, onAnalyse }: { attachment:
           width={160}
           height={120}
           unoptimized
-          className="h-28 w-40 rounded-lg object-cover"
+          className="h-28 w-40 rounded-sm object-cover"
         />
       </a>
       <div className="flex w-40 flex-col gap-1 text-sm">
@@ -105,7 +106,7 @@ function PhotoAttachment({ attachment, facades, busy, onAnalyse }: { attachment:
           id={selectId}
           value={facadeId}
           onChange={(e) => setFacadeId(e.target.value)}
-          className="min-h-11 rounded-lg border border-mud/60 bg-white px-2"
+          className="min-h-11 rounded-sm border border-mud/60 bg-white px-3"
         >
           <option value="">دون حفظ مخطط</option>
           {facades.map((f) => (
@@ -128,7 +129,7 @@ function FileLink({ attachment }: { attachment: Attachment }) {
     <a
       href={attachment.url}
       download={attachment.file_name}
-      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-mud/60 bg-white px-3 text-sm hover:bg-sand"
+      className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-mud/60 bg-white px-3 text-sm hover:bg-sand"
     >
       <span className="font-bold">{label}</span>
       <bdi className="text-mud">{attachment.file_name}</bdi>
@@ -142,7 +143,7 @@ function ToolMessage({ message, onDecide }: { message: Message } & Handlers) {
   return (
     <article
       aria-label={toolResultAr(message)}
-      className={`flex flex-col gap-2 rounded-xl border p-3 text-sm ${failed ? "border-urgent/40 bg-urgent/5" : "border-clay/40 bg-white/75"}`}
+      className={`flex flex-col gap-2 rounded-sm border p-3 text-sm ${failed ? "border-urgent/40 bg-urgent/5" : "border-line bg-white"}`}
     >
       <p className="font-bold">{toolResultAr(message)}</p>
       <p className={failed ? "text-urgent" : "text-mud"}>{message.text}</p>
@@ -178,7 +179,7 @@ function ElementsTable({ rows, wallName }: { rows: ElementRow[]; wallName: strin
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-clay/30">
+            <tr key={row.id} className="border-b border-line">
               <td className="px-2 py-1">
                 <bdi>{row.id}</bdi>
                 {(row.needs_review || row.severity === "urgent") && <span className="ms-1 text-urgent">· زيارة ميدانية</span>}
@@ -216,7 +217,7 @@ function ActionCard({ action, onDecide }: { action: PendingAction; onDecide: Han
     );
   }
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-sadu/50 bg-sand/60 p-3">
+    <div className="flex flex-col gap-2 rounded-sm border border-sadu/50 bg-sand/60 p-3">
       <p>
         إرسال <bdi className="font-bold">{action.file_name}</bdi> إلى المختصين ينتظر تأكيدك. سيصلهم رابط الملف لمراجعته
         واعتماده، ولا يمكن سحب الإرسال بعد تأكيده.
@@ -226,7 +227,7 @@ function ActionCard({ action, onDecide }: { action: PendingAction; onDecide: Han
           type="button"
           onClick={() => decide(true)}
           disabled={deciding}
-          className="min-h-11 rounded-full bg-sadu px-5 font-bold text-sand hover:bg-ink disabled:opacity-50"
+          className={buttonVariants()}
         >
           أكّد الإرسال
         </button>
@@ -243,7 +244,7 @@ function AgentMessage({ message }: { message: Message }) {
   return (
     <article
       aria-label="رد المساعد"
-      className={`me-auto flex max-w-[85%] flex-col gap-1 rounded-xl p-3 ${unavailable ? "border border-urgent/40 bg-urgent/10" : "bg-white"}`}
+      className={`me-auto flex max-w-[85%] flex-col gap-1 rounded-sm p-3 ${unavailable ? "border border-urgent/40 bg-urgent/10" : "bg-white"}`}
     >
       {message.skill_title && (
         <p className="text-sm text-mud">
