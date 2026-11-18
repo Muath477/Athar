@@ -12,7 +12,7 @@ import { VIEWPORT_CLASS } from "./viewport";
 
 const SiteModel = dynamic(() => import("@/components/site-model").then((m) => m.SiteModel), {
   ssr: false,
-  loading: () => <div className="size-full animate-pulse rounded-xl bg-clay/20" />,
+  loading: () => <div className="size-full animate-pulse rounded-xl bg-clay/20 motion-reduce:animate-none" />,
 });
 
 type Props = { siteId: string; mapsApiKey: string | null };
@@ -62,10 +62,14 @@ export function SiteExplorer({ siteId, mapsApiKey }: Props) {
 
 function ExplorerSkeleton() {
   return (
-    <div className="flex flex-col gap-5 pt-4" aria-busy>
-      <div className="h-9 w-2/3 animate-pulse rounded bg-clay/20" />
-      <div className={`${VIEWPORT_CLASS} animate-pulse bg-clay/20`} />
-      <div className="h-40 animate-pulse rounded-xl bg-clay/20" />
+    <div
+      role="status"
+      aria-label="جارٍ التحميل"
+      className="flex animate-pulse flex-col gap-5 pt-4 motion-reduce:animate-none"
+    >
+      <div className="h-9 w-2/3 rounded-xl bg-clay/25" />
+      <div className={`${VIEWPORT_CLASS} bg-clay/20`} />
+      <div className="h-40 rounded-xl bg-clay/20" />
     </div>
   );
 }

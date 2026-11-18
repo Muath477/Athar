@@ -18,23 +18,37 @@ export function AnalysisProgress() {
   }, []);
 
   const current = STAGES.filter((stage) => seconds >= stage.from).length - 1;
+  const shownStage = Math.min(current, 2);
 
   return (
     <div className="flex aspect-[4/3] flex-col justify-center gap-4 rounded-xl bg-ink p-6 text-sand">
-      <ol className="flex flex-col gap-3" aria-live="polite">
-        {STAGES.slice(0, 3).map((stage, index) => (
-          <li key={stage.label} className={`flex items-center gap-3 ${index > current ? "opacity-40" : ""}`}>
-            <span
-              aria-hidden
-              className={`h-2.5 w-2.5 rounded-full ${
-                index < current ? "bg-sand" : index === current ? "animate-pulse bg-watch motion-reduce:animate-none" : "border border-sand"
-              }`}
-            />
-            {stage.label}
-          </li>
-        ))}
+      <p role="status" className="sr-only">
+        {STAGES[current].label}
+      </p>
+      <ol className="flex flex-col gap-3">
+        {STAGES.slice(0, 3).map((stage, index) => {
+          const done = index < shownStage;
+          const active = index === shownStage;
+          return (
+            <li key={stage.label} className={`flex items-center gap-3 ${done || active ? "" : "text-sand/70"}`}>
+              <span
+                aria-hidden
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                  done ? "bg-sand" : active ? "animate-pulse bg-watch motion-reduce:animate-none" : "border border-sand/70"
+                }`}
+              />
+              {stage.label}
+              {done && <span className="sr-only">(تمّ)</span>}
+              {active && <span className="sr-only">(جارٍ)</span>}
+            </li>
+          );
+        })}
       </ol>
-      {current === 3 && <p className="text-sm text-sand/80">{STAGES[3].label}</p>}
+      {current === 3 && (
+        <p aria-hidden className="text-sm text-sand/80">
+          {STAGES[3].label}
+        </p>
+      )}
       <p className="text-sm tabular-nums text-sand/70">{seconds.toLocaleString("ar-SA")} ث</p>
     </div>
   );

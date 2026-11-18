@@ -1,18 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type DragEvent, type FormEvent, useEffect, useState } from "react";
+import { type DragEvent, type FormEvent, useCallback, useEffect, useState } from "react";
+import { PageSkeleton, RetryAlert } from "@/app/_components/page-status";
 import { ApiError, type Site, request } from "@/lib/api";
 import { createMap, type NewMapMeta } from "@/lib/maps";
-import { useMe } from "@/lib/use-me";
+import { useMeState } from "@/lib/use-me";
 import { AnalysisProgress } from "./analysis-progress";
 import { CornerPicker, type Corners, DEFAULT_CORNERS, FULL_FRAME } from "./corner-picker";
 import { Stepper } from "./stepper";
 
 const OTHER_WALL = "other";
+const INPUT_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3 text-base";
+const SECONDARY_CLASS = "min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand";
 
 export function NewMapForm() {
-  const me = useMe();
+  const { me, error: meError, retry: retryMe } = useMeState();
   const router = useRouter();
   const [sites, setSites] = useState<Site[]>([]);
   const [wallChoice, setWallChoice] = useState<string>("");
@@ -22,10 +25,18 @@ export function NewMapForm() {
   const [pending, setPending] = useState(false);
   const [dropping, setDropping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [sitesError, setSitesError] = useState<string | null>(null);
+
+  const loadSites = useCallback(() => {
+    request<Site[]>("/sites").then(setSites, (e) =>
+      setSitesError(e instanceof ApiError ? e.message : "تعذر تحميل الجدران المسجلة."),
+    );
+  }, []);
 
   useEffect(() => {
-    if (me) request<Site[]>("/sites").then(setSites);
-  }, [me]);
+    if (me) loadSites();
+  }, [me, loadSites]);
 
   function choosePhoto(file: File | null) {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
@@ -33,6 +44,7 @@ export function NewMapForm() {
     setPhotoUrl(file ? URL.createObjectURL(file) : null);
     setCorners(DEFAULT_CORNERS);
     setError(null);
+    setPhotoError(null);
   }
 
   function onDrop(event: DragEvent<HTMLLabelElement>) {
@@ -40,7 +52,7 @@ export function NewMapForm() {
     setDropping(false);
     const file = event.dataTransfer.files[0];
     if (file && ["image/jpeg", "image/png"].includes(file.type)) choosePhoto(file);
-    else setError("أرسل صورة بصيغة JPEG أو PNG.");
+    else setPhotoError("أرسل صورة بصيغة JPEG أو PNG.");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -66,29 +78,60 @@ export function NewMapForm() {
     }
   }
 
-  if (!me) return <p className="pt-6">…</p>;
+  if (meError) {
+    return (
+      <div className="pt-6">
+        <RetryAlert message={meError} onRetry={retryMe} />
+      </div>
+    );
+  }
+  if (!me) return <FormSkeleton />;
 
   const step = pending ? 4 : photo ? 3 : wallChoice ? 2 : 1;
+  const missing = !wallChoice && !photo
+    ? "اختر الجدار وأرفق صورة أولًا."
+    : !wallChoice
+      ? "اختر الجدار أولًا."
+      : !photo
+        ? "أرفق صورة الجدار أولًا."
+        : null;
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-bold leading-tight">ارسم مخطط جدار</h1>
+        <h1 className="text-3xl font-bold leading-snug">ارسم مخطط جدار</h1>
         <Stepper current={step} steps={["اختر الجدار", "صوّر الجدار", "حدد الزوايا", "التحليل"]} />
       </header>
 
-      <fieldset disabled={pending} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <div className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-bold">الجدار</span>
+      {sitesError && (
+        <RetryAlert
+          message={sitesError}
+          onRetry={() => {
+            setSitesError(null);
+            loadSites();
+          }}
+        />
+      )}
+
+      <fieldset
+        disabled={pending}
+        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:grid-rows-[auto_1fr]"
+      >
+        <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-1">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="wall-choice" className="font-bold">
+              الجدار
+            </label>
             <select
+              id="wall-choice"
               required
               value={wallChoice}
               onChange={(e) => setWallChoice(e.target.value)}
-              className="rounded-lg border border-clay/60 bg-white/80 p-2.5 text-base"
+              aria-describedby="wall-choice-hint"
+              className="min-h-11 rounded-lg border border-mud/60 bg-white px-3 text-base"
             >
               <option value="" disabled>
-                اختر واجهة مسجلة أو جدارًا آخر
+                اختر الجدار
               </option>
               {sites.map((site) => (
                 <optgroup key={site.id} label={site.name_ar}>
@@ -101,22 +144,24 @@ export function NewMapForm() {
               ))}
               <option value={OTHER_WALL}>جدار غير مسجل</option>
             </select>
-            <span className="text-sm text-mud">الواجهات المسجلة تعرف مقاسها؛ للجدار الآخر أدخل العرض والارتفاع.</span>
-          </label>
+            <p id="wall-choice-hint" className="text-sm text-mud">
+              الواجهات المسجلة تعرف مقاسها؛ للجدار غير المسجل أدخل العرض والارتفاع.
+            </p>
+          </div>
 
           {wallChoice === OTHER_WALL && (
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 sm:col-span-2">
                 <span>اسم الجدار</span>
-                <input name="wall_name" required maxLength={200} className="rounded-lg border border-clay/60 bg-white/80 p-2.5 text-base" />
+                <input name="wall_name" required maxLength={200} className={INPUT_CLASS} />
               </label>
               <label className="flex flex-col gap-1">
                 <span>العرض بالمتر</span>
-                <input name="width_m" type="number" inputMode="decimal" step="0.1" min="0.5" max="500" required className="rounded-lg border border-clay/60 bg-white/80 p-2.5 text-base" />
+                <input name="width_m" type="number" inputMode="decimal" step="0.1" min="0.5" max="500" required className={INPUT_CLASS} />
               </label>
               <label className="flex flex-col gap-1">
                 <span>الارتفاع بالمتر</span>
-                <input name="height_m" type="number" inputMode="decimal" step="0.1" min="0.5" max="100" required className="rounded-lg border border-clay/60 bg-white/80 p-2.5 text-base" />
+                <input name="height_m" type="number" inputMode="decimal" step="0.1" min="0.5" max="100" required className={INPUT_CLASS} />
               </label>
             </div>
           )}
@@ -128,51 +173,47 @@ export function NewMapForm() {
             }}
             onDragLeave={() => setDropping(false)}
             onDrop={onDrop}
-            className={`flex cursor-pointer flex-col gap-1 rounded-xl border-2 border-dashed p-4 transition-colors ${
-              dropping ? "border-sadu bg-sadu/5" : "border-clay/70 hover:border-mud"
+            className={`flex cursor-pointer flex-col gap-1 rounded-xl border-2 border-dashed p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-sadu ${
+              dropping ? "border-sadu bg-white/60" : photoError ? "border-urgent" : "border-mud hover:bg-white/60"
             }`}
           >
             <span className="font-bold">{photo ? "غيّر الصورة" : "صوّر الجدار أو اسحب صورته هنا"}</span>
             <span className="text-sm text-mud">
-              {photo ? photo.name : "قف أمام الجدار قدر الإمكان، في ضوء النهار، والجدار كاملًا في الإطار."}
+              {photo ? <bdi>{photo.name}</bdi> : "قف أمام الجدار قدر الإمكان، في ضوء النهار، والجدار كاملًا في الإطار."}
             </span>
             <input
               type="file"
               accept="image/jpeg,image/png"
               capture="environment"
               required={!photo}
+              aria-invalid={photoError ? true : undefined}
+              aria-describedby={photoError ? "wall-photo-error" : undefined}
               className="sr-only"
               onChange={(e) => choosePhoto(e.target.files?.[0] ?? null)}
             />
           </label>
-
-          {error && (
-            <p role="alert" className="border-s-4 border-urgent bg-urgent/10 p-3 text-sm leading-relaxed">
-              {error}
+          {photoError && (
+            <p id="wall-photo-error" role="alert" className="-mt-2 text-sm text-urgent">
+              {photoError}
             </p>
           )}
-
-          <button
-            type="submit"
-            disabled={pending || !photo || !wallChoice}
-            className="rounded-full bg-sadu px-8 py-3 text-lg font-bold text-sand transition-opacity disabled:opacity-40"
-          >
-            {pending ? "يحلّل أثر الجدار…" : "حلّل الجدار"}
-          </button>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           {pending ? (
             <AnalysisProgress />
           ) : photoUrl ? (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm">اسحب النقاط الأربع إلى زوايا الجدار. تظهر عدسة مكبّرة أثناء السحب.</p>
+                <p className="text-sm leading-relaxed">
+                  اسحب النقاط الأربع إلى زوايا الجدار، أو اختر نقطة ثم انقر مكانها في الصورة. تظهر عدسة مكبّرة أثناء
+                  السحب.
+                </p>
                 <div className="flex gap-2 text-sm">
-                  <button type="button" onClick={() => setCorners(DEFAULT_CORNERS)} className="rounded-full border border-ink px-3 py-1">
+                  <button type="button" onClick={() => setCorners(DEFAULT_CORNERS)} className={SECONDARY_CLASS}>
                     أعد الزوايا
                   </button>
-                  <button type="button" onClick={() => setCorners(FULL_FRAME)} className="rounded-full border border-ink px-3 py-1">
+                  <button type="button" onClick={() => setCorners(FULL_FRAME)} className={SECONDARY_CLASS}>
                     الصورة كاملة
                   </button>
                 </div>
@@ -180,13 +221,52 @@ export function NewMapForm() {
               <CornerPicker imageUrl={photoUrl} corners={corners} onChange={setCorners} />
             </>
           ) : (
-            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-xl border border-clay/50 bg-white/40 p-6 text-center text-mud">
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-xl bg-white/60 p-6 text-center text-mud">
               <span className="text-lg font-bold text-ink">هنا تظهر صورة الجدار</span>
               <span className="max-w-xs text-sm leading-relaxed">بعد اختيار الصورة تحدد زواياه، فيعدّل أثر المنظور ويقسمه شبكة قبل التحليل.</span>
             </div>
           )}
         </div>
+
+        <div className="flex flex-col gap-3 self-start lg:col-start-1 lg:row-start-2">
+          {error && (
+            <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm leading-relaxed">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={pending || !photo || !wallChoice}
+            aria-describedby={missing && !pending ? "submit-missing" : undefined}
+            className="min-h-11 rounded-full bg-sadu px-6 text-lg font-bold text-sand hover:bg-ink disabled:opacity-50"
+          >
+            {pending ? "يحلّل أثر الجدار…" : "حلّل الجدار"}
+          </button>
+          {missing && !pending && (
+            <p id="submit-missing" className="text-sm text-mud">
+              {missing}
+            </p>
+          )}
+        </div>
       </fieldset>
     </form>
+  );
+}
+
+function FormSkeleton() {
+  return (
+    <PageSkeleton>
+      <div className="flex flex-col gap-3">
+        <div className="h-9 w-72 max-w-full rounded-xl bg-clay/25" />
+        <div className="h-6 w-96 max-w-full rounded-xl bg-clay/20" />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <div className="flex flex-col gap-4">
+          <div className="h-11 rounded-xl bg-clay/20" />
+          <div className="h-24 rounded-xl bg-clay/20" />
+        </div>
+        <div className="aspect-[4/3] rounded-xl bg-clay/20" />
+      </div>
+    </PageSkeleton>
   );
 }

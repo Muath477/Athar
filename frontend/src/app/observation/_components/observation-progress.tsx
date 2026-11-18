@@ -33,7 +33,7 @@ export function ObservationProgress() {
   if (!state || state.status === "received" || state.status === "processing") {
     return (
       <div className="flex flex-col items-center gap-4 pt-16" aria-live="polite">
-        <div className="sadu-band w-40 animate-pulse" aria-hidden />
+        <div className="sadu-band w-40 animate-pulse motion-reduce:animate-none" aria-hidden />
         <p className="text-lg">{stageAr[state?.detail.stage ?? ""] ?? "استلمنا صورتك"}</p>
       </div>
     );
@@ -50,7 +50,7 @@ export function ObservationProgress() {
               key={o.facade_id}
               disabled={answering}
               onClick={() => answer(o.facade_id)}
-              className="rounded-xl border border-ink bg-white/70 p-4"
+              className="rounded-xl border border-ink bg-white/75 p-4"
             >
               {o.name_ar}
             </button>
@@ -80,7 +80,7 @@ export function ObservationProgress() {
         </section>
       )}
       {detail.findings && detail.findings.length > 0 && (
-        <section className="rounded-xl bg-white/70 p-4">
+        <section className="rounded-xl bg-white/75 p-4">
           <h2 className="mb-2 font-bold">شكرًا، صورتك ساعدت</h2>
           <ul className="flex flex-col gap-1 text-sm">
             {detail.findings.map((f) => (

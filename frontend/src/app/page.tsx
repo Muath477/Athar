@@ -12,7 +12,7 @@ export default function Home() {
         </p>
         <Link
           href="/capture"
-          className="self-start rounded-full bg-sadu px-8 py-3 text-lg font-bold text-sand shadow"
+          className="inline-flex min-h-11 items-center self-start rounded-full bg-sadu px-8 py-3 text-lg font-bold text-sand shadow hover:bg-ink"
         >
           ابدأ التصوير
         </Link>
@@ -20,7 +20,7 @@ export default function Home() {
 
       <NearbyMissions />
 
-      <section className="rounded-xl bg-white/60 p-4 text-sm leading-relaxed">
+      <section className="rounded-xl bg-white/75 p-4 text-sm leading-relaxed">
         <h2 className="mb-2 font-bold">خصوصيتك</h2>
         <p>
           نطمس الوجوه ونحذف بيانات الصورة قبل حفظها. لا نستخدم موقعك أو اتجاه جوالك إلا بموافقتك، ونحذف الموقع بمجرد

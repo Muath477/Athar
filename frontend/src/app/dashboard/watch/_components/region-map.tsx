@@ -15,7 +15,9 @@ const LEVEL_FILL: Record<string, string> = {
 };
 
 const LEVEL_RADIUS: Record<string, number> = { unknown: 6, stable: 6, watch: 9, moderate: 11, urgent: 13 };
-const LABELLED = new Set(["watch", "moderate", "urgent"]);
+const LABELLED = new Set(["moderate", "urgent"]);
+const LABEL_SIZE = 22;
+const LABEL_GAP = 6;
 
 export function project(sites: SiteRisk[]): (lat: number, lon: number) => [number, number] {
   const lats = sites.map((s) => s.location.lat);
@@ -33,6 +35,11 @@ export function RegionMap({ sites }: { sites: SiteRisk[] }) {
   if (sites.length === 0) return null;
   const toPoint = project(sites);
   const ordered = [...sites].sort((a, b) => a.priority - b.priority);
+  const points = ordered.map((site) => {
+    const level = site.latest?.level ?? "unknown";
+    const [x, y] = toPoint(site.location.lat, site.location.lon);
+    return { site, level, x, y, r: LEVEL_RADIUS[level] };
+  });
 
   return (
     <figure className="flex flex-col gap-2">
@@ -42,46 +49,78 @@ export function RegionMap({ sites }: { sites: SiteRisk[] }) {
         role="group"
         aria-label="مواقع المنطقة على الخريطة، ملوّنة بدرجة الخطر"
       >
-        {ordered.map((site) => {
-          const [x, y] = toPoint(site.location.lat, site.location.lon);
-          const level = site.latest?.level ?? "unknown";
-          return (
-            <Link
+        {points.map(({ site, level, x, y, r }) => (
+          <Link
+            key={site.site_id}
+            href={`/dashboard/watch/${site.site_id}`}
+            aria-label={`${site.name_ar}: ${levelAr[level]}`}
+            className="group"
+          >
+            <circle
+              cx={x}
+              cy={y}
+              r={r + 6}
+              className="fill-transparent stroke-sadu opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+              strokeWidth={3}
+            />
+            <circle cx={x} cy={y} r={r} fill={LEVEL_FILL[level]} stroke="white" strokeWidth={1.5}>
+              <title>{site.name_ar}</title>
+            </circle>
+          </Link>
+        ))}
+        <g aria-hidden="true" className="pointer-events-none">
+          {placeLabels(points).map(({ site, x, y, anchor }) => (
+            <text
               key={site.site_id}
-              href={`/dashboard/watch/${site.site_id}`}
-              aria-label={`${site.name_ar}: ${levelAr[level]}`}
-              className="group outline-none"
+              x={x}
+              y={y}
+              direction="rtl"
+              textAnchor={anchor}
+              dominantBaseline="central"
+              fontSize={LABEL_SIZE}
+              className="fill-ink font-bold"
+              paintOrder="stroke"
+              stroke="white"
+              strokeWidth={4}
             >
-              <circle
-                cx={x}
-                cy={y}
-                r={LEVEL_RADIUS[level] + 6}
-                className="fill-transparent stroke-sadu opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
-                strokeWidth={2}
-              />
-              <circle cx={x} cy={y} r={LEVEL_RADIUS[level]} fill={LEVEL_FILL[level]} stroke="white" strokeWidth={1.5}>
-                <title>{site.name_ar}</title>
-              </circle>
-              {LABELLED.has(level) && (
-                <text
-                  x={x}
-                  y={y - LEVEL_RADIUS[level] - 5}
-                  textAnchor="middle"
-                  className="fill-ink text-[13px] font-bold"
-                  paintOrder="stroke"
-                  stroke="white"
-                  strokeWidth={3}
-                >
-                  {site.name_ar}
-                </text>
-              )}
-            </Link>
-          );
-        })}
+              {site.name_ar}
+            </text>
+          ))}
+        </g>
       </svg>
       <figcaption className="text-xs text-mud">
-        المواقع في مواضعها التقريبية، وتكبر النقطة مع درجة الخطر. أسماء المواقع المستقرة تظهر عند المرور عليها.
+        المواقع في مواضعها التقريبية، وتكبر النقطة مع درجة الخطر. تظهر على الخريطة أسماء المواقع العاجلة والمتوسطة
+        فقط، وكل المواقع مرتبة بأسمائها في القائمة.
       </figcaption>
     </figure>
   );
+}
+
+type Placed = { site: SiteRisk; x: number; y: number; anchor: "start" | "end" };
+type Box = { left: number; right: number; top: number; bottom: number };
+
+function placeLabels(points: { site: SiteRisk; level: string; x: number; y: number; r: number }[]): Placed[] {
+  const taken: Box[] = points.map(({ x, y, r }) => ({ left: x - r, right: x + r, top: y - r, bottom: y + r }));
+  const placed: Placed[] = [];
+  const byPriority = [...points].filter(({ level }) => LABELLED.has(level)).sort((a, b) => b.site.priority - a.site.priority);
+  for (const { site, x, y, r } of byPriority) {
+    const width = site.name_ar.length * LABEL_SIZE * 0.5;
+    const top = y - LABEL_SIZE * 0.6;
+    const bottom = y + LABEL_SIZE * 0.6;
+    const onLeft = { left: x - r - LABEL_GAP - width, right: x - r - LABEL_GAP, top, bottom };
+    const onRight = { left: x + r + LABEL_GAP, right: x + r + LABEL_GAP + width, top, bottom };
+    const fits = (box: Box) =>
+      box.left >= 0 &&
+      box.right <= WIDTH &&
+      !taken.some((t) => t.left < box.right && box.left < t.right && t.top < box.bottom && box.top < t.bottom);
+    const choice = fits(onLeft) ? onLeft : fits(onRight) ? onRight : null;
+    if (!choice) continue;
+    taken.push(choice);
+    placed.push(
+      choice === onLeft
+        ? { site, x: onLeft.right, y, anchor: "start" }
+        : { site, x: onRight.left, y, anchor: "end" },
+    );
+  }
+  return placed;
 }

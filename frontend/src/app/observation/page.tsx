@@ -1,9 +1,10 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/app/_components/page-status";
 import { ObservationProgress } from "./_components/observation-progress";
 
 export default function ObservationPage() {
   return (
-    <Suspense fallback={<p className="pt-6">…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <ObservationProgress />
     </Suspense>
   );

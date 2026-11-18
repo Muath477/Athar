@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { SiteNav } from "./_components/site-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,10 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="text-2xl font-bold text-sadu">
             أثر
           </Link>
-          <nav className="flex gap-4 text-sm">
-            <Link href="/passport">جوازي</Link>
-            <Link href="/dashboard">لوحة المتابعة</Link>
-          </nav>
+          <SiteNav />
         </header>
         <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-10">{children}</main>
       </body>

@@ -1,40 +1,106 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { rememberCsrf, request, roleAr } from "@/lib/api";
+import { useMe } from "@/lib/use-me";
 
 const SECTIONS = [
-  { href: "/dashboard", label: "الموقع ثلاثي الأبعاد", exact: true },
-  { href: "/dashboard/condition", label: "حالة الموقع", exact: false },
-  { href: "/dashboard/watch", label: "الرصد من الفضاء", exact: false },
-  { href: "/dashboard/maps", label: "مخططات تلف الجدران", exact: false },
-  { href: "/dashboard/review", label: "قائمة المراجعة", exact: false },
+  { href: "/dashboard", label: "الموقع ثلاثي الأبعاد", short: null, exact: true },
+  { href: "/dashboard/condition", label: "حالة الموقع", short: null, exact: false },
+  { href: "/dashboard/watch", label: "الرصد من الفضاء", short: null, exact: false },
+  { href: "/dashboard/maps", label: "مخططات تلف الجدران", short: "المخططات", exact: false },
+  { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
 ];
 
 export function DashboardNav() {
   const pathname = usePathname();
+  const current = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    current.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [pathname]);
+
   if (pathname.startsWith("/dashboard/login")) return null;
 
   return (
-    <nav aria-label="أقسام لوحة المتابعة" className="no-print -mx-4 overflow-x-auto border-b border-clay/40 px-4">
-      <ul className="flex min-w-max gap-1">
-        {SECTIONS.map((section) => {
-          const active = section.exact ? pathname === section.href : pathname.startsWith(section.href);
-          return (
-            <li key={section.href}>
-              <Link
-                href={section.href}
-                aria-current={active ? "page" : undefined}
-                className={`-mb-px inline-block border-b-[3px] px-3 py-2.5 text-sm transition-colors ${
-                  active ? "border-sadu font-bold text-sadu" : "border-transparent text-mud hover:border-clay hover:text-ink"
-                }`}
-              >
-                {section.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <div className="no-print -mx-4 flex flex-col px-4 lg:flex-row lg:items-center lg:gap-4 lg:border-b lg:border-clay/40">
+      <nav
+        aria-label="أقسام لوحة المتابعة"
+        className="-mx-4 scroll-px-4 overflow-x-auto border-b border-clay/40 px-4 lg:mx-0 lg:min-w-0 lg:flex-1 lg:border-b-0 lg:px-0"
+      >
+        <ul className="flex min-w-max gap-1">
+          {SECTIONS.map((section) => {
+            const active = section.exact ? pathname === section.href : pathname.startsWith(section.href);
+            return (
+              <li key={section.href}>
+                <Link
+                  ref={active ? current : undefined}
+                  href={section.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`-mb-px inline-flex min-h-11 items-center border-b-[3px] px-3 text-sm transition-colors ${
+                    active ? "border-sadu font-bold text-sadu" : "border-transparent text-mud hover:border-clay hover:text-ink"
+                  }`}
+                >
+                  {section.short ? (
+                    <>
+                      <span className="sm:hidden">{section.short}</span>
+                      <span className="hidden sm:inline">{section.label}</span>
+                    </>
+                  ) : (
+                    section.label
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      <SignedInUser />
+    </div>
+  );
+}
+
+function SignedInUser() {
+  const me = useMe();
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function signOut() {
+    setLeaving(true);
+    setError(null);
+    try {
+      await request("/auth/logout", { method: "POST" });
+      rememberCsrf(null);
+      router.replace("/dashboard/login");
+    } catch {
+      setError("تعذر تسجيل الخروج. أعد المحاولة.");
+      setLeaving(false);
+    }
+  }
+
+  if (!me) return null;
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 py-1 text-sm">
+      <p className="min-w-0 text-mud">
+        <bdi className="inline-block max-w-56 truncate align-bottom text-ink">{me.email}</bdi> · {roleAr[me.role]}
+      </p>
+      <button
+        type="button"
+        onClick={signOut}
+        disabled={leaving}
+        className="min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand disabled:opacity-50"
+      >
+        {leaving ? "نسجّل خروجك…" : "تسجيل الخروج"}
+      </button>
+      {error && (
+        <p role="alert" className="basis-full text-end text-urgent">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

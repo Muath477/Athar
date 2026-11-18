@@ -17,7 +17,7 @@ export function MapCard({ summary }: { summary: MapSummary }) {
           src={summary.thumbnail_url}
           alt=""
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:group-hover:scale-100 motion-reduce:transition-none"
         />
         <span
           className={`absolute start-2 top-2 rounded-full px-2.5 py-0.5 text-xs font-bold ${
@@ -32,9 +32,9 @@ export function MapCard({ summary }: { summary: MapSummary }) {
         <div
           className="h-1.5 overflow-hidden rounded-full bg-clay/25"
           role="img"
-          aria-label={`نسبة الخلايا المتضررة ${Math.round(share * 100)}٪`}
+          aria-label={`نسبة الخلايا المتضررة ${Math.round(share * 100).toLocaleString("ar-SA")}٪`}
         >
-          <div className="h-full rounded-full bg-sadu" style={{ inlineSize: `${Math.max(share * 100, share > 0 ? 3 : 0)}%` }} />
+          <div className="h-full rounded-full bg-mud" style={{ inlineSize: `${Math.max(share * 100, share > 0 ? 3 : 0)}%` }} />
         </div>
         <p className="text-sm text-mud">
           <span className="tabular-nums">{Math.round(share * 100).toLocaleString("ar-SA")}٪</span> من الجدار متضرر

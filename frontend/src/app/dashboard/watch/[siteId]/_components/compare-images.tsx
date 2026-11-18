@@ -44,11 +44,11 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
       {view === "compare" ? (
         <div className="flex flex-col gap-2" dir="ltr">
           <div className="relative aspect-square w-full max-w-xl overflow-hidden rounded-xl bg-mud/20">
-            <img src={scan.before_url} alt="الموقع قبل: متوسط صور السنة الماضية" className="absolute inset-0 h-full w-full" />
+            <img src={scan.before_url} alt="الموقع قبل: متوسط صور السنة الماضية" className="absolute inset-0 h-full w-full bg-clay/20 text-transparent" />
             <img
               src={scan.after_url}
               alt="الموقع بعد: متوسط صور الشهر الأخير"
-              className="absolute inset-0 h-full w-full"
+              className="absolute inset-0 h-full w-full bg-clay/20 text-transparent"
               style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
             />
             <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-white" style={{ left: `${split}%` }} />
@@ -73,7 +73,7 @@ export function CompareImages({ scan, colors }: { scan: Scan; colors: Record<Thr
           <img
             src={scan.change_url}
             alt="صورة الشهر الأخير وعليها المناطق المتغيرة ملوّنة حسب نوع التغيّر"
-            className="aspect-square w-full max-w-xl rounded-xl"
+            className="aspect-square w-full max-w-xl rounded-xl bg-clay/20 text-transparent"
           />
           <ul className="flex flex-wrap gap-3 text-sm" aria-label="مفتاح الألوان">
             {threats.map((threat) => (

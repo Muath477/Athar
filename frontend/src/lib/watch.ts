@@ -1,4 +1,5 @@
 import { type LatLon, request } from "@/lib/api";
+import { countAr, hectares } from "@/lib/plural";
 
 export type Threat = "water" | "vegetation_loss" | "construction" | "earthworks" | "sand";
 export type Zone = "inside" | "ring";
@@ -104,7 +105,7 @@ export const threatAr: Record<Threat, string> = {
 
 export const zoneAr: Record<Zone, string> = {
   inside: "داخل حدود الموقع",
-  ring: "في محيط ١٥٠ م",
+  ring: "حول الموقع (١٥٠\u00a0م)",
 };
 
 export const levelAr: Record<RiskLevel, string> = {
@@ -141,13 +142,21 @@ export function strongestSignal(scan: Scan | null): Signal | null {
 }
 
 export function areaAr(m2: number): string {
-  if (m2 >= 10_000) return `${(m2 / 10_000).toLocaleString("ar-SA", { maximumFractionDigits: 1 })} هكتار`;
+  if (m2 >= 10_000) {
+    const ha = Math.round(m2 / 1_000) / 10;
+    if (Number.isInteger(ha)) return countAr(ha, hectares);
+    return `${ha.toLocaleString("ar-SA", { maximumFractionDigits: 1 })} هكتار`;
+  }
   return `${Math.round(m2).toLocaleString("ar-SA")} م²`;
 }
 
-export function copernicusCredit(scan: Scan | null): string {
+export function imageryYear(scan: Scan | null): string {
   const year = scan ? new Date(scan.recent_end).getFullYear() : new Date().getFullYear();
-  return `يحتوي على بيانات Copernicus Sentinel معدّلة ${year.toLocaleString("ar-SA", { useGrouping: false })}`;
+  return year.toLocaleString("ar-SA", { useGrouping: false });
+}
+
+export function copernicusCredit(scan: Scan | null): string {
+  return `يحتوي على بيانات Copernicus Sentinel معدّلة ${imageryYear(scan)}`;
 }
 
 export const trendAr: Record<NonNullable<SiteRisk["trend"]>, string> = {
