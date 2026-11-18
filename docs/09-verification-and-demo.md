@@ -43,7 +43,7 @@ Source for the inscription: [UNESCO, Traditional weaving of Al Sadu](https://ich
 
 Phone, screen mirrored:
 
-1. Open Sadu, tap "صوّر الواجهة", allow location. (5 s)
+1. Open Athar, tap "صوّر الواجهة", allow location. (5 s)
 2. Photograph the north facade (`north-crack.jpg` printed, or the real wall). Progress shows each agent step: نتعرّف على الواجهة، نقارن صورتك بالصورة المرجعية، نتحقق من النتائج. (20 s)
 3. The story appears with a label on each sentence (موثّق، رواية شفهية، تفسير) and plays in a Saudi voice. (15 s)
 4. Open the passport: a new stamp. (5 s)

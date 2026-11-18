@@ -16,7 +16,7 @@ The team was not available to answer questions, so these assumptions are used th
 ## 1. Problem, users and success (restated)
 
 Heritage sites in Saudi Arabia are many and spread across 13 regions, and field teams cannot visit them often. Mud-brick buildings degrade fast (cracks, basal erosion, collapse) and encroachments (graffiti, unauthorized building, removed doors or carvings) are caught late. Public reports, where they exist, are a photo with no precise location, no prior state and no severity.
-Sadu turns visitors into monitors: a visitor photographs a facade and gets a verified story; agents compare the photo with a baseline of the same facade, verify any change with evidence, and pin it on a 3D model in the authority dashboard.
+Athar turns visitors into monitors: a visitor photographs a facade and gets a verified story; agents compare the photo with a baseline of the same facade, verify any change with evidence, and pin it on a 3D model in the authority dashboard.
 Users: the **inspector** (paying customer, decides interventions), the **visitor** (data source, gets story and passport), the **expert** (reviews medium-confidence findings).
 Success for Round 1: detection precision and recall >= 80% on 50 labeled images, pin on the correct facade >= 90%, >= 9 of 10 false reports rejected or sent back, 100% of published findings linked to evidence, and a measurable drop in unsupported story claims with the Verifier on.
 
@@ -28,13 +28,13 @@ IDs are referenced from the test plan in [07-infra-and-testing.md](07-infra-and-
 
 | ID | Story | Acceptance criteria |
 |---|---|---|
-| V1 | As a visitor I open Sadu from a QR code without installing anything. | PWA loads on a mid-range Android phone over 4G in under 3 s (LCP); works in Arabic RTL by default; shows a one-screen consent for camera, location and heading with "allow" and "skip" options. |
+| V1 | As a visitor I open Athar from a QR code without installing anything. | PWA loads on a mid-range Android phone over 4G in under 3 s (LCP); works in Arabic RTL by default; shows a one-screen consent for camera, location and heading with "allow" and "skip" options. |
 | V2 | As a visitor I photograph a wall and the app records where I stood and which way I faced. | Photo, GPS (lat, lon, accuracy) and compass heading are sent only after consent; if location is refused, the visitor picks the site from a list and the photo is still accepted for the story but flagged "no location" for monitoring. |
 | V3 | As a visitor on a monitoring mission I see the reference photo as an overlay so I can match the angle. | Overlay opacity adjustable 20-80%; mission shows the facade name and a short instruction; capture button stays enabled (the overlay is guidance, not a gate). |
 | V4 | As a visitor I receive the story of the landmark in text and Arabic audio. | Story arrives in under 10 s (cached path under 2 s); every sentence-level claim shows its confidence label and a source link or narrator name; if no verified source exists the app says so; audio plays with an ar-SA voice. |
 | V5 | As a visitor I am asked a short question when the app is unsure which facade I photographed. | Question offers 2-4 facade options with thumbnails plus "I'm not sure"; answering resumes processing; no answer within 2 minutes falls back to the best guess with label Unknown for facade. |
 | V6 | As a visitor I am asked for another photo when mine is unusable. | Retake request states the reason (blurry, too dark, wrong angle) in Arabic and shows the overlay again. |
-| V7 | As a visitor I keep a Sadu Passport of my visits and contributions. | Passport is tied to an anonymous device token, lists sites visited and contribution count with status (received, verified, used in a report); visitor can delete the passport and all linked photos with one action. |
+| V7 | As a visitor I keep a Athar Passport of my visits and contributions. | Passport is tied to an anonymous device token, lists sites visited and contribution count with status (received, verified, used in a report); visitor can delete the passport and all linked photos with one action. |
 
 ### Inspector (heritage authority)
 
