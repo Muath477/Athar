@@ -1,0 +1,60 @@
+name: Space watch live check
+
+on:
+  workflow_dispatch:
+    inputs:
+      sites:
+        description: Comma-separated site slugs from the Riyadh pack
+        default: at-turaif
+        required: true
+      start:
+        description: First screening date (YYYY-MM-DD)
+        required: true
+      end:
+        description: Last screening date (YYYY-MM-DD)
+        required: true
+      step_days:
+        description: Days between screening dates
+        default: "60"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      UV_VERSION: "0.11.32"
+      SADU_REGION_PACKS_DIR: ../region-packs
+      SITES: ${{ inputs.sites }}
+      START: ${{ inputs.start }}
+      END: ${{ inputs.end }}
+      STEP_DAYS: ${{ inputs.step_days }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          pip install "uv==${UV_VERSION}"
+          uv sync --frozen
+      - name: Screen the sites against Sentinel-2 on Earth Search
+        run: |
+          uv run python -m eval.backtest_watch run \
+            --sites "$SITES" --start "$START" --end "$END" --step-days "$STEP_DAYS" \
+            --source earth_search --out "$RUNNER_TEMP/watch-backtest"
+      - name: Keep the alert table and evidence images
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: space-watch-live
+          path: ${{ runner.temp }}/watch-backtest
+          retention-days: 14
