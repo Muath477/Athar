@@ -19,6 +19,8 @@
 
 **Athar** is an Arabic-first platform that helps heritage authorities follow the condition of mud-brick walls from the ground and from space. Wall photos arrive from field surveyors, site cameras, drones and bulk uploads. Faces are blurred and location data stripped before anything is stored, then an analysis model drafts a damage map in the unified glossary. A conservation specialist corrects the draft, and it can be approved only after a recorded field inspection. The approved map carries a treatment plan with materials and quantities, and downloads as PDF and CSV. From orbit, Athar screens the surroundings of each site weekly with Sentinel-2, warns about new building, digging and standing water, and opens photo missions so someone checks on the ground.
 
+**العرض المسجّل · Demo video:** [docs/demo/athar-demo.mp4](docs/demo/athar-demo.mp4) (دقيقتان، يمرّ على الرصد من الفضاء، مخطط الجدار، الفحص الميداني والاعتماد، الكاميرات، الرفع الجماعي، مساعد أثر، الصلاحيات وسجل التدقيق).
+
 <p align="center"><img src="docs/assets/athar-pipeline.svg" alt="Animated pipeline: a wall photo has faces blurred, is straightened and split into a grid, damaged cells are marked and corrected by an expert, and a treatment plan with materials appears" width="100%"></p>
 
 ## Challenges it answers
