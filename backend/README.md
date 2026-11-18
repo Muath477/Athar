@@ -54,7 +54,7 @@ Every module except `capture`, `inspection`, `passport` and `stories` also impor
 | `missions` | Photo missions for coverage gaps and ground checks |
 | `models` | Own-model registry and `GET /ml/training-export` |
 | `passport` | Anonymous visitor passports |
-| `reports` | Wall report PDF, elements CSV, site condition JSON/PDF/CSV, assistant audit PDF |
+| `reports` | Wall report PDF, elements CSV, site condition JSON/PDF/CSV, assistant audit PDF, the evidence and review quality report |
 | `sites` | Region packs, sites, facades, baselines, field photography permit |
 | `stories` | Story sources, retrieval, drafted claims, cached stories |
 | `treatments` | Treatment catalog and plans |

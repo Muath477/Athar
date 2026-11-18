@@ -19,7 +19,7 @@
 
 **Athar** is an Arabic-first platform that helps heritage authorities follow the condition of mud-brick walls from the ground and from space. Wall photos arrive from field surveyors, site cameras, drones and bulk uploads. Faces are blurred and location data stripped before anything is stored, then an analysis model drafts a damage map in the unified glossary. A conservation specialist corrects the draft, and it can be approved only after a recorded field inspection. The approved map carries a treatment plan with materials and quantities, and downloads as PDF and CSV. From orbit, Athar screens the surroundings of each site weekly with Sentinel-2, warns about new building, digging and standing water, and opens photo missions so someone checks on the ground.
 
-**العرض المسجّل · Demo video:** [docs/demo/athar-demo.mp4](docs/demo/athar-demo.mp4) (دقيقتان، يمرّ على الرصد من الفضاء، مخطط الجدار، الفحص الميداني والاعتماد، الكاميرات، الرفع الجماعي، مساعد أثر، الصلاحيات وسجل التدقيق).
+**العرض المسجّل · Demo video:** [شاهده في المتصفح · watch in the browser](https://cdn.jsdelivr.net/gh/Muath477/Athar@8aeb515757ed07a351baa5f1db5930a218e2eb3f/docs/demo/athar-demo.mp4) · [الملف · file](docs/demo/athar-demo.mp4) (دقيقتان، يمرّ على الرصد من الفضاء، مخطط الجدار، الفحص الميداني والاعتماد، الكاميرات، الرفع الجماعي، مساعد أثر، الصلاحيات وسجل التدقيق).
 
 <p align="center"><img src="docs/assets/athar-pipeline.svg" alt="Animated pipeline: a wall photo has faces blurred, is straightened and split into a grid, damaged cells are marked and corrected by an expert, and a treatment plan with materials appears" width="100%"></p>
 
@@ -32,6 +32,32 @@ Built by team Athar for the agentX Riyadh hackathon, Culture and Heritage track.
 | Diriyah Gate Development Authority (هيئة تطوير بوابة الدرعية) | Detecting and mapping damage to mud walls | Wall damage maps, the ten-step workflow, specialist correction and approval, treatment plans ([ADR-017](docs/adr/ADR-017-diriyah-challenge-alignment.md), [ADR-026](docs/adr/ADR-026-diriyah-agent-workflow.md)) |
 | Heritage Commission (هيئة التراث) | «كيف نرى التراث من الفضاء؟» | Weekly Sentinel-2 screening of eleven Riyadh-region sites, early warning and ground checks ([ADR-025](docs/adr/ADR-025-space-watch.md)) |
 
+## Who pays, and why visitors take part
+
+<div dir="rtl">
+
+- **من يدفع:** الجهة المسؤولة عن الموقع (هيئة تطوير بوابة الدرعية، هيئة التراث، أو أمانة المنطقة)، باشتراك سنوي لكل موقع مرصود يُضاف على شكل حزم مناطق. يشمل الاشتراك الرصد من الفضاء، ومخططات التلف، والتقارير، ومساعد أثر، وسجل التدقيق.
+- **ما يتحمله أثر في كل صورة:** صور Sentinel-2 مجانية ومفتوحة. التكلفة المتغيرة هي استدعاءات النموذج المستضاف، ويسجلها أثر لكل استدعاء ويحسب تكلفة الصورة الواحدة لمسؤول النظام (`GET /api/v1/admin/costs`). نموذجنا Qwen3.5 على جهاز الجهة يُخفّض هذه التكلفة ويبقي الصور داخل المملكة.
+- **لماذا يصوّر الزائر:** لا يدفع شيئًا. يحصل على قصة المكان بمصادرها وصوت عربي، وختم في جوازه، فتأتي المراقبة مع الزيارة. كل صورة منه زيارة كانت الجهة سترسل لها فريقًا.
+- **ما لم يثبت بعد:** لم توافق أي جهة على الدفع حتى الآن، ولم نقس التكلفة الفعلية لكل صورة بنموذج حقيقي، فالعرض يستخدم إجابات مخزّنة.
+
+</div>
+
+- **Customer:** the authority responsible for the site (Diriyah Gate Development Authority, the Heritage Commission, or a regional municipality), on a yearly subscription per monitored site, sold as region packs. It covers space watch, damage maps, reports, the assistant and the audit trail.
+- **Cost per photo:** Sentinel-2 imagery is free and open. The variable cost is hosted model calls, which Athar records per call and turns into a cost per photo for the admin (`GET /api/v1/admin/costs`). Our own Qwen3.5 model on the authority's machine lowers that cost and keeps photos in the country.
+- **Why visitors take part:** they pay nothing. They get a sourced story of the place with Arabic audio and a passport stamp, so monitoring comes with the visit. Each visitor photo is a visit the authority would otherwise send a team for.
+- **Not proven yet:** no authority has agreed to pay, and the real cost per photo has not been measured with a live model; the demo uses cached answers.
+
+## Success metrics
+
+| Metric | Target | How it is measured | Status on 2026-11-18 |
+|---|---|---|---|
+| Every report that reaches the dashboard has evidence | 100% | `python -m sadu.cli quality`, `GET /api/v1/reports/quality`, the card on `/dashboard/audit` | Enforced by a database constraint for visitor findings. The demo data shows 13 of 17 approved maps: the other 4 were approved before the field inspection became mandatory, and the report flags them. |
+| Damage recall and precision on real walls | Recall ≥ 0.70 for cracks and plaster loss, precision ≥ 0.60 | `eval.score_maps` on walls a specialist drew first; the accuracy card on approved maps | Not measured on real walls yet |
+| Photo attributed to the right facade | ≥ 90% | `eval.run` on the demo pack; GPS facade matching tests | 4 of 4 on synthetic photos only |
+| False or unclear reports stopped before the dashboard | ≥ 9 of 10 | `eval.run` (shadows, off-target photos); live share of photos sent back and findings held for a specialist in the quality report | 2 of 2 on synthetic photos only |
+| Story claims without a source | Fewer with the verifier than without | A set of drafted claims checked with and without the claims verifier | Not measured yet |
+
 ## What works today
 
 <div dir="rtl">
@@ -43,6 +69,8 @@ Built by team Athar for the agentX Riyadh hackathon, Culture and Heritage track.
 - استقبال الصور من الكاميرات والطائرات المسيّرة والرفع الجماعي، ومطابقة الصورة بالواجهة من إحداثياتها.
 - «مساعد أثر» للموظفين بخمس مهارات فحص، يصوغ ملف تدقيق PDF ولا يرسله إلا بعد تأكيد المستخدم.
 - ستة أدوار، وتقييد الحساب بمواقع محددة، وسجل تدقيق قابل للتنزيل، وحذف تلقائي لصور الزوار بعد ٣٠ يومًا.
+- تقرير جودة يجيب عن سؤال: هل وصل شيء إلى اللوحة بلا دليل؟ ويعرض الصور المعادة لأصحابها وما حُجز للمختص وما صححه.
+- تطبيق الزائر: يصوّر الواجهة بمطابقة الصورة المرجعية، ويسمع قصة المكان بمصادرها، ويحصل على ختم في جوازه.
 
 </div>
 
@@ -53,6 +81,7 @@ Built by team Athar for the agentX Riyadh hackathon, Culture and Heritage track.
 - Photos from site cameras (HTTP snapshot), drones and bulk uploads, matched to a facade by GPS.
 - «مساعد أثر», a staff assistant with five inspection skills that drafts an audit PDF and sends it only after the user confirms.
 - Six roles, site scoping, an exportable audit log, and a 30-day purge of visitor photos.
+- A quality report that answers "did anything reach the dashboard without evidence?", plus photos sent back, findings held for a specialist and maps the specialist corrected.
 - The visitor app: photograph a facade, hear a sourced story, collect a passport stamp, see the site in 3D with directions.
 - The code path for Athar's own damage model: dataset builder, Colab notebook, evaluation, model registry and detector.
 
@@ -64,6 +93,8 @@ Built by team Athar for the agentX Riyadh hackathon, Culture and Heritage track.
 - Add a lease to the schedulers so more than one API process can run.
 - Read text from PDFs attached to the assistant (with OCR for scanned reports).
 - Scope visitor findings and pins by site, for a pilot with several authorities.
+- Measure unsourced story claims with and without the claims verifier.
+- Interview the challenge owners for inspection frequency and late-found damage, and test the subscription model with one authority.
 
 ## Contents
 
@@ -461,6 +492,7 @@ uv run alembic upgrade head
 uv run pytest
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run lint-imports
 uv run python -m eval.run
+uv run python -m sadu.cli quality
 uv run pytest ../ml/tests
 ```
 
@@ -479,8 +511,9 @@ Evaluation tools:
 
 - `uv run python -m eval.score_maps <folder> --min-accuracy 0.8` scores a detector on labelled wall photos ([format](docs/10-damage-maps.md#measuring-accuracy-before-the-demo)).
 - `uv run python -m eval.backtest_watch run …` then `score …` replays satellite screening over past dates and measures its precision against a hand-filled truth column.
+- `uv run python -m sadu.cli quality` reads the live database and prints the share of published findings and approved maps that carry full evidence, photos sent back, findings held for a specialist, specialist rejections and corrected maps. It exits non-zero when anything reached the dashboard without evidence. The same report is `GET /api/v1/reports/quality` (`read_audit`) and the card on the audit page.
 
-Counted on 2026-11-18 on this branch: 398 backend tests, 47 frontend unit tests in 10 files, and 22 ML script tests, all passing.
+Counted on 2026-11-18 on this branch: 403 backend tests, 48 frontend unit tests in 10 files, and 22 ML script tests, all passing.
 
 What CI runs ([.github/workflows/ci.yml](.github/workflows/ci.yml)) on every push to `main` and every pull request:
 
