@@ -2,6 +2,7 @@ import httpx
 import structlog
 
 from sadu.modules.watch.application.ports import AlertMessage
+from sadu.shared.adapters.webhook import post_json
 
 log = structlog.get_logger()
 
@@ -33,9 +34,5 @@ class WebhookNotifier:
             "trend": message.trend,
             "link": message.link,
         }
-        try:
-            async with httpx.AsyncClient(timeout=self._timeout_s, transport=self._transport) as client:
-                response = await client.post(self._url, json=payload)
-                response.raise_for_status()
-        except httpx.HTTPError:
+        if not await post_json(self._url, payload, timeout_s=self._timeout_s, transport=self._transport):
             log.warning("alert_webhook_failed", site=message.site_name_ar)

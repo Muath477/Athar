@@ -169,6 +169,17 @@ async def release_passport_photos(session: AsyncSession, passport_id: UUID) -> d
     return to_delete
 
 
+async def expired_photos(session: AsyncSession, now: datetime, limit: int) -> dict[UUID, str]:
+    rows = await session.execute(
+        select(ObservationRow.id, ObservationRow.object_key)
+        .where(ObservationRow.delete_after <= now)
+        .order_by(ObservationRow.delete_after)
+        .limit(limit)
+        .with_for_update(skip_locked=True)
+    )
+    return {observation_id: key for observation_id, key in rows.all()}
+
+
 async def delete_observations(session: AsyncSession, observation_ids: list[UUID]) -> None:
     await session.execute(delete(ObservationRow).where(ObservationRow.id.in_(observation_ids)))
 
@@ -213,3 +224,8 @@ def _request_hash(raw_photo: bytes, meta: CaptureMeta) -> str:
     digest = hashlib.sha256(raw_photo)
     digest.update(repr(sorted(vars(meta).items())).encode())
     return digest.hexdigest()
+
+
+async def outcome_counts(session: AsyncSession) -> dict[ObservationStatus, int]:
+    rows = await session.execute(select(ObservationRow.status, func.count()).group_by(ObservationRow.status))
+    return {ObservationStatus(status): count for status, count in rows.all()}

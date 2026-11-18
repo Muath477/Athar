@@ -173,7 +173,7 @@ export function ElementCanvas({
             ) : (
               <>
                 {countAr(draft.length, pointForms)}. انقر مرتين أو اضغط{" "}
-                <kbd dir="ltr" className="rounded bg-clay/20 px-1">
+                <kbd dir="ltr" className="rounded-sm border border-line bg-white px-1">
                   Enter
                 </kbd>{" "}
                 للإنهاء.

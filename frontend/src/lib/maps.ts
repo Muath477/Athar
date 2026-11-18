@@ -81,6 +81,8 @@ export type DamageMap = {
   field_notes: string;
   treatment_plan: TreatmentPlan;
   changes: MapChanges | null;
+  source: string | null;
+  source_label: string | null;
 };
 
 export type Geometry = "area" | "line" | "point";
@@ -155,6 +157,8 @@ export type MapSummary = {
   total_cells: number;
   thumbnail_url: string;
   created_at: string;
+  source: string | null;
+  source_label: string | null;
 };
 
 export type TypeScore = {

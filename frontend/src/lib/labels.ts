@@ -66,3 +66,31 @@ export const changeKindAr: Record<string, string> = {
   improved: "تحسّن",
   resolved: "لم يعد ظاهرًا",
 };
+
+export const deviceKindAr: Record<string, string> = {
+  fixed_camera: "كاميرا ثابتة",
+  drone: "طائرة مسيّرة",
+  phone: "جوال المساح",
+  upload: "محطة رفع",
+};
+
+export const jobStatusAr: Record<string, string> = {
+  queued: "في الانتظار",
+  analysing: "قيد التحليل",
+  needs_facade: "حدّد الواجهة",
+  done: "اكتمل التحليل",
+  failed: "تعذر التحليل",
+};
+
+export const mapSourceAr: Record<string, string> = {
+  inspector: "المساح الميداني",
+  camera: "كاميرا الموقع",
+  drone: "طائرة مسيّرة",
+  upload: "رفع جماعي",
+};
+
+export function mapSourceText(source: string | null, label: string | null): string | null {
+  if (!source) return null;
+  const kind = mapSourceAr[source] ?? source;
+  return label ? `${kind}: ${label}` : kind;
+}

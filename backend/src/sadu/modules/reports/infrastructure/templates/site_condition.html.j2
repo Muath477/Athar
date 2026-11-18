@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>تقرير حالة {{ c.site.name_ar }}</title>
+<style>
+  :root { --ink: #1f1a16; --sand: #efe4d2; --clay: #b3804f; --sadu: #8f1f1a; --urgent: #b3261e; --muted: #6b5d50; }
+  @page {
+    size: A4;
+    margin: 20mm 16mm 18mm 16mm;
+    @top-right { content: "أثر · تقرير حالة موقع"; font-size: 8.5pt; color: var(--muted); }
+    @top-left { content: string(site); font-size: 8.5pt; color: var(--muted); }
+    @bottom-center { content: "صفحة " counter(page, arabic-indic) " من " counter(pages, arabic-indic); font-size: 8.5pt; color: var(--muted); }
+  }
+  html { font-family: "Noto Naskh Arabic", "Noto Sans Arabic", serif; font-size: 10.5pt; line-height: 1.75; color: var(--ink); }
+  body { margin: 0; }
+  h1, h2 { line-height: 1.35; margin: 0; }
+  h1 { font-size: 21pt; string-set: site content(); }
+  h2 { font-size: 13.5pt; margin-block: 14pt 6pt; padding-block-end: 3pt; border-block-end: 1.2pt solid var(--clay); break-after: avoid; }
+  p { margin: 0 0 4pt; }
+  .band { height: 7pt; margin-block-end: 10pt; background: repeating-linear-gradient(135deg, var(--sadu) 0 5pt, var(--ink) 5pt 10pt); }
+  .subtitle { color: var(--muted); font-size: 11pt; margin-block-end: 8pt; }
+  .facts { display: flex; gap: 6pt; margin-block: 8pt; }
+  .fact { flex: 1 1 0; background: var(--sand); padding: 5pt 8pt; border-radius: 3pt; }
+  .fact .value { font-size: 15pt; font-weight: bold; display: block; line-height: 1.3; }
+  .fact .label { font-size: 8.5pt; color: var(--muted); }
+  .fact.urgent .value { color: var(--urgent); }
+  table { width: 100%; border-collapse: collapse; margin-block: 4pt 8pt; font-size: 9.5pt; }
+  thead { display: table-header-group; }
+  th { text-align: start; background: var(--sand); font-weight: bold; padding: 3pt 6pt; }
+  td { padding: 3pt 6pt; border-block-end: 0.5pt solid #e2d6c3; vertical-align: top; }
+  tr { break-inside: avoid; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sev-urgent { color: var(--urgent); font-weight: bold; }
+  .note { font-size: 9pt; color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="band"></div>
+  <h1>{{ c.site.name_ar }}</h1>
+  <p class="subtitle">أُعد في {{ date(c.generated_at) }} من آخر مخطط معتمد لكل جدار.</p>
+
+  <div class="facts">
+    <div class="fact{% if c.urgent %} urgent{% endif %}"><span class="value num">{{ digits(c.urgent) }}</span><span class="label">عناصر تلف عاجلة في المخططات المعتمدة</span></div>
+    <div class="fact"><span class="value num">{{ digits(c.awaiting_approval) }}</span><span class="label">جدران تنتظر الاعتماد</span></div>
+    <div class="fact"><span class="value num">{{ digits(c.walls_due) }}</span><span class="label">جدران مستحقة المسح</span></div>
+  </div>
+
+  <h2>الجدران</h2>
+  <table>
+    <thead><tr><th>الجدار</th><th>الحالة</th><th>آخر مسح</th><th>العناصر</th><th>العاجل</th><th>المساحة المتضررة</th></tr></thead>
+    <tbody>
+    {% for w in c.walls %}
+      <tr>
+        <td>{{ w.name_ar }}{% if w.pending_draft %}<br><span class="note">مسودة أحدث تنتظر الاعتماد</span>{% endif %}</td>
+        <td>{{ wall_status(w.status) }}{% if w.survey_due %}<br><span class="note">مستحق المسح</span>{% endif %}</td>
+        <td class="num">{% if w.surveyed_at %}{{ date(w.surveyed_at) }}{% else %}—{% endif %}</td>
+        <td class="num">{{ digits(w.elements) }}</td>
+        <td class="num{% if w.urgent %} sev-urgent{% endif %}">{{ digits(w.urgent) }}</td>
+        <td class="num">{{ number(w.damaged_area_m2) }} م²</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if c.totals %}
+  <h2>التلف حسب النوع</h2>
+  <table>
+    <thead><tr><th>نوع التلف</th><th>العناصر</th><th>العاجل</th><th>المساحة</th></tr></thead>
+    <tbody>
+    {% for t in c.totals %}
+      <tr>
+        <td>{{ damage(t.damage_type) }}</td>
+        <td class="num">{{ digits(t.elements) }}</td>
+        <td class="num{% if t.urgent %} sev-urgent{% endif %}">{{ digits(t.urgent) }}</td>
+        <td class="num">{{ number(t.area_m2) }} م²</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if c.materials %}
+  <h2>المواد المقدّرة</h2>
+  <table>
+    <thead><tr><th>المادة</th><th>الكمية</th></tr></thead>
+    <tbody>
+    {% for m in c.materials %}
+      <tr><td>{{ m.name_ar }}</td><td class="num">{{ number(m.quantity) }} {{ m.unit_ar }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if not c.catalog_reviewed %}
+  <p class="note">الكميات تقديرية من مكتبة معالجات لم يعتمدها مختص بعد.</p>
+  {% endif %}
+  {% endif %}
+</body>
+</html>

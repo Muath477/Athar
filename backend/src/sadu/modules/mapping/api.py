@@ -1,22 +1,31 @@
 import asyncio
 import json
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sadu.modules.admin import api as admin
 from sadu.modules.mapping.application.claude_detector import ClaudeGridDetector
 from sadu.modules.mapping.application.manual_detector import ManualOnly
+from sadu.modules.mapping.application.notices import (
+    APPROVAL_OVERDUE,
+    URGENT_ELEMENTS,
+    approval_overdue_notice,
+    urgent_elements_notice,
+)
 from sadu.modules.mapping.application.ports import (
+    ActiveModelLookup,
     DamageDetector,
     DetectionInput,
     DetectionOutput,
     DetectorUnavailable,
+    ModelChoice,
 )
 from sadu.modules.mapping.domain.changes import CellChange, ChangeKind, compare_maps
 from sadu.modules.mapping.domain.damage_map import (
@@ -42,9 +51,10 @@ from sadu.modules.mapping.domain.elements import (
 from sadu.modules.mapping.domain.glossary import CLASS_VALUES, GLOSSARY, ClassKind, Geometry, GlossaryEntry
 from sadu.modules.mapping.domain.grid import CellRef, Grid, WallSize
 from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY
+from sadu.modules.mapping.domain.provenance import MapSource, Provenance
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.modules.mapping.domain.scoring import MapScore, ScoredPair, TypeScore, score_maps
-from sadu.modules.mapping.domain.workflow import Step, StepState, WorkflowFacts, workflow
+from sadu.modules.mapping.domain.workflow import Detection, Step, StepState, WorkflowFacts, workflow
 from sadu.modules.mapping.infrastructure.http_detector import (
     HttpCellClassifier,
     HttpDetectionModel,
@@ -53,11 +63,13 @@ from sadu.modules.mapping.infrastructure.http_detector import (
 )
 from sadu.modules.mapping.infrastructure.imaging import RectifiedWall, paint_elements, rectify_wall
 from sadu.modules.mapping.infrastructure.orm import DamageMapCellRow, DamageMapRow
+from sadu.modules.mapping.infrastructure.qwen_detector import QwenEndpoint, QwenVisionDetector
 from sadu.modules.treatments import api as treatments
 from sadu.shared.config import DetectorKind, Settings
 from sadu.shared.errors import Conflict, NotFound, SaduError
 from sadu.shared.i18n import translate
 from sadu.shared.ports.llm import LLMPort
+from sadu.shared.ports.notify import Notice
 from sadu.shared.storage import ObjectStore, new_object_key
 from sadu.shared.vocabulary import DamageType, ModelConfidence, RetakeReason, Severity
 
@@ -67,6 +79,7 @@ __all__ = [
     "GLOSSARY",
     "MAP_DAMAGE_TYPES",
     "SEVERITY_OPACITY",
+    "ApprovalCounts",
     "CellChange",
     "CellCorrection",
     "CellRef",
@@ -82,21 +95,30 @@ __all__ = [
     "Geometry",
     "GlossaryEntry",
     "Grid",
+    "LabelQuality",
     "MapCell",
     "MapScore",
+    "MapSource",
     "MapStatus",
     "Measurement",
+    "ModelChoice",
     "ModelConfidence",
+    "Provenance",
     "Quad",
     "Step",
     "StepState",
+    "TrainingExample",
     "TypeScore",
     "WallSize",
+    "approved_examples",
+    "cell_json",
     "edit_elements",
+    "element_json",
     "location_label",
     "map_workflow",
     "measure",
     "record_field_inspection",
+    "weak_examples",
 ]
 
 DEFAULT_LIST_LIMIT = 100
@@ -106,6 +128,13 @@ class DetectorStatus(StrEnum):
     OK = "ok"
     FAILED = "failed"
     MANUAL = "manual"
+
+
+DETECTION_BY_STATUS = {
+    DetectorStatus.OK: Detection.MODEL,
+    DetectorStatus.FAILED: Detection.FAILED,
+    DetectorStatus.MANUAL: Detection.MANUAL,
+}
 
 
 @dataclass(frozen=True)
@@ -166,6 +195,8 @@ class MapView:
     correction_log: tuple[dict[str, Any], ...] = ()
     field_inspected_at: datetime | None = None
     field_notes: str = ""
+    source: MapSource | None = None
+    source_label: str | None = None
 
     @property
     def damaged_area_m2(self) -> float:
@@ -174,6 +205,10 @@ class MapView:
     @property
     def low_confidence(self) -> tuple[Element, ...]:
         return tuple(e for e in self.elements if e.needs_review)
+
+    @property
+    def urgent(self) -> tuple[Element, ...]:
+        return tuple(e for e in self.elements if e.severity is Severity.URGENT)
 
 
 @dataclass(frozen=True)
@@ -189,6 +224,28 @@ class MapSummary:
     total_cells: int
     rectified_key: str
     created_at: datetime
+    source: MapSource | None = None
+    source_label: str | None = None
+
+
+class LabelQuality(StrEnum):
+    EXPERT = "expert"
+    WEAK = "weak"
+
+
+@dataclass(frozen=True)
+class TrainingExample:
+    map_id: UUID
+    site_id: UUID | None
+    facade_id: UUID | None
+    wall: WallSize
+    grid: Grid
+    rectified_key: str
+    elements: tuple[Element, ...]
+    model_cells: tuple[MapCell, ...]
+    detector: str
+    detector_status: DetectorStatus
+    label_quality: LabelQuality
 
 
 class PhotoUnusable(SaduError):
@@ -200,12 +257,16 @@ class PhotoUnusable(SaduError):
         self.reason = reason
 
 
-def build_detector(settings: Settings, llm: LLMPort) -> DamageDetector:
+def build_detector(
+    settings: Settings, llm: LLMPort, active_model: ActiveModelLookup | None = None
+) -> DamageDetector:
     kind = settings.sadu_damage_detector
     if kind is DetectorKind.CLAUDE:
         return ClaudeGridDetector(llm)
     if kind is DetectorKind.NONE:
         return ManualOnly()
+    if kind is DetectorKind.QWEN:
+        return QwenVisionDetector(_qwen_endpoint(settings), active_model)
     if not settings.sadu_detector_url:
         raise ValueError(f"SADU_DETECTOR_URL is required when SADU_DAMAGE_DETECTOR={kind}")
     token = settings.sadu_detector_token.get_secret_value() if settings.sadu_detector_token else None
@@ -214,6 +275,17 @@ def build_detector(settings: Settings, llm: LLMPort) -> DamageDetector:
     if kind is DetectorKind.HTTP_DETECTION:
         return HttpDetectionModel(client, labels, settings.sadu_detector_min_score)
     return HttpCellClassifier(client, labels, settings.sadu_detector_min_score)
+
+
+def _qwen_endpoint(settings: Settings) -> QwenEndpoint:
+    token = settings.sadu_qwen_token.get_secret_value() if settings.sadu_qwen_token else None
+    return QwenEndpoint(
+        url=settings.sadu_qwen_url,
+        model=settings.sadu_qwen_model,
+        timeout_s=settings.sadu_qwen_timeout_s,
+        token=token,
+        json_schema=settings.sadu_qwen_json_schema,
+    )
 
 
 def prepare_wall(photo_jpeg: bytes, quad: Quad, wall: WallSize, rows: int) -> PreparedWall:
@@ -232,6 +304,10 @@ async def detect_damage(detector: DamageDetector, prepared: PreparedWall) -> Det
     return DetectionRun(detector.name, status, output)
 
 
+def draft_elements(prepared: PreparedWall, run: DetectionRun) -> tuple[Element, ...]:
+    return elements_from_cells(run.output.cells, prepared.grid)
+
+
 async def save_map(
     session: AsyncSession,
     store: ObjectStore,
@@ -240,6 +316,7 @@ async def save_map(
     prepared: PreparedWall,
     run: DetectionRun,
     created_by: UUID | None,
+    provenance: Provenance | None = None,
 ) -> MapView:
     photo_key = new_object_key("maps/photos", "jpg")
     rectified_key = new_object_key("maps/rectified", "jpg")
@@ -261,19 +338,27 @@ async def save_map(
         detector=run.detector,
         detector_status=run.status,
         summary_ar=run.output.summary_ar,
-        model_cells=[_cell_json(c) for c in run.output.cells],
-        elements=[element_json(e) for e in elements_from_cells(run.output.cells, prepared.grid)],
+        model_cells=[cell_json(c) for c in run.output.cells],
+        elements=[element_json(e) for e in _model_elements(run.output, prepared.grid)],
         elements_edited=False,
         correction_log=[],
         field_notes="",
         status=MapStatus.DRAFT,
         created_by=created_by,
+        source=provenance.source if provenance else None,
+        source_label=provenance.label if provenance else None,
     )
     session.add(row)
     await session.flush()
     _add_cell_rows(session, row.id, run.output.cells)
     await session.flush()
     return _view(row, run.output.cells)
+
+
+def _model_elements(output: DetectionOutput, grid: Grid) -> tuple[Element, ...]:
+    if output.elements:
+        return output.elements
+    return elements_from_cells(output.cells, grid)
 
 
 async def get_map(session: AsyncSession, map_id: UUID) -> MapView:
@@ -288,6 +373,7 @@ async def list_maps(
     *,
     site_id: UUID | None = None,
     facade_id: UUID | None = None,
+    visible_site_ids: Collection[UUID] | None = None,
     limit: int | None = DEFAULT_LIST_LIMIT,
 ) -> list[MapSummary]:
     damaged = (
@@ -309,6 +395,8 @@ async def list_maps(
         query = query.where(DamageMapRow.site_id == site_id)
     if facade_id is not None:
         query = query.where(DamageMapRow.facade_id == facade_id)
+    if visible_site_ids is not None:
+        query = query.where(or_(DamageMapRow.site_id.is_(None), DamageMapRow.site_id.in_(visible_site_ids)))
     return [
         MapSummary(
             id=row.id,
@@ -324,6 +412,8 @@ async def list_maps(
             total_cells=row.rows * row.cols,
             rectified_key=row.rectified_key,
             created_at=row.created_at,
+            source=_source(row),
+            source_label=row.source_label,
         )
         for row, count, urgent in (await session.execute(query)).all()
     ]
@@ -450,8 +540,76 @@ def map_workflow(view: MapView, plan: treatments.TreatmentPlan) -> tuple[Step, .
             corrections=corrections,
             field_inspected=view.field_inspected_at is not None,
             approved=view.status is MapStatus.APPROVED,
+            detection=DETECTION_BY_STATUS[view.detector_status],
         )
     )
+
+
+async def announce_urgent(session: AsyncSession, view: MapView, origin: str) -> Notice | None:
+    if not view.urgent or await admin.was_audited(session, URGENT_ELEMENTS, str(view.id)):
+        return None
+    await admin.audit(
+        session,
+        actor_id=None,
+        action=URGENT_ELEMENTS,
+        target_type="damage_map",
+        target_id=str(view.id),
+        details={"urgent": len(view.urgent)},
+    )
+    return urgent_elements_notice(view.wall_name, len(view.urgent), _map_link(origin, view.id))
+
+
+async def announce_overdue_approvals(
+    session: AsyncSession, *, waiting_longer_than: timedelta, origin: str, now: datetime
+) -> list[Notice]:
+    drafts = await session.scalars(
+        select(DamageMapRow)
+        .where(DamageMapRow.status == MapStatus.DRAFT, DamageMapRow.created_at < now - waiting_longer_than)
+        .order_by(DamageMapRow.created_at)
+    )
+    notices = []
+    for row in drafts:
+        if await admin.was_audited(session, APPROVAL_OVERDUE, str(row.id)):
+            continue
+        waiting_days = (now - row.created_at).days
+        await admin.audit(
+            session,
+            actor_id=None,
+            action=APPROVAL_OVERDUE,
+            target_type="damage_map",
+            target_id=str(row.id),
+            details={"waiting_days": waiting_days},
+        )
+        notices.append(approval_overdue_notice(row.wall_name, waiting_days, _map_link(origin, row.id)))
+    return notices
+
+
+@dataclass(frozen=True)
+class ApprovalCounts:
+    approved: int
+    approved_with_evidence: int
+    corrected_by_specialist: int
+
+
+async def approval_counts(session: AsyncSession) -> ApprovalCounts:
+    approved = DamageMapRow.status == MapStatus.APPROVED
+    with_evidence = and_(
+        approved,
+        DamageMapRow.approved_by.is_not(None),
+        DamageMapRow.field_inspected_at.is_not(None),
+        DamageMapRow.photo_key != "",
+        DamageMapRow.rectified_key != "",
+    )
+    row = (
+        await session.execute(
+            select(
+                func.count().filter(approved),
+                func.count().filter(with_evidence),
+                func.count().filter(approved, DamageMapRow.elements_edited.is_(True)),
+            )
+        )
+    ).one()
+    return ApprovalCounts(approved=row[0], approved_with_evidence=row[1], corrected_by_specialist=row[2])
 
 
 async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapScore:
@@ -466,6 +624,47 @@ async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapSco
         predicted = {c.ref: c.damage_type for c in _cells_from_json(row.model_cells)}
         pairs.append(ScoredPair(row.rows * row.cols, predicted, expected))
     return score_maps(pairs)
+
+
+def _map_link(origin: str, map_id: UUID) -> str:
+    return f"{origin.rstrip('/')}/dashboard/maps/{map_id}"
+
+
+async def approved_examples(session: AsyncSession) -> list[TrainingExample]:
+    query = select(DamageMapRow).where(DamageMapRow.status == MapStatus.APPROVED)
+    return [
+        await _example(session, row, LabelQuality.EXPERT)
+        for row in await session.scalars(query.order_by(DamageMapRow.created_at))
+    ]
+
+
+async def weak_examples(session: AsyncSession) -> list[TrainingExample]:
+    query = select(DamageMapRow).where(
+        DamageMapRow.status == MapStatus.DRAFT,
+        DamageMapRow.detector_status == DetectorStatus.OK,
+        DamageMapRow.elements_edited.is_(False),
+    )
+    return [
+        await _example(session, row, LabelQuality.WEAK)
+        for row in await session.scalars(query.order_by(DamageMapRow.created_at))
+    ]
+
+
+async def _example(session: AsyncSession, row: DamageMapRow, quality: LabelQuality) -> TrainingExample:
+    view = _view(row, await _cells(session, row.id))
+    return TrainingExample(
+        map_id=view.id,
+        site_id=view.site_id,
+        facade_id=view.facade_id,
+        wall=view.wall,
+        grid=view.grid,
+        rectified_key=view.rectified_key,
+        elements=view.elements,
+        model_cells=view.model_cells,
+        detector=view.detector,
+        detector_status=view.detector_status,
+        label_quality=quality,
+    )
 
 
 async def _draft_row(session: AsyncSession, map_id: UUID) -> DamageMapRow:
@@ -510,7 +709,7 @@ def _add_cell_rows(session: AsyncSession, map_id: UUID, cells: Iterable[MapCell]
     )
 
 
-def _cell_json(cell: MapCell) -> dict[str, Any]:
+def cell_json(cell: MapCell) -> dict[str, Any]:
     return {
         "row": cell.ref.row,
         "col": cell.ref.col,
@@ -559,7 +758,13 @@ def _view(row: DamageMapRow, cells: tuple[MapCell, ...]) -> MapView:
         correction_log=tuple(row.correction_log or ()),
         field_inspected_at=row.field_inspected_at,
         field_notes=row.field_notes or "",
+        source=_source(row),
+        source_label=row.source_label,
     )
+
+
+def _source(row: DamageMapRow) -> MapSource | None:
+    return MapSource(row.source) if row.source else None
 
 
 def _elements(row: DamageMapRow, cells: tuple[MapCell, ...]) -> tuple[Element, ...]:

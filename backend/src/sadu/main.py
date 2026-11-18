@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import sentry_sdk
@@ -15,10 +15,17 @@ from sqlalchemy import text
 import sadu.shared.orm_registry
 from sadu.modules.admin.interface.routes import router as admin_router
 from sadu.modules.agents import api as agents
+from sadu.modules.agents.interface.retention import router as retention_router
 from sadu.modules.agents.interface.routes import router as agents_router
+from sadu.modules.assistant import api as assistant
+from sadu.modules.assistant.interface.routes import router as assistant_router
+from sadu.modules.ingest import api as ingest
+from sadu.modules.ingest.interface.routes import router as ingest_router
 from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.routes import router as maps_router
 from sadu.modules.missions.interface.routes import router as missions_router
+from sadu.modules.models import api as models
+from sadu.modules.models.interface.routes import router as models_router
 from sadu.modules.passport.interface.routes import router as passport_router
 from sadu.modules.reports.interface.routes import router as reports_router
 from sadu.modules.sites.interface.routes import router as sites_router
@@ -29,19 +36,24 @@ from sadu.modules.watch.interface.routes import router as watch_router
 from sadu.shared.adapters.anthropic_llm import AnthropicLLM
 from sadu.shared.adapters.azure_speech import AzureSpeech, NoSpeech
 from sadu.shared.adapters.cached_llm import CachedLLM
+from sadu.shared.adapters.webhook import NoNotifier, WebhookNotifier
 from sadu.shared.config import SceneSourceKind, Settings, get_settings
 from sadu.shared.db import get_engine, plain_postgres_url, unit_of_work
 from sadu.shared.errors import install_error_handlers
 from sadu.shared.logging import configure_logging, request_id_middleware
 from sadu.shared.ports.llm import LLMPort
+from sadu.shared.ports.notify import Notifier
 from sadu.shared.ports.speech import TextToSpeechPort
-from sadu.shared.storage import get_object_store
+from sadu.shared.storage import ObjectStore, get_object_store
 from sadu.shared.web import API_PREFIX, AppState, Session, public, security_headers_middleware
 
 log = structlog.get_logger()
 
 MISSION_DISPATCH_INTERVAL_S = 15 * 60
 WATCH_POLL_INTERVAL_S = 60 * 60
+CAMERA_POLL_INTERVAL_S = 15 * 60
+INGEST_POLL_INTERVAL_S = 30
+APPROVAL_CHECK_INTERVAL_S = 60 * 60
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -66,6 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_error_handlers(app)
     for router in (
         agents_router,
+        assistant_router,
         sites_router,
         findings_router,
         maps_router,
@@ -74,7 +87,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         treatments_router,
         missions_router,
         passport_router,
+        ingest_router,
+        models_router,
         admin_router,
+        retention_router,
         health_router,
     ):
         app.include_router(router, prefix=API_PREFIX)
@@ -105,13 +121,24 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = get_object_store()
     await store.ensure_bucket()
     llm = build_llm(settings)
-    app.state.damage_detector = mapping.build_detector(settings, llm)
+    app.state.damage_detector = mapping.build_detector(settings, llm, active_model)
+    app.state.assistant = assistant.build_assistant(
+        settings, llm=llm, detector=app.state.damage_detector, unit_of_work=unit_of_work, store=store
+    )
     app.state.scan_queue = watch.ScanQueue(
         unit_of_work,
         store,
         watch.build_scene_source(settings),
         notifier=watch.build_notifier(settings),
         public_origin=settings.sadu_public_origin,
+    )
+    app.state.ingestion = ingest.Ingestion(
+        unit_of_work,
+        store,
+        app.state.damage_detector,
+        ingest.build_camera_client(settings),
+        map_rows=settings.sadu_map_rows,
+        concurrency=settings.sadu_ingest_concurrency,
     )
     deps = agents.Dependencies(
         unit_of_work=unit_of_work,
@@ -123,10 +150,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     async with AsyncPostgresSaver.from_conn_string(plain_postgres_url()) as checkpointer:
         await checkpointer.setup()
         runner = agents.AgentRunner(deps, checkpointer, settings.sadu_max_concurrent_runs)
-        app.state.sadu = AppState(settings=settings, unit_of_work=unit_of_work, store=store, runner=runner)
+        notifier = build_notifier(settings)
+        app.state.sadu = AppState(
+            settings=settings, unit_of_work=unit_of_work, store=store, runner=runner, notifier=notifier
+        )
         await runner.recover()
-        dispatcher = asyncio.create_task(dispatch_missions_forever())
-        watcher = asyncio.create_task(scan_sites_forever(settings, app.state.scan_queue))
+        await app.state.ingestion.recover()
+        background = [
+            asyncio.create_task(dispatch_missions_forever()),
+            asyncio.create_task(scan_sites_forever(settings, app.state.scan_queue)),
+            asyncio.create_task(process_ingest_jobs_forever(app.state.ingestion)),
+            asyncio.create_task(capture_cameras_forever(settings, app.state.ingestion)),
+            asyncio.create_task(purge_expired_photos_forever(settings, store)),
+            asyncio.create_task(notify_overdue_approvals_forever(settings, notifier)),
+        ]
         log.info(
             "api_started",
             env=settings.sadu_env,
@@ -137,7 +174,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         try:
             yield
         finally:
-            for task in (dispatcher, watcher):
+            for task in background:
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
@@ -145,9 +182,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await get_engine().dispose()
 
 
+async def active_model() -> mapping.ModelChoice | None:
+    async with unit_of_work() as session:
+        return await models.active_model(session)
+
+
 def build_llm(settings: Settings) -> LLMPort:
     llm: LLMPort = agents.RecordingLLM(AnthropicLLM(settings), settings.sadu_daily_llm_budget_usd)
     return CachedLLM(llm, Path(settings.sadu_demo_cache_dir), prefer_cache=settings.sadu_demo_mode)
+
+
+def build_notifier(settings: Settings) -> Notifier:
+    if settings.sadu_alert_webhook_url:
+        return WebhookNotifier(settings.sadu_alert_webhook_url)
+    return NoNotifier()
 
 
 def build_tts(settings: Settings) -> TextToSpeechPort:
@@ -181,6 +229,61 @@ async def scan_sites_forever(settings: Settings, queue: watch.ScanQueue) -> None
         except Exception:
             log.exception("site_scan_round_failed")
         await asyncio.sleep(WATCH_POLL_INTERVAL_S)
+
+
+async def process_ingest_jobs_forever(ingestion: ingest.Ingestion) -> None:
+    while True:
+        try:
+            ingestion.kick()
+            await ingestion.join()
+        except Exception:
+            log.exception("ingest_round_failed")
+        await asyncio.sleep(INGEST_POLL_INTERVAL_S)
+
+
+async def capture_cameras_forever(settings: Settings, ingestion: ingest.Ingestion) -> None:
+    if settings.sadu_camera_interval_h == 0:
+        return
+    interval = timedelta(hours=settings.sadu_camera_interval_h)
+    while True:
+        try:
+            captured = await ingestion.capture_due(interval)
+            log.info("cameras_captured", devices=captured)
+        except Exception:
+            log.exception("camera_round_failed")
+        await asyncio.sleep(CAMERA_POLL_INTERVAL_S)
+
+
+async def purge_expired_photos_forever(settings: Settings, store: ObjectStore) -> None:
+    if settings.sadu_retention_interval_h == 0:
+        return
+    while True:
+        try:
+            result = await agents.purge_expired_photos(unit_of_work, store, now=datetime.now(UTC))
+            log.info("expired_photos_purged", observations=result.observations, objects=result.objects)
+        except Exception:
+            log.exception("photo_retention_failed")
+        await asyncio.sleep(settings.sadu_retention_interval_h * 3600)
+
+
+async def notify_overdue_approvals_forever(settings: Settings, notifier: Notifier) -> None:
+    if settings.sadu_approval_overdue_days == 0:
+        return
+    waiting = timedelta(days=settings.sadu_approval_overdue_days)
+    while True:
+        try:
+            async with unit_of_work() as session:
+                notices = await mapping.announce_overdue_approvals(
+                    session,
+                    waiting_longer_than=waiting,
+                    origin=settings.sadu_public_origin,
+                    now=datetime.now(UTC),
+                )
+            for notice in notices:
+                await notifier.send(notice)
+        except Exception:
+            log.exception("approval_reminders_failed")
+        await asyncio.sleep(APPROVAL_CHECK_INTERVAL_S)
 
 
 app = create_app()

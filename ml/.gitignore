@@ -1,0 +1,9 @@
+data/raw/
+data/public/
+data/athar/
+data/build/
+data/athar-export.zip
+eval/predictions.jsonl
+eval/metrics.json
+eval/metrics.md
+outputs/

@@ -14,6 +14,12 @@ class Actor(StrEnum):
     SPECIALIST = "specialist"
 
 
+class Detection(StrEnum):
+    MODEL = "model"
+    FAILED = "failed"
+    MANUAL = "manual"
+
+
 class Criterion(StrEnum):
     NONE = "none"
     PRIVACY = "privacy"
@@ -32,6 +38,11 @@ class WorkflowFacts:
     corrections: int
     field_inspected: bool
     approved: bool
+    detection: Detection = Detection.MODEL
+
+    @property
+    def model_ran(self) -> bool:
+        return self.detection is Detection.MODEL
 
 
 @dataclass(frozen=True)
@@ -60,7 +71,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
         else (StepState.WAITING if facts.field_inspected else StepState.BLOCKED)
     )
     return (
-        Step(1, "photo_check", "فحص الصورة", Actor.AGENT, Criterion.NONE, StepState.DONE, "صورة مقبولة"),
+        _photo_check(facts),
         Step(
             2,
             "privacy",
@@ -70,15 +81,7 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             StepState.DONE,
             "تُطمس الوجوه وتُحذف بيانات الموقع من الصورة قبل التحليل والتخزين",
         ),
-        Step(
-            3,
-            "detect",
-            "تحديد التلف",
-            Actor.AGENT,
-            Criterion.ACCURACY,
-            StepState.DONE,
-            f"عناصر تلف مصنفة من المسرد: {_ar(facts.elements)}",
-        ),
+        _detection(facts),
         Step(
             4,
             "confidence",
@@ -152,3 +155,30 @@ def workflow(facts: WorkflowFacts) -> tuple[Step, ...]:
             "خريطة · جدول · سجل تصحيحات" if facts.approved else "تُصدر بعد الاعتماد",
         ),
     )
+
+
+def _photo_check(facts: WorkflowFacts) -> Step:
+    output = "صورة مقبولة" if facts.model_ran else "استُلمت الصورة دون فحص آلي لجودتها"
+    return Step(1, "photo_check", "فحص الصورة", Actor.AGENT, Criterion.NONE, StepState.DONE, output)
+
+
+def _detection(facts: WorkflowFacts) -> Step:
+    if facts.model_ran:
+        return Step(
+            3,
+            "detect",
+            "تحديد التلف",
+            Actor.AGENT,
+            Criterion.ACCURACY,
+            StepState.DONE,
+            f"عناصر تلف مصنفة من المسرد: {_ar(facts.elements)}",
+        )
+    failed = facts.detection is Detection.FAILED
+    if facts.elements:
+        reason = "تعذّر التحليل الآلي" if failed else "تحديد يدوي"
+        state, output = StepState.DONE, f"{reason}، عناصر رسمها المختص: {_ar(facts.elements)}"
+    elif failed:
+        state, output = StepState.FLAGGED, "تعذّر التحليل الآلي، ارسم العناصر يدويًا"
+    else:
+        state, output = StepState.WAITING, "تحديد يدوي"
+    return Step(3, "detect", "تحديد التلف", Actor.SPECIALIST, Criterion.ACCURACY, state, output)

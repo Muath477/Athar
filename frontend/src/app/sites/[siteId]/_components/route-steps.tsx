@@ -10,9 +10,9 @@ export function RouteSteps({ steps, currentIndex, onFocusStep }: Props) {
   if (steps.length === 0) return null;
 
   return (
-    <details className="group rounded-lg bg-white/60" open>
+    <details className="group rounded-sm border border-line" open>
       <summary className="flex min-h-11 cursor-pointer items-center px-3 font-bold">خطوات الطريق ({steps.length})</summary>
-      <ol className="flex flex-col border-t border-clay/30">
+      <ol className="flex flex-col border-t border-line">
         {steps.map((step, index) => {
           const current = index === currentIndex;
           return (

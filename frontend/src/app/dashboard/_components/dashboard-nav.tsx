@@ -3,35 +3,49 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { rememberCsrf, request, roleAr } from "@/lib/api";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { type Me, type Permission, can, rememberCsrf, request, roleAr } from "@/lib/api";
 import { useMe } from "@/lib/use-me";
+import { cn } from "@/lib/utils";
 
-const SECTIONS = [
+type Section = { href: string; label: string; short: string | null; exact: boolean; permission?: Permission };
+
+const SECTIONS: Section[] = [
   { href: "/dashboard", label: "الموقع ثلاثي الأبعاد", short: null, exact: true },
   { href: "/dashboard/condition", label: "حالة الموقع", short: null, exact: false },
   { href: "/dashboard/watch", label: "الرصد من الفضاء", short: null, exact: false },
   { href: "/dashboard/maps", label: "مخططات تلف الجدران", short: "المخططات", exact: false },
+  { href: "/dashboard/uploads", label: "رفع الصور", short: null, exact: false, permission: "survey" },
+  { href: "/dashboard/devices", label: "الكاميرات والأجهزة", short: "الأجهزة", exact: false, permission: "read" },
   { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
+  { href: "/dashboard/assistant", label: "مساعد أثر", short: "المساعد", exact: false, permission: "assistant" },
+  { href: "/dashboard/users", label: "الحسابات والصلاحيات", short: "الحسابات", exact: false, permission: "administer" },
+  { href: "/dashboard/audit", label: "سجل التدقيق", short: "التدقيق", exact: false, permission: "read_audit" },
+  { href: "/dashboard/models", label: "نموذج التحليل", short: "النموذج", exact: false, permission: "manage_models" },
 ];
 
 export function DashboardNav() {
   const pathname = usePathname();
+  if (pathname.startsWith("/dashboard/login")) return null;
+  return <SignedInNav pathname={pathname} />;
+}
+
+function SignedInNav({ pathname }: { pathname: string }) {
+  const me = useMe();
   const current = useRef<HTMLAnchorElement>(null);
+  const sections = SECTIONS.filter((section) => !section.permission || can(me, section.permission));
 
   useEffect(() => {
     current.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [pathname]);
 
-  if (pathname.startsWith("/dashboard/login")) return null;
-
   return (
-    <div className="no-print -mx-4 flex flex-col px-4 lg:flex-row lg:items-center lg:gap-4 lg:border-b lg:border-clay/40">
-      <nav
-        aria-label="أقسام لوحة المتابعة"
-        className="-mx-4 scroll-px-4 overflow-x-auto border-b border-clay/40 px-4 lg:mx-0 lg:min-w-0 lg:flex-1 lg:border-b-0 lg:px-0"
-      >
+    <div className="no-print flex flex-col">
+      <SignedInUser me={me} />
+      <nav aria-label="أقسام لوحة المتابعة" className="-mx-4 scroll-px-4 overflow-x-auto border-b border-line px-4">
         <ul className="flex min-w-max gap-1">
-          {SECTIONS.map((section) => {
+          {sections.map((section) => {
             const active = section.exact ? pathname === section.href : pathname.startsWith(section.href);
             return (
               <li key={section.href}>
@@ -39,9 +53,10 @@ export function DashboardNav() {
                   ref={active ? current : undefined}
                   href={section.href}
                   aria-current={active ? "page" : undefined}
-                  className={`-mb-px inline-flex min-h-11 items-center border-b-[3px] px-3 text-sm transition-colors ${
-                    active ? "border-sadu font-bold text-sadu" : "border-transparent text-mud hover:border-clay hover:text-ink"
-                  }`}
+                  className={cn(
+                    "-mb-px inline-flex min-h-11 items-center border-b-2 px-3 text-sm transition-colors duration-150",
+                    active ? "border-sadu font-bold text-sadu" : "border-transparent text-mud hover:border-clay hover:text-ink",
+                  )}
                 >
                   {section.short ? (
                     <>
@@ -57,13 +72,11 @@ export function DashboardNav() {
           })}
         </ul>
       </nav>
-      <SignedInUser />
     </div>
   );
 }
 
-function SignedInUser() {
-  const me = useMe();
+function SignedInUser({ me }: { me: Me | null }) {
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,18 +97,19 @@ function SignedInUser() {
   if (!me) return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 py-1 text-sm">
+    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm">
+      <Avatar className="size-8" aria-hidden="true">
+        <AvatarFallback className="font-latin uppercase">{me.email.charAt(0)}</AvatarFallback>
+      </Avatar>
       <p className="min-w-0 text-mud">
         <bdi className="inline-block max-w-56 truncate align-bottom text-ink">{me.email}</bdi> · {roleAr[me.role]}
       </p>
-      <button
-        type="button"
-        onClick={signOut}
-        disabled={leaving}
-        className="min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand disabled:opacity-50"
-      >
+      <Link href="/dashboard/password" className="inline-flex min-h-11 items-center text-mud underline underline-offset-4">
+        غيّر كلمة المرور
+      </Link>
+      <Button type="button" variant="ghost" size="sm" onClick={signOut} disabled={leaving}>
         {leaving ? "نسجّل خروجك…" : "تسجيل الخروج"}
-      </button>
+      </Button>
       {error && (
         <p role="alert" className="basis-full text-end text-urgent">
           {error}

@@ -52,6 +52,41 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "حاول بعد {minutes} دقيقة.",
         "en": "Try again in {minutes} minutes.",
     },
+    "problem.account_disabled.title": {"ar": "الحساب موقوف", "en": "Account disabled"},
+    "problem.account_disabled.detail": {
+        "ar": "أوقف مسؤول النظام هذا الحساب. تواصل معه لإعادة تفعيله.",
+        "en": "An administrator disabled this account. Ask them to reactivate it.",
+    },
+    "problem.password_change_required.title": {"ar": "غيّر كلمة المرور", "en": "Password change required"},
+    "problem.password_change_required.detail": {
+        "ar": "عيّن كلمة مرور جديدة قبل المتابعة.",
+        "en": "Set a new password before you continue.",
+    },
+    "problem.weak_password.title": {"ar": "كلمة المرور قصيرة", "en": "Password too short"},
+    "problem.weak_password.detail": {
+        "ar": "استخدم {min_length} حرفًا على الأقل.",
+        "en": "Use at least {min_length} characters.",
+    },
+    "problem.password_unchanged.title": {"ar": "كلمة المرور لم تتغير", "en": "Password unchanged"},
+    "problem.password_unchanged.detail": {
+        "ar": "اختر كلمة مرور مختلفة عن الحالية.",
+        "en": "Choose a password different from the current one.",
+    },
+    "problem.user_exists.title": {"ar": "الحساب موجود", "en": "User exists"},
+    "problem.user_exists.detail": {
+        "ar": "يوجد حساب بهذا البريد.",
+        "en": "An account with this email already exists.",
+    },
+    "problem.own_account.title": {"ar": "لا يمكن تعديل حسابك", "en": "Cannot change your own account"},
+    "problem.own_account.detail": {
+        "ar": "لا يغيّر المسؤول دوره ولا يوقف حسابه بنفسه. اطلب ذلك من مسؤول آخر.",
+        "en": "Administrators cannot change their own role or disable themselves. Ask another administrator.",
+    },
+    "problem.unknown_site.title": {"ar": "موقع غير معروف", "en": "Unknown site"},
+    "problem.unknown_site.detail": {
+        "ar": "أحد المواقع المختارة غير مسجل.",
+        "en": "One of the selected sites is not registered.",
+    },
     "problem.forbidden.title": {"ar": "غير مسموح", "en": "Forbidden"},
     "problem.forbidden.detail": {"ar": "لا تملك صلاحية لهذا الإجراء.", "en": "You cannot do this."},
     "problem.csrf_failed.title": {"ar": "طلب مرفوض", "en": "Request rejected"},
@@ -71,6 +106,16 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "لا يمكن تعديل مخطط معتمد. أنشئ مخططًا جديدًا للجدار.",
         "en": "An approved map cannot be changed. Create a new map for the wall.",
     },
+    "problem.model_version_exists.title": {"ar": "الإصدار مسجل", "en": "Model version exists"},
+    "problem.model_version_exists.detail": {
+        "ar": "هذا الإصدار من النموذج مسجل من قبل. اختر رقم إصدار جديدًا.",
+        "en": "This model version is already registered. Choose a new version number.",
+    },
+    "problem.model_status_unchanged.title": {"ar": "لا يمكن تغيير الحالة", "en": "Status cannot change"},
+    "problem.model_status_unchanged.detail": {
+        "ar": "حالة النموذج الحالية لا تسمح بهذا الإجراء.",
+        "en": "The model's current status does not allow this action.",
+    },
     "problem.photo_unusable.title": {"ar": "الصورة غير صالحة للتحليل", "en": "Photo cannot be analysed"},
     "problem.photo_unusable.detail": {"ar": "{reason_ar}", "en": "{reason_en}"},
     "problem.invalid_corners.title": {"ar": "زوايا الجدار غير صحيحة", "en": "Invalid wall corners"},
@@ -87,6 +132,96 @@ MESSAGES: dict[str, dict[str, str]] = {
     "problem.photo_required.detail": {
         "ar": "أرفق صورة الجدار أو اختر مشاركة زائر.",
         "en": "Attach a wall photo or pick a visitor observation.",
+    },
+    "problem.heic_unsupported.title": {"ar": "صيغة HEIC غير مدعومة", "en": "HEIC is not supported"},
+    "problem.heic_unsupported.detail": {
+        "ar": "لا يقرأ الخادم صور HEIC بعد ({file_name}). صدّرها بصيغة JPEG أو غيّر إعداد كاميرا الجوال.",
+        "en": "This server cannot read HEIC photos yet ({file_name}). Export them as JPEG.",
+    },
+    "problem.batch_size.title": {"ar": "عدد الصور غير مقبول", "en": "Wrong number of photos"},
+    "problem.batch_size.detail": {
+        "ar": "أرسل من صورة واحدة إلى {max_files} صورة في الدفعة.",
+        "en": "Send between 1 and {max_files} photos per batch.",
+    },
+    "problem.facade_not_in_site.title": {"ar": "الواجهة لا تتبع الموقع", "en": "Facade is not in this site"},
+    "problem.facade_not_in_site.detail": {
+        "ar": "اختر واجهة من الموقع نفسه.",
+        "en": "Pick a facade that belongs to the chosen site.",
+    },
+    "problem.device_site_required.title": {"ar": "الموقع مطلوب", "en": "Site required"},
+    "problem.device_site_required.detail": {
+        "ar": "الكاميرا الثابتة تحتاج موقعًا تراقبه.",
+        "en": "A fixed camera needs the site it watches.",
+    },
+    "problem.invalid_camera_url.title": {"ar": "رابط الكاميرا غير مقبول", "en": "Camera URL rejected"},
+    "problem.invalid_camera_url.detail": {
+        "ar": "استخدم رابط http أو https للقطة (أو rtsp للبث) دون كلمة مرور داخل الرابط.",
+        "en": "Use an http(s) snapshot URL (or rtsp stream) with no password inside the URL.",
+    },
+    "problem.device_has_no_source.title": {"ar": "لا رابط للالتقاط", "en": "Nothing to capture from"},
+    "problem.device_has_no_source.detail": {
+        "ar": "أضف رابط لقطة أو بث لهذا الجهاز أولًا.",
+        "en": "Add a snapshot or stream URL to this device first.",
+    },
+    "problem.job_not_retryable.title": {"ar": "لا يمكن إعادة المحاولة", "en": "Cannot retry"},
+    "problem.job_not_retryable.detail": {
+        "ar": "تُعاد المحاولة للصور المتعثرة المحفوظة فقط.",
+        "en": "Only failed jobs with a stored photo can be retried.",
+    },
+    "problem.ingest_failed.title": {"ar": "تعذر تحليل الصورة", "en": "Photo could not be analysed"},
+    "problem.ingest_failed.detail": {
+        "ar": "تعذر تحليل الصورة بعد عدة محاولات. أعد المحاولة لاحقًا.",
+        "en": "The photo could not be analysed after several attempts. Retry later.",
+    },
+    "camera.invalid_url": {"ar": "رابط الكاميرا غير مقبول.", "en": "The camera URL is not accepted."},
+    "camera.unresolvable": {"ar": "تعذر العثور على عنوان الكاميرا.", "en": "The camera host was not found."},
+    "camera.blocked_address": {
+        "ar": "عنوان الكاميرا داخلي. أضفه إلى SADU_CAMERA_ALLOWED_HOSTS إن كانت الكاميرا على شبكة الموقع.",
+        "en": "The camera address is internal. Allow it in SADU_CAMERA_ALLOWED_HOSTS if it is on site.",
+    },
+    "camera.timeout": {
+        "ar": "لم تستجب الكاميرا في الوقت المحدد.",
+        "en": "The camera did not answer in time.",
+    },
+    "camera.connection": {"ar": "تعذر الاتصال بالكاميرا.", "en": "Could not connect to the camera."},
+    "camera.http_status": {
+        "ar": "ردّت الكاميرا بالرمز {status}.",
+        "en": "The camera answered with status {status}.",
+    },
+    "camera.not_image": {"ar": "لم ترسل الكاميرا صورة.", "en": "The camera did not send an image."},
+    "camera.too_large": {
+        "ar": "لقطة الكاميرا أكبر من الحد المسموح.",
+        "en": "The snapshot is larger than allowed.",
+    },
+    "camera.rtsp_unavailable": {
+        "ar": "التقاط البث RTSP يحتاج ffmpeg على الخادم.",
+        "en": "RTSP capture needs ffmpeg on the server.",
+    },
+    "camera.no_source": {"ar": "لا رابط لقطة لهذا الجهاز.", "en": "This device has no snapshot URL."},
+    "problem.empty_message.title": {"ar": "الرسالة فارغة", "en": "Empty message"},
+    "problem.empty_message.detail": {
+        "ar": "اكتب سؤالك أو أرفق صورة أو ملف PDF.",
+        "en": "Write a question or attach a photo or PDF.",
+    },
+    "problem.too_many_attachments.title": {"ar": "مرفقات كثيرة", "en": "Too many attachments"},
+    "problem.too_many_attachments.detail": {
+        "ar": "أرفق {max_files} ملفات على الأكثر في الرسالة الواحدة.",
+        "en": "Attach at most {max_files} files per message.",
+    },
+    "problem.assistant_busy.title": {"ar": "المساعد يرد الآن", "en": "Assistant is replying"},
+    "problem.assistant_busy.detail": {
+        "ar": "انتظر حتى ينتهي الرد الحالي في هذه المحادثة.",
+        "en": "Wait for the current reply in this conversation to finish.",
+    },
+    "problem.nothing_to_answer.title": {"ar": "لا رسالة جديدة", "en": "Nothing to answer"},
+    "problem.nothing_to_answer.detail": {
+        "ar": "أرسل رسالة جديدة أولًا ثم اطلب الرد.",
+        "en": "Send a new message before asking for a reply.",
+    },
+    "problem.action_already_decided.title": {"ar": "حُسم الطلب", "en": "Already decided"},
+    "problem.action_already_decided.detail": {
+        "ar": "أُكد هذا الطلب أو أُلغي من قبل.",
+        "en": "This request was already confirmed or cancelled.",
     },
     "retake.blurry": {"ar": "الصورة غير واضحة. ثبّت الجوال وصوّر مرة أخرى.", "en": "The photo is blurry."},
     "retake.too_dark": {"ar": "الصورة مظلمة جدًا. صوّر في إضاءة أفضل.", "en": "The photo is too dark."},

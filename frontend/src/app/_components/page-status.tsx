@@ -1,3 +1,7 @@
+import { TriangleAlertIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+
 export function PageSkeleton({ children }: { children?: React.ReactNode }) {
   return (
     <div
@@ -7,8 +11,8 @@ export function PageSkeleton({ children }: { children?: React.ReactNode }) {
     >
       {children ?? (
         <>
-          <div className="h-9 w-72 max-w-full rounded-xl bg-clay/25" />
-          <div className="h-40 rounded-xl bg-clay/20" />
+          <Skeleton className="h-9 w-72 max-w-full animate-none" />
+          <Skeleton className="h-40 animate-none" />
         </>
       )}
     </div>
@@ -17,15 +21,15 @@ export function PageSkeleton({ children }: { children?: React.ReactNode }) {
 
 export function RetryAlert({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
-      <span>{message}</span>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand"
-      >
+    <div
+      role="alert"
+      className="flex flex-wrap items-center gap-3 rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm"
+    >
+      <TriangleAlertIcon className="size-5 shrink-0 text-urgent" aria-hidden="true" />
+      <span className="min-w-0 flex-1">{message}</span>
+      <Button type="button" variant="outline" size="sm" onClick={onRetry}>
         أعد المحاولة
-      </button>
+      </Button>
     </div>
   );
 }

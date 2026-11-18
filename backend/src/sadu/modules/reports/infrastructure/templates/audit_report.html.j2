@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>{{ r.title_ar }}</title>
+<style>
+  :root {
+    --ink: #1f1a16;
+    --sand: #efe4d2;
+    --clay: #b3804f;
+    --sadu: #8f1f1a;
+    --urgent: #b3261e;
+    --muted: #6b5d50;
+  }
+  @page {
+    size: A4;
+    margin: 20mm 16mm 18mm 16mm;
+    @top-right { content: "أثر · ملف تدقيق"; font-size: 8.5pt; color: var(--muted); }
+    @top-left { content: "يتطلب اعتماد المختص"; font-size: 8.5pt; color: var(--urgent); }
+    @bottom-center { content: "صفحة " counter(page, arabic-indic) " من " counter(pages, arabic-indic); font-size: 8.5pt; color: var(--muted); }
+  }
+  html { font-family: "Noto Naskh Arabic", "Noto Sans Arabic", serif; font-size: 10.5pt; line-height: 1.75; color: var(--ink); }
+  body { margin: 0; }
+  h1, h2 { line-height: 1.35; margin: 0; }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 13.5pt; margin-block: 14pt 6pt; padding-block-end: 3pt; border-block-end: 1.2pt solid var(--clay); break-after: avoid; }
+  p { margin: 0 0 4pt; }
+  .band { height: 7pt; margin-block-end: 10pt;
+    background: repeating-linear-gradient(135deg, var(--sadu) 0 5pt, var(--ink) 5pt 10pt); }
+  .subtitle { color: var(--muted); font-size: 11pt; margin-block-end: 8pt; }
+  .stamp { border: 2pt solid var(--urgent); color: var(--urgent); padding: 6pt 10pt; margin-block: 8pt; border-radius: 4pt; font-weight: bold; }
+  .stamp span { display: block; font-weight: normal; font-size: 9.5pt; }
+  .facts { display: flex; gap: 6pt; margin-block: 8pt; }
+  .fact { flex: 1 1 0; background: var(--sand); padding: 5pt 8pt; border-radius: 3pt; }
+  .fact .value { font-size: 15pt; font-weight: bold; display: block; line-height: 1.3; }
+  .fact .label { font-size: 8.5pt; color: var(--muted); }
+  .fact.urgent .value { color: var(--urgent); }
+  .photos { display: flex; flex-wrap: wrap; gap: 6pt; }
+  figure { margin: 0; width: 48%; break-inside: avoid; }
+  figure img { width: 100%; border: 0.6pt solid var(--clay); }
+  figcaption { font-size: 8.5pt; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; margin-block: 4pt 8pt; font-size: 9.5pt; }
+  thead { display: table-header-group; }
+  th { text-align: start; background: var(--sand); font-weight: bold; padding: 3pt 6pt; }
+  td { padding: 3pt 6pt; border-block-end: 0.5pt solid #e2d6c3; vertical-align: top; }
+  tr { break-inside: avoid; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sev-urgent { color: var(--urgent); font-weight: bold; }
+  .specialist { color: var(--urgent); font-weight: bold; font-size: 9pt; }
+  .note { font-size: 9pt; color: var(--muted); }
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+  .summary { white-space: pre-line; }
+</style>
+</head>
+<body>
+  <div class="band"></div>
+  <h1>{{ r.title_ar }}</h1>
+  <p class="subtitle">
+    {% if r.site_names %}{{ r.site_names|join("، ") }} · {% endif %}أُعد في {{ date(r.generated_at) }} · مرجع <span class="ltr">{{ r.reference }}</span>
+  </p>
+  <p class="stamp">يتطلب اعتماد المختص
+    <span>مسودة تدقيق أعدها مساعد أثر. لا يُعتمد مخطط ولا معالجة ولا يُبنى قرار عليها قبل مراجعة أخصائي الترميم وزيارة ميدانية عند الحاجة.</span>
+  </p>
+
+  <div class="facts">
+    <div class="fact"><span class="value num">{{ digits(r.elements|length) }}</span><span class="label">عنصر تلف مرصود</span></div>
+    <div class="fact{% if r.urgent %} urgent{% endif %}"><span class="value num">{{ digits(r.urgent) }}</span><span class="label">عنصر عاجل</span></div>
+    <div class="fact"><span class="value num">{{ digits(r.field_visits|length) }}</span><span class="label">عنصر يحتاج زيارة ميدانية</span></div>
+  </div>
+
+  <h2>الملخص</h2>
+  <p class="summary">{{ r.summary_ar }}</p>
+
+  {% if r.photos %}
+  <h2>الصور المفحوصة</h2>
+  <div class="photos">
+    {% for p in r.photos %}
+    <figure>
+      <img src="data:image/jpeg;base64,{{ photo(p.jpeg) }}" alt="{{ p.caption }}">
+      <figcaption>{{ p.caption }} · طُمست الوجوه وحُذفت بيانات EXIF قبل الحفظ.</figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2>عناصر التلف</h2>
+  {% if r.elements %}
+  <table>
+    <thead><tr><th>الجدار</th><th>العنصر</th><th>النوع</th><th>الموقع</th><th>القياس</th><th>الفئة</th><th>الشدة</th><th>الثقة</th></tr></thead>
+    <tbody>
+    {% for e in r.elements %}
+      <tr>
+        <td>{{ e.wall_name }}</td>
+        <td><bdi>{{ e.id }}</bdi>{% if e.needs_field_visit %} <span class="sev-urgent">زيارة ميدانية</span>{% endif %}</td>
+        <td>{{ damage(e.damage_type) }}</td>
+        <td><bdi>{{ e.location }}</bdi></td>
+        <td class="num">{% if not e.measured %}بلا مقياس{% elif e.count %}{{ digits(e.count) }}{% elif e.length_m %}{{ number(e.length_m) }} م{% else %}{{ number(e.area_m2) }} م²{% endif %}</td>
+        <td>{{ damage_class(e.damage_class) }}</td>
+        <td class="{% if e.severity == 'urgent' %}sev-urgent{% endif %}">{{ severity(e.severity) }}</td>
+        <td>{{ confidence(e.confidence) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="note">القياسات بالمتر تظهر فقط للجدران المربوطة بواجهة معروفة الأبعاد. العناصر العاجلة أو منخفضة الثقة تحتاج زيارة ميدانية قبل أي معالجة.</p>
+  {% else %}
+  <p>لم يُرصد تلف في الصور المفحوصة.</p>
+  {% endif %}
+
+  {% if r.treatments %}
+  <h2>معالجات مقترحة من الدليل</h2>
+  <table>
+    <thead><tr><th>المعالجة</th><th>التلف</th><th>الشدة</th><th>الإشراف</th></tr></thead>
+    <tbody>
+    {% for t in r.treatments %}
+      <tr>
+        <td>{{ t.title_ar }}</td>
+        <td>{{ damage(t.damage_type) }}</td>
+        <td>{{ severity(t.severity) }}</td>
+        <td>{% if t.specialist_required %}<span class="specialist">بإشراف مختص</span>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="note">المعالجات من دليل استرشادي ولا تُنفذ قبل اعتماد المختص.</p>
+  {% endif %}
+
+  <h2>التوصيات</h2>
+  {% if r.recommendations_ar %}
+  <ol>{% for item in r.recommendations_ar %}<li>{{ item }}</li>{% endfor %}</ol>
+  {% else %}
+  <p>لا توصيات إضافية.</p>
+  {% endif %}
+
+  {% if r.documents %}
+  <h2>مستندات مرفقة للرجوع إليها</h2>
+  <ul>{% for name in r.documents %}<li><bdi>{{ name }}</bdi></li>{% endfor %}</ul>
+  <p class="note">لم تُقرأ هذه المستندات آليًا؛ أُرفقت ليطلع عليها المختص.</p>
+  {% endif %}
+
+  {% if r.draft_map_ids %}
+  <p class="note">مسودات مخططات أُنشئت أثناء الفحص: {% for id in r.draft_map_ids %}<span class="ltr">{{ id }}</span>{% if not loop.last %}، {% endif %}{% endfor %}.</p>
+  {% endif %}
+</body>
+</html>

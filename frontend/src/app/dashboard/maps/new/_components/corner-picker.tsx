@@ -158,8 +158,8 @@ function Loupe({ imageUrl, point, frame }: { imageUrl: string; point: [number, n
         backgroundPosition: `${LOUPE_SIZE / 2 - x * frame.width * LOUPE_ZOOM}px ${LOUPE_SIZE / 2 - y * frame.height * LOUPE_ZOOM}px`,
       }}
     >
-      <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-sadu" />
-      <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-sadu" />
+      <span className="absolute inset-x-0 top-0 mx-auto h-full w-px bg-sadu" />
+      <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-sadu" />
     </div>
   );
 }

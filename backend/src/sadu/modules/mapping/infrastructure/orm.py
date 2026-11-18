@@ -47,6 +47,8 @@ class DamageMapRow(UuidPk, Timestamped, Base):
     field_inspected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     field_inspected_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     field_notes: Mapped[str] = mapped_column(Text, default="")
+    source: Mapped[str | None] = mapped_column(String(16))
+    source_label: Mapped[str | None] = mapped_column(String(200))
 
 
 class DamageMapCellRow(Base):

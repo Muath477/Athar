@@ -12,6 +12,7 @@ from sadu.modules.agents.api import AgentRunner, Dependencies
 from sadu.modules.capture import api as capture
 from sadu.modules.capture.api import ObservationStatus
 from sadu.modules.passport import api as passport
+from sadu.modules.reports import api as reports
 from sadu.modules.sites import api as sites
 from sadu.modules.stories import api as stories
 from sadu.modules.verification import api as verification
@@ -99,6 +100,9 @@ async def test_crack_photo_is_published_with_evidence_and_a_story(session, store
 
     pins = await verification.published_for_facades(session, [demo.facades["north"].id])
     assert pins and all(p.baseline_key and p.diff_key and p.photo_key for p in pins)
+    quality = await reports.quality_report(session)
+    assert quality.findings_with_evidence.total == len(pins)
+    assert quality.findings_with_evidence.value == 1.0 and quality.every_report_has_evidence
     story = await stories.cached_story(session, demo.site.id, demo.facades["north"].id)
     assert story is not None and story.claims[0].label == "confirmed"
 
@@ -119,6 +123,7 @@ async def test_unknown_view_asks_the_visitor_then_asks_for_a_retake(session, sto
     assert done.status is ObservationStatus.NEEDS_RETAKE
     assert done.status_payload["retake_reason"] == "wrong_angle"
     assert done.status_payload["story_id"] is not None
+    assert (await capture.outcome_counts(session))[ObservationStatus.NEEDS_RETAKE] == 1
 
 
 async def test_medium_confidence_waits_for_an_expert(session, store, demo, runner_for):
@@ -143,6 +148,8 @@ async def test_medium_confidence_waits_for_an_expert(session, store, demo, runne
     await runner.wait()
     published = await verification.published_for_facades(session, [demo.facades["north"].id])
     assert {p.label for p in published} == {"confirmed"}
+    counts = await verification.finding_counts(session)
+    assert counts.expert_reviews == len(queue) and counts.expert_rejections == 0
 
 
 async def test_model_outage_sends_changes_to_review_not_to_the_map(session, store, demo, runner_for):

@@ -18,7 +18,7 @@ export function AccuracyCard() {
   const scored = accuracy.by_type.filter((t) => t.true_positives + t.false_positives + t.false_negatives > 0);
 
   return (
-    <section className="flex flex-col gap-3 border-t border-clay/40 pt-5">
+    <section className="flex flex-col gap-3 border-t border-line pt-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold">هل يوافق النموذج المختص؟</h2>
         {accuracy.maps > 0 && (
@@ -43,7 +43,7 @@ export function AccuracyCard() {
           </thead>
           <tbody>
             {scored.map((t) => (
-              <tr key={t.damage_type} className="border-t border-clay/30">
+              <tr key={t.damage_type} className="border-t border-line">
                 <td className="py-2">
                   <span className="flex items-center gap-2">
                     <span aria-hidden className="h-3 w-3 rounded-sm" style={{ background: colorFor(t.damage_type) }} />
@@ -69,7 +69,7 @@ function Meter({ value }: { value: number | null }) {
   if (value === null) return <span className="text-mud">لا بيانات</span>;
   return (
     <span className="flex items-center gap-2">
-      <span className="h-1.5 w-24 overflow-hidden rounded-full bg-clay/25">
+      <span className="h-1.5 w-24 overflow-hidden rounded-xs bg-clay">
         <span className="block h-full bg-ink" style={{ inlineSize: `${value * 100}%` }} />
       </span>
       <span className="tabular-nums">{percent(value)}</span>

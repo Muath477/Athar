@@ -122,14 +122,6 @@ export const statusAr: Record<ScanStatus, string> = {
   source_unavailable: "تعذّر الوصول إلى صور الأقمار",
 };
 
-export const levelClass: Record<RiskLevel, string> = {
-  unknown: "bg-clay/25 text-ink",
-  stable: "bg-ink/10 text-ink",
-  watch: "bg-watch text-ink",
-  moderate: "bg-moderate text-ink",
-  urgent: "bg-urgent text-white",
-};
-
 export const LEVEL_ORDER: RiskLevel[] = ["urgent", "moderate", "watch", "stable", "unknown"];
 
 export function latestOk(scans: Scan[]): Scan | null {

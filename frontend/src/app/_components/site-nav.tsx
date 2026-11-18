@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
+import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/passport", label: "جوازي" },
@@ -23,7 +24,7 @@ function CurrentNavLinks() {
 
 function NavLinks({ pathname }: { pathname: string }) {
   return (
-    <nav aria-label="الرئيسية" className="flex gap-2 text-sm">
+    <nav aria-label="الرئيسية" className="flex gap-1 text-sm">
       {LINKS.map((link) => {
         const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
@@ -31,9 +32,10 @@ function NavLinks({ pathname }: { pathname: string }) {
             key={link.href}
             href={link.href}
             aria-current={active ? "page" : undefined}
-            className={`inline-flex min-h-11 items-center px-2 transition-colors ${
-              active ? "font-bold text-ink" : "text-mud hover:text-ink"
-            }`}
+            className={cn(
+              "inline-flex min-h-11 items-center border-b-2 px-2 transition-colors duration-150",
+              active ? "border-sadu font-bold text-sadu" : "border-transparent text-mud hover:border-clay hover:text-ink",
+            )}
           >
             {link.label}
           </Link>

@@ -1,7 +1,10 @@
 "use client";
 
+import { XIcon } from "lucide-react";
+import { SeverityLabel } from "@/components/brand/severity-label";
+import { Button } from "@/components/ui/button";
 import type { Finding } from "@/lib/api";
-import { damageTypeAr, findingLabelAr, severityAr } from "@/lib/labels";
+import { damageTypeAr, findingLabelAr } from "@/lib/labels";
 
 export function EvidencePanel({ finding, onClose }: { finding: Finding; onClose?: () => void }) {
   const images = [
@@ -10,22 +13,22 @@ export function EvidencePanel({ finding, onClose }: { finding: Finding; onClose?
     { title: "خريطة الفرق", url: finding.evidence?.diff_url },
   ];
   return (
-    <aside className="flex flex-col gap-3 rounded-xl bg-white/80 p-4">
-      <div className="flex items-start justify-between">
+    <aside className="flex flex-col gap-3 rounded-sm border border-line bg-white p-4">
+      <div className="flex items-start justify-between gap-2">
         <h2 className="text-lg font-bold">
-          {damageTypeAr[finding.damage_type] ?? finding.damage_type} · {severityAr[finding.severity]}
+          {damageTypeAr[finding.damage_type] ?? finding.damage_type} · <SeverityLabel severity={finding.severity} />
         </h2>
         {onClose && (
-          <button onClick={onClose} aria-label="إغلاق" className="text-xl leading-none">
-            ×
-          </button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="أغلق" className="-mt-2 -me-2">
+            <XIcon className="size-5" aria-hidden="true" />
+          </Button>
         )}
       </div>
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
         <dt>درجة الثقة</dt>
         <dd>{findingLabelAr[finding.label]}</dd>
         <dt>تأكيدات مستقلة</dt>
-        <dd>{finding.confirmations}</dd>
+        <dd>{finding.confirmations.toLocaleString("ar-SA")}</dd>
         <dt>التاريخ</dt>
         <dd>{new Date(finding.created_at).toLocaleDateString("ar-SA")}</dd>
         {finding.cause && (

@@ -5,10 +5,15 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import SESSION_COOKIE, Admin, Staff
+from sadu.modules.admin.api import UserView
+from sadu.modules.admin.interface.audit import router as audit_router
+from sadu.modules.admin.interface.auth import SESSION_COOKIE, Admin, SignedIn, Staff
+from sadu.modules.admin.interface.users import router as users_router
 from sadu.shared.web import Session, State, limit_per_ip, public
 
 router = APIRouter(tags=["auth"])
+router.include_router(users_router)
+router.include_router(audit_router)
 
 
 class LoginRequest(BaseModel):
@@ -19,9 +24,17 @@ class LoginRequest(BaseModel):
 class Me(BaseModel):
     id: str
     email: str
+    display_name: str
     role: str
     permissions: list[str]
+    site_ids: list[str]
+    must_change_password: bool
     csrf_token: str | None = None
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=1, max_length=200)
 
 
 class RoleOut(BaseModel):
@@ -56,13 +69,7 @@ async def login(body: LoginRequest, response: Response, session: Session, state:
     await admin.audit(
         session, actor_id=result.user.id, action="login", target_type="user", target_id=str(result.user.id)
     )
-    return Me(
-        id=str(result.user.id),
-        email=result.user.email,
-        role=result.user.role,
-        permissions=sorted(result.user.role.permissions),
-        csrf_token=result.csrf_token,
-    )
+    return me_out(result.user, result.csrf_token)
 
 
 @router.post("/auth/logout", status_code=204, dependencies=[Depends(public)])
@@ -74,14 +81,39 @@ async def logout(request: Request, response: Response, session: Session) -> None
 
 
 @router.get("/auth/me")
-async def me(user: Staff, request: Request, session: Session) -> Me:
-    auth = await admin.authenticate(session, request.cookies[SESSION_COOKIE])
+async def me(auth: SignedIn) -> Me:
+    return me_out(auth.user, auth.csrf_token)
+
+
+@router.post("/auth/password", status_code=204, dependencies=[Depends(limit_per_ip("password", 5, 60))])
+async def change_password(body: PasswordChangeIn, auth: SignedIn, request: Request, session: Session) -> None:
+    await admin.change_password(
+        session,
+        auth.user.id,
+        current=body.current_password,
+        new=body.new_password,
+        session_token=request.cookies[SESSION_COOKIE],
+    )
+    await admin.audit(
+        session,
+        actor_id=auth.user.id,
+        action="user.password_change",
+        target_type="user",
+        target_id=str(auth.user.id),
+        request_id=getattr(request.state, "request_id", None),
+    )
+
+
+def me_out(user: UserView, csrf_token: str) -> Me:
     return Me(
         id=str(user.id),
         email=user.email,
+        display_name=user.display_name,
         role=user.role,
         permissions=sorted(user.role.permissions),
-        csrf_token=auth.csrf_token,
+        site_ids=sorted(str(site_id) for site_id in user.site_ids),
+        must_change_password=user.must_change_password,
+        csrf_token=csrf_token,
     )
 
 

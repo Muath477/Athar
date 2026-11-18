@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { ApiError, forgetPassportLocally, type Passport, passportToken, request } from "@/lib/api";
 
 export function PassportView() {
@@ -47,23 +48,23 @@ export function PassportView() {
           ))}
         </ul>
       )}
-      <section className="mt-6 flex flex-col gap-2 border-t border-clay/40 pt-4 text-sm">
+      <section className="mt-6 flex flex-col gap-2 border-t border-line pt-4 text-sm">
         {confirming ? (
           <>
             <p>سيُحذف جوازك وأختامه وصورك التي لم تصبح دليلًا على ضرر. لا يمكن التراجع.</p>
-            <div className="flex gap-3">
-              <button onClick={deleteAll} className="rounded-full bg-urgent px-4 py-1.5 text-white">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="destructive" onClick={deleteAll}>
                 احذف نهائيًا
-              </button>
-              <button onClick={() => setConfirming(false)} className="underline">
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setConfirming(false)}>
                 إلغاء
-              </button>
+              </Button>
             </div>
           </>
         ) : (
-          <button onClick={() => setConfirming(true)} className="self-start underline">
+          <Button type="button" variant="link" onClick={() => setConfirming(true)} className="self-start text-urgent">
             احذف جوازي وصوري
-          </button>
+          </Button>
         )}
       </section>
     </div>

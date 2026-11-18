@@ -16,6 +16,7 @@ class DetectorKind(StrEnum):
     CLAUDE = "claude"
     HTTP_DETECTION = "http_detection"
     HTTP_CELL_CLASSIFICATION = "http_cell_classification"
+    QWEN = "qwen"
     NONE = "none"
 
 
@@ -63,6 +64,11 @@ class Settings(BaseSettings):
     sadu_detector_labels: str = ""
     sadu_detector_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
     sadu_detector_timeout_s: float = Field(default=30.0, gt=0)
+    sadu_qwen_url: str = "http://localhost:8080/v1"
+    sadu_qwen_model: str = "athar-damage"
+    sadu_qwen_token: SecretStr | None = None
+    sadu_qwen_timeout_s: float = Field(default=120.0, gt=0)
+    sadu_qwen_json_schema: bool = True
     sadu_map_rows: int = Field(default=8, ge=2, le=20)
     sadu_treatment_catalog: str | None = None
 
@@ -93,6 +99,13 @@ class Settings(BaseSettings):
     sadu_watch_interval_h: int = Field(default=168, ge=0)
     sadu_watch_sample_events: str = ""
     sadu_alert_webhook_url: str = Field(default="", pattern=r"^(https://\S+)?$")
+    sadu_retention_interval_h: int = Field(default=24, ge=0)
+    sadu_approval_overdue_days: int = Field(default=7, ge=0)
+
+    sadu_camera_interval_h: int = Field(default=24, ge=0)
+    sadu_camera_allowed_hosts: str = ""
+    sadu_ingest_concurrency: int = Field(default=2, ge=1, le=8)
+    sadu_specialist_webhook_url: str = Field(default="", pattern=r"^(https://\S+)?$")
 
     @property
     def watch_sample_events_path(self) -> Path:

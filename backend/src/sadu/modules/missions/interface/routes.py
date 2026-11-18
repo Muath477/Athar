@@ -69,12 +69,15 @@ async def nearby_missions(
 
 
 @router.get("/missions")
-async def list_missions(_: Staff, session: Session, site_id: UUID | None = None) -> list[MissionOut]:
-    return [mission_out(m) for m in await missions.list_missions(session, site_id=site_id)]
+async def list_missions(user: Staff, session: Session, site_id: UUID | None = None) -> list[MissionOut]:
+    admin.ensure_sees_site(user, site_id)
+    found = await missions.list_missions(session, site_id=site_id)
+    return [mission_out(m) for m in found if user.sees_site(m.site_id)]
 
 
 @router.post("/missions", status_code=201)
 async def create_mission(body: NewMission, user: Inspector, session: Session) -> MissionOut:
+    admin.ensure_sees_site(user, (await sites.get_facade(session, body.facade_id)).site_id)
     mission = await missions.create_mission(session, body.facade_id, body.reason, body.finding_id)
     await admin.audit(
         session, actor_id=user.id, action="mission.create", target_type="mission", target_id=str(mission.id)
@@ -83,7 +86,8 @@ async def create_mission(body: NewMission, user: Inspector, session: Session) ->
 
 
 @router.get("/sites/{site_id}/coverage")
-async def coverage(site_id: UUID, _: Staff, session: Session) -> list[FacadeCoverage]:
+async def coverage(site_id: UUID, user: Staff, session: Session) -> list[FacadeCoverage]:
+    admin.ensure_sees_site(user, site_id)
     now = datetime.now(UTC)
     last_photos = await capture.last_usable_photo_per_facade(session, site_id)
     open_by_facade = {m.facade_id: m.id for m in await missions.list_missions(session, site_id=site_id)}

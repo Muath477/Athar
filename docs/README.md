@@ -10,11 +10,13 @@ Athar (أثر) turns many visitors' photos into one living picture of each herit
 | 3 · Architecture (all diagrams) | [03-architecture.md](03-architecture.md) |
 | 4 · Tech stack confirmation | [04-stack.md](04-stack.md) |
 | 5 · Phases and hour-by-hour plan | [05-phases.md](05-phases.md) |
-| 6 · Security | [06-security/threat-model.md](06-security/threat-model.md) |
+| 6 · Security | [06-security/threat-model.md](06-security/threat-model.md), [06-security/roles.md](06-security/roles.md) |
 | 7 · Infrastructure, monitoring, testing | [07-infra-and-testing.md](07-infra-and-testing.md) |
 | 9 · Verification evidence and demo script | [09-verification-and-demo.md](09-verification-and-demo.md) |
 | 10 · Wall damage maps (Diriyah challenge) | [10-damage-maps.md](10-damage-maps.md) |
 | 11 · UML and structure | [11-uml.md](11-uml.md) |
-| Decisions | [adr/](adr/) (ADR-001 to ADR-024) |
+| Design contract | [design/DESIGN.md](design/DESIGN.md) |
+| Own damage model | [ml/architecture.md](ml/architecture.md) |
+| Decisions | [adr/](adr/) (ADR-001 to ADR-029) |
 
 CI renders every Mermaid diagram with mermaid-cli 12.0.1 on each push.

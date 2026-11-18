@@ -83,8 +83,9 @@ async def nearby_sites(
 
 
 @router.get("/sites")
-async def list_sites(_: Staff, session: Session, state: State) -> list[SiteOut]:
-    return [await site_out(session, state, s) for s in await sites.list_sites(session)]
+async def list_sites(user: Staff, session: Session, state: State) -> list[SiteOut]:
+    visible = [s for s in await sites.list_sites(session) if user.sees_site(s.id)]
+    return [await site_out(session, state, s) for s in visible]
 
 
 @router.get("/sites/{site_id}", dependencies=[Depends(public), Depends(limit_public_reads)])
@@ -96,6 +97,7 @@ async def get_site(site_id: UUID, session: Session, state: State) -> SiteOut:
 async def set_field_photography(
     site_id: UUID, body: PermitIn, user: SiteManager, session: Session, state: State, request: Request
 ) -> SiteOut:
+    admin.ensure_sees_site(user, site_id)
     site = await sites.set_field_photography(session, site_id, body.permitted)
     await admin.audit(
         session,

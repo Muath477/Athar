@@ -1,6 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { colorFor } from "@/lib/damage-palette";
 import { damageTypeAr, severityAr } from "@/lib/labels";
 import { corrections, countAr } from "@/lib/plural";
@@ -43,125 +55,102 @@ export function MapToolbar({
   const [confirming, setConfirming] = useState(false);
   const erasing = brush.damage_type === "none";
   const approveBlocked = busy || !fieldInspected || unsaved > 0 || unreviewed > 0;
-  const focusRing = "focus-visible:outline-sand";
   if (confirming && approveBlocked) setConfirming(false);
 
   return (
-    <section aria-label="أدوات التصحيح" className="no-print flex flex-col gap-3 rounded-xl bg-ink p-3 text-sand">
+    <section aria-label="أدوات التصحيح" className="no-print flex flex-col gap-3 rounded-sm border border-line bg-white p-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-sm text-sand/70">الفرشاة</span>
+        <span className="text-sm text-mud">الفرشاة</span>
         <div role="radiogroup" aria-label="نوع التلف" className="flex flex-wrap gap-1.5">
-          {damageTypes.map((type) => {
-            const selected = brush.damage_type === type;
-            return (
-              <button
-                key={type}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => onBrush({ ...brush, damage_type: type })}
-                className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm transition-colors ${focusRing} ${
-                  selected ? "bg-sand text-ink" : "hover:bg-sand/15"
-                }`}
-              >
-                <span aria-hidden className="h-3 w-3 rounded-sm" style={{ background: colorFor(type) }} />
-                {damageTypeAr[type] ?? type}
-              </button>
-            );
-          })}
-          <button
+          {damageTypes.map((type) => (
+            <Button
+              key={type}
+              type="button"
+              role="radio"
+              variant="segment"
+              size="sm"
+              aria-checked={brush.damage_type === type}
+              onClick={() => onBrush({ ...brush, damage_type: type })}
+            >
+              <span aria-hidden className="size-3 rounded-xs" style={{ background: colorFor(type) }} />
+              {damageTypeAr[type] ?? type}
+            </Button>
+          ))}
+          <Button
             type="button"
             role="radio"
+            variant="segment"
+            size="sm"
             aria-checked={erasing}
             onClick={() => onBrush({ ...brush, damage_type: "none" })}
-            className={`min-h-11 rounded-full border border-dashed border-sand/60 px-3 text-sm ${focusRing} ${
-              erasing ? "bg-sand text-ink" : "hover:bg-sand/15"
-            }`}
+            className="border border-dashed border-mud/60"
           >
             ممحاة: سليمة
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="radiogroup" aria-label="الخطورة" className={`flex items-center gap-1 ${erasing ? "opacity-40" : ""}`}>
-          <span className="me-2 text-sm text-sand/70">الخطورة</span>
+          <span className="me-2 text-sm text-mud">الخطورة</span>
           {SEVERITIES.map((severity) => (
-            <button
+            <Button
               key={severity}
               type="button"
               role="radio"
+              variant="segment"
+              size="sm"
               aria-checked={brush.severity === severity}
               disabled={erasing}
               onClick={() => onBrush({ ...brush, severity })}
-              className={`min-h-11 rounded-full px-3 text-sm ${focusRing} ${
-                brush.severity === severity ? "bg-sand font-bold text-ink" : "hover:bg-sand/15"
-              }`}
             >
               {severityAr[severity]}
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onUndo}
-            disabled={!canUndo}
-            aria-keyshortcuts="Control+Z"
-            className={`min-h-11 rounded-full px-3 text-sm hover:bg-sand/15 disabled:opacity-30 ${focusRing}`}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={onUndo} disabled={!canUndo} aria-keyshortcuts="Control+Z">
             تراجع
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onRedo}
             disabled={!canRedo}
             aria-keyshortcuts="Control+Shift+Z"
-            className={`min-h-11 rounded-full px-3 text-sm hover:bg-sand/15 disabled:opacity-30 ${focusRing}`}
           >
             إعادة
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={busy || pendingCount === 0}
-            className={`min-h-11 rounded-full bg-sand px-4 text-sm font-bold text-ink disabled:opacity-30 ${focusRing}`}
-          >
+          </Button>
+          <Button type="button" variant="outline" onClick={onSave} disabled={busy || pendingCount === 0}>
             {busy ? "نحفظ…" : pendingCount > 0 ? `احفظ ${countAr(pendingCount, corrections)}` : "احفظ التصحيحات"}
-          </button>
-          {confirming ? (
-            <span role="group" aria-label="تأكيد الاعتماد" className="flex items-center gap-2 rounded-full bg-mud ps-3 text-sm text-sand">
-              يُجمَّد المخطط بعد الاعتماد.
-              <button
+          </Button>
+          <AlertDialog open={confirming} onOpenChange={setConfirming}>
+            <AlertDialogTrigger asChild>
+              <Button
                 type="button"
-                onClick={() => {
-                  setConfirming(false);
-                  onApprove();
-                }}
-                className={`min-h-11 px-2 font-bold underline ${focusRing}`}
+                disabled={approveBlocked}
+                aria-describedby={approveBlocked && !busy ? "grid-approve-reason" : undefined}
               >
-                اعتمد
-              </button>
-              <button type="button" onClick={() => setConfirming(false)} className={`min-h-11 pe-3 ps-2 underline ${focusRing}`}>
-                إلغاء
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              disabled={approveBlocked}
-              aria-describedby={approveBlocked && !busy ? "grid-approve-reason" : undefined}
-              className={`min-h-11 rounded-full bg-sadu px-4 text-sm font-bold text-sand disabled:opacity-30 ${focusRing}`}
-            >
-              اعتمد المخطط
-            </button>
-          )}
+                اعتمد المخطط
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>اعتماد المخطط</AlertDialogTitle>
+                <AlertDialogDescription>يُجمَّد المخطط بعد الاعتماد، ولا يمكن التعديل بعدها.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction onClick={onApprove}>اعتمد</AlertDialogAction>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       {!busy && approveBlocked && (
-        <p id="grid-approve-reason" className="text-xs text-sand/70">
+        <p id="grid-approve-reason" className="text-xs text-mud">
           {!fieldInspected
             ? "الاعتماد متاح بعد تسجيل الفحص الميداني."
             : unsaved > 0
@@ -169,9 +158,9 @@ export function MapToolbar({
               : "راجع العناصر منخفضة الثقة في وضع «عناصر التلف بالمسرد» قبل الاعتماد."}
         </p>
       )}
-      <p className="text-xs text-sand/60">
+      <p className="text-xs text-mud">
         اسحب على الخلايا لتلوينها، أو تنقّل بالأسهم واضغط زر المسافة.{" "}
-        <kbd dir="ltr" className="rounded bg-clay/20 px-1">
+        <kbd dir="ltr" className="rounded-xs bg-muted px-1">
           Ctrl+Z
         </kbd>{" "}
         للتراجع.

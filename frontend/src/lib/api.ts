@@ -98,25 +98,52 @@ export type Coverage = {
   open_mission_id: string | null;
 };
 
-export type Permission = "read" | "survey" | "review" | "manage_site" | "administer";
+export type Permission =
+  | "read"
+  | "survey"
+  | "review"
+  | "manage_site"
+  | "manage_devices"
+  | "export"
+  | "assistant"
+  | "manage_models"
+  | "read_audit"
+  | "administer";
+
+export type Role = "inspector" | "site_manager" | "expert" | "authority" | "ml_engineer" | "admin";
 
 export type Me = {
   id: string;
   email: string;
-  role: "inspector" | "site_manager" | "expert" | "admin";
+  display_name: string;
+  role: Role;
   permissions: Permission[];
+  site_ids: string[];
+  must_change_password: boolean;
   csrf_token: string | null;
 };
 
-export const roleAr: Record<Me["role"], string> = {
+export const roleAr: Record<Role, string> = {
   inspector: "المساح الميداني",
   site_manager: "مدير الموقع",
   expert: "أخصائي الترميم",
+  authority: "ممثل هيئة التراث",
+  ml_engineer: "مهندس النماذج",
   admin: "مسؤول النظام",
 };
 
 export function can(me: Me | null, permission: Permission): boolean {
   return !!me && me.permissions.includes(permission);
+}
+
+export const PASSWORD_PAGE = "/dashboard/password";
+
+export function homeFor(me: Me): string {
+  if (me.must_change_password) return PASSWORD_PAGE;
+  if (can(me, "review")) return "/dashboard/maps";
+  if (can(me, "manage_site")) return "/dashboard/condition";
+  if (can(me, "survey")) return "/dashboard/maps/new";
+  return "/dashboard";
 }
 
 export type Passport = {
@@ -151,6 +178,10 @@ export function forgetPassportLocally(): void {
   removeStorage(PASSPORT_KEY);
 }
 
+export function csrfToken(): string | null {
+  return readStorage(CSRF_KEY);
+}
+
 export function rememberCsrf(token: string | null): void {
   if (token) writeStorage(CSRF_KEY, token);
   else removeStorage(CSRF_KEY);
@@ -183,6 +214,18 @@ export function baselineUrl(facadeId: string): string {
 
 export function mapReportUrl(mapId: string): string {
   return `${BASE}/maps/${mapId}/report.pdf`;
+}
+
+export function mapElementsCsvUrl(mapId: string): string {
+  return `${BASE}/maps/${mapId}/elements.csv`;
+}
+
+export function conditionExportUrl(siteId: string, format: "csv" | "pdf"): string {
+  return `${BASE}/sites/${siteId}/condition.${format}`;
+}
+
+export function apiUrl(path: string): string {
+  return `${BASE}${path}`;
 }
 
 function readStorage(key: string): string | null {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Button } from "@/components/ui/button";
 import type { WorkflowStep } from "@/lib/maps";
 
 const CURRENT_BORDER: Record<WorkflowStep["state"], string> = {
@@ -42,7 +43,7 @@ export function WorkflowSteps({ steps }: { steps: WorkflowStep[] }) {
   const collapsible = expanded ? "flex" : "hidden md:flex";
 
   return (
-    <section aria-labelledby="workflow-title" className="flex flex-col gap-3 rounded-xl bg-white/60 p-3">
+    <section aria-labelledby="workflow-title" className="flex flex-col gap-3 rounded-sm border border-line bg-white p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="workflow-title" className="text-lg font-bold">
           خريطة الإجراءات
@@ -58,7 +59,7 @@ export function WorkflowSteps({ steps }: { steps: WorkflowStep[] }) {
         {done.map((step) => (
           <li key={step.key} className={`${collapsible} md:w-auto`}>
             <details className="text-xs text-mud">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-full bg-white/70 pe-3 ps-1.5">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-sm border border-line bg-white pe-3 ps-1.5">
                 <StepNumber step={step} tone="bg-ink text-sand" />
                 <span>{step.title_ar}</span>
               </summary>
@@ -102,15 +103,17 @@ export function WorkflowSteps({ steps }: { steps: WorkflowStep[] }) {
       </ol>
 
       {steps.length > 1 && (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           aria-expanded={expanded}
           aria-controls={listId}
           onClick={() => setExpanded((open) => !open)}
-          className="min-h-11 w-fit rounded-full border border-ink/30 px-4 text-sm hover:bg-ink hover:text-sand md:hidden"
+          className="w-fit md:hidden"
         >
           {expanded ? "أخفِ بقية الخطوات" : "اعرض كل الخطوات"}
-        </button>
+        </Button>
       )}
     </section>
   );

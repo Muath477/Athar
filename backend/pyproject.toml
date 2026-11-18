@@ -130,6 +130,9 @@ containers = [
     "sadu.modules.passport",
     "sadu.modules.admin",
     "sadu.modules.watch",
+    "sadu.modules.ingest",
+    "sadu.modules.models",
+    "sadu.modules.assistant",
 ]
 layers = ["interface", "api", "infrastructure", "application", "domain"]
 exhaustive = false
@@ -138,7 +141,8 @@ exhaustive = false
 name = "Module dependency graph from docs/03-architecture.md"
 type = "layers"
 layers = [
-    "sadu.modules.agents | sadu.modules.reports | sadu.modules.watch",
+    "sadu.modules.assistant",
+    "sadu.modules.agents | sadu.modules.reports | sadu.modules.watch | sadu.modules.ingest | sadu.modules.models",
     "sadu.modules.missions | sadu.modules.mapping",
     "sadu.modules.verification | sadu.modules.stories | sadu.modules.capture | sadu.modules.passport",
     "sadu.modules.inspection",

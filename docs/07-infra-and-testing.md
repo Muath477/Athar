@@ -78,7 +78,9 @@ SADU_ENABLE_YOLO=false
 
 ### Evaluation harness
 
-Command: `docker compose run --rm api python -m eval.run --set data/testset --out eval/results/<name>.md`
+Status on 2026-11-18: `eval/run.py` runs four synthetic photos from the demo pack (facade identification, damage recall, no false damage, shadow flagged as lighting, off-target photo sent to retake). The 50-image set below is still to be collected. Evidence coverage is also measured on live data: `python -m sadu.cli quality` and `GET /api/v1/reports/quality` report the share of published findings and approved maps that carry full evidence (target 100%, the command exits non-zero below it), photos sent back, findings held for a specialist, specialist rejections and maps the specialist corrected.
+
+Planned command for the full set: `docker compose run --rm api python -m eval.run --set data/testset --out eval/results/<name>.md`
 
 Inputs: `data/testset/labels.csv` (per photo: facade code, has_change, damage_type, change box in baseline pixels), `data/testset/false_reports/` (10 photos meant to fool the system: shadows, wet patches after watering, a wrong building, a photo of a screen, a photo with written instructions), and `data/stories/questions.csv` (20 questions with reference answers and allowed sources).
 

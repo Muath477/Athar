@@ -24,10 +24,13 @@ async def site_manager(committed_unit_of_work) -> str:
 async def test_each_role_gets_only_its_own_permissions(client, site_manager):
     manager = await login(client, site_manager)
     me = (await client.get("/auth/me")).json()
-    assert me["role"] == "site_manager" and me["permissions"] == ["manage_site", "read"]
+    assert me["role"] == "site_manager"
+    assert me["permissions"] == ["assistant", "export", "manage_devices", "manage_site", "read"]
     roles = {r["role"]: r["permissions"] for r in (await client.get("/auth/roles")).json()}
-    assert roles["inspector"] == ["read", "survey"]
-    assert roles["expert"] == ["read", "review", "survey"]
+    assert roles["inspector"] == ["assistant", "read", "survey"]
+    assert roles["expert"] == ["assistant", "export", "read", "review", "survey"]
+    assert roles["authority"] == ["assistant", "export", "read", "read_audit"]
+    assert roles["ml_engineer"] == ["export", "manage_models", "read"]
 
     [site] = (await client.get("/sites")).json()
     assert (await client.get(f"/sites/{site['id']}/condition")).status_code == 200

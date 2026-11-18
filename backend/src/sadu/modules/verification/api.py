@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.verification.application.claims import check_claims
@@ -345,3 +345,42 @@ def _view(row: FindingRow) -> FindingView:
         diff_key=row.diff_key,
         created_at=row.created_at,
     )
+
+
+@dataclass(frozen=True)
+class FindingCounts:
+    published: int
+    published_with_evidence: int
+    pending_review: int
+    rejected: int
+    expert_reviews: int
+    expert_rejections: int
+
+
+async def finding_counts(session: AsyncSession) -> FindingCounts:
+    by_status = await _count_by(session, FindingRow.status)
+    with_evidence = await session.scalar(
+        select(func.count())
+        .select_from(FindingRow)
+        .where(
+            FindingRow.status == FindingStatus.PUBLISHED,
+            FindingRow.baseline_key.is_not(None),
+            FindingRow.photo_key.is_not(None),
+            FindingRow.diff_key.is_not(None),
+            FindingRow.existence_label.in_((ConfidenceLabel.CONFIRMED, ConfidenceLabel.LIKELY)),
+        )
+    )
+    by_decision = await _count_by(session, ReviewRow.decision)
+    return FindingCounts(
+        published=by_status.get(FindingStatus.PUBLISHED, 0),
+        published_with_evidence=with_evidence or 0,
+        pending_review=by_status.get(FindingStatus.PENDING_REVIEW, 0),
+        rejected=by_status.get(FindingStatus.REJECTED, 0),
+        expert_reviews=sum(by_decision.values()),
+        expert_rejections=by_decision.get(ReviewDecision.REJECT, 0),
+    )
+
+
+async def _count_by(session: AsyncSession, column: Any) -> dict[str, int]:
+    rows = await session.execute(select(column, func.count()).group_by(column))
+    return {str(value): count for value, count in rows.all()}

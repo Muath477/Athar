@@ -136,10 +136,10 @@ def scan_out(view: watch.ScanView, store: ObjectStore) -> ScanOut:
 
 
 @router.get("/watch/sites")
-async def watch_overview(_: Staff, session: Session, state: State, request: Request) -> WatchOverviewOut:
+async def watch_overview(user: Staff, session: Session, state: State, request: Request) -> WatchOverviewOut:
     queue: watch.ScanQueue = request.app.state.scan_queue
     source = queue.source
-    ranked = await watch.rank_sites(session, queue)
+    ranked = [r for r in await watch.rank_sites(session, queue) if user.sees_site(r.site.id)]
     return WatchOverviewOut(
         source=source.name,
         is_sample=source.is_sample,
@@ -176,7 +176,8 @@ async def watch_overview(_: Staff, session: Session, state: State, request: Requ
 
 
 @router.get("/watch/sites/{site_id}/scans")
-async def list_scans(site_id: UUID, _: Staff, session: Session, state: State) -> list[ScanOut]:
+async def list_scans(site_id: UUID, user: Staff, session: Session, state: State) -> list[ScanOut]:
+    admin.ensure_sees_site(user, site_id)
     return [scan_out(v, state.store) for v in await watch.site_scans(session, site_id)]
 
 
@@ -184,6 +185,7 @@ async def list_scans(site_id: UUID, _: Staff, session: Session, state: State) ->
 async def scan_now(
     site_id: UUID, user: Inspector, session: Session, state: State, request: Request
 ) -> ScanQueuedOut:
+    admin.ensure_sees_site(user, site_id)
     state.rate_limiter.check(f"watch-scan:{user.id}", SCANS_PER_USER_PER_HOUR, 3600)
     await watch.watch_area(session, site_id)
     queue: watch.ScanQueue = request.app.state.scan_queue
@@ -204,6 +206,7 @@ async def scan_now(
 async def acknowledge(
     scan_id: UUID, user: Expert, session: Session, state: State, request: Request
 ) -> ScanOut:
+    admin.ensure_sees_site(user, (await watch.get_scan(session, scan_id)).site_id)
     view = await watch.acknowledge(session, scan_id, user.id)
     await admin.audit(
         session,
@@ -220,6 +223,7 @@ async def acknowledge(
 async def ground_check(
     scan_id: UUID, user: Inspector, session: Session, state: State, request: Request
 ) -> GroundCheckOut:
+    admin.ensure_sees_site(user, (await watch.get_scan(session, scan_id)).site_id)
     state.rate_limiter.check(f"watch-ground:{user.id}", GROUND_CHECKS_PER_USER_PER_HOUR, 3600)
     result = await watch.request_ground_check(session, scan_id)
     await admin.audit(

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { TriangleAlertIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { ApiError, can } from "@/lib/api";
 import { countAr, missions, scenes } from "@/lib/plural";
 import { useMe } from "@/lib/use-me";
@@ -13,8 +15,6 @@ import {
   acknowledgeScan,
   areaAr,
   getOverview,
-  levelAr,
-  levelClass,
   latestOk,
   listScans,
   requestGroundCheck,
@@ -26,6 +26,7 @@ import {
   warningAr,
   zoneAr,
 } from "@/lib/watch";
+import { LevelBadge, SampleBadge } from "../../_components/level-badge";
 import { CopernicusCredit, LoadError, SiteWatchSkeleton } from "../../_components/watch-states";
 import { CompareImages } from "./compare-images";
 
@@ -103,15 +104,11 @@ export function SiteWatch() {
           → كل المواقع
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 ref={headingRef} tabIndex={-1} className="text-3xl font-bold leading-snug">
+          <h1 ref={headingRef} tabIndex={-1} className="text-3xl font-bold">
             {site.name_ar}
           </h1>
-          <span className={`rounded-full px-3 py-1 text-sm font-bold ${levelClass[level]}`}>{levelAr[level]}</span>
-          {latest?.is_sample && (
-            <span className="rounded-full border-2 border-dashed border-clay px-3 py-0.5 text-sm font-bold text-mud">
-              بيانات تجريبية
-            </span>
-          )}
+          <LevelBadge level={level} />
+          {latest?.is_sample && <SampleBadge>بيانات تجريبية</SampleBadge>}
         </div>
         {latest && (
           <p className="text-sm text-mud">
@@ -123,15 +120,22 @@ export function SiteWatch() {
       </header>
 
       {warningAr(site) && (
-        <p className={`rounded-xl p-3 ${site.alert ? "border border-urgent/40 bg-urgent/10" : "bg-white/75"}`}>
-          {site.alert && <strong>تنبيه للمختصين · </strong>}
+        <p
+          className={`rounded-sm border p-3 ${site.alert ? "border-urgent/40 bg-urgent/5" : "border-line bg-white"}`}
+        >
+          {site.alert && (
+            <strong>
+              <TriangleAlertIcon className="me-1 inline size-4 align-[-0.125em] text-urgent" aria-hidden="true" />
+              تنبيه للمختصين ·{" "}
+            </strong>
+          )}
           {warningAr(site)}
           {site.trend && site.trend !== "new" && <> · {trendAr[site.trend]}</>}
         </p>
       )}
 
       {error && (
-        <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
+        <p role="alert" className="rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm">
           {error}
         </p>
       )}
@@ -139,8 +143,9 @@ export function SiteWatch() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2">
           {canSurvey && (
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() =>
                 run("scan", async () => {
                   await scanSite(siteId);
@@ -148,24 +153,23 @@ export function SiteWatch() {
                 })
               }
               disabled={busy !== null}
-              className="min-h-11 rounded-full border border-ink/30 px-5 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
             >
               {busy === "scan" ? "يُفحص…" : "افحص الآن"}
-            </button>
+            </Button>
           )}
           {canSurvey && hasSignals && latest && !latest.ground_check_at && (
-            <button
+            <Button
               type="button"
               onClick={() => run("ground", async () => ({ kind: "ground", check: await requestGroundCheck(latest.id) }))}
               disabled={busy !== null}
-              className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand transition-transform hover:-translate-y-0.5 disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-none"
             >
               {busy === "ground" ? "يُرسل…" : "اطلب تحققًا ميدانيًا"}
-            </button>
+            </Button>
           )}
           {hasSignals && latest && canAcknowledge && !latest.acknowledged_at && (
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() =>
                 run("ack", async () => {
                   await acknowledgeScan(latest.id);
@@ -173,10 +177,9 @@ export function SiteWatch() {
                 })
               }
               disabled={busy !== null}
-              className="min-h-11 rounded-full border border-ink/30 px-5 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
             >
               {busy === "ack" ? "يُحفظ…" : "أكّد أنك راجعت التنبيه"}
-            </button>
+            </Button>
           )}
         </div>
         <div role="status">{notice && <NoticeText notice={notice} />}</div>
@@ -187,13 +190,13 @@ export function SiteWatch() {
       )}
 
       {failedSince && (
-        <p className="rounded-xl bg-white/75 p-4">
+        <p className="rounded-sm border border-line bg-white p-4">
           آخر محاولة في {dateAr(failedSince.created_at)}: {statusAr[failedSince.status]}.
           {latest && " نعرض أدناه آخر فحص مكتمل."}
         </p>
       )}
       {latest === null && !failedSince && (
-        <p className="rounded-xl bg-white/75 p-4">لم يُفحص هذا الموقع بعد. ابدأ بفحص الآن.</p>
+        <p className="rounded-sm border border-line bg-white p-4">لم يُفحص هذا الموقع بعد. ابدأ بفحص الآن.</p>
       )}
 
       {latest?.status === "ok" && (
@@ -206,13 +209,13 @@ export function SiteWatch() {
             {latest.signals.length === 0 ? (
               <p className="text-mud">لا تغيّر ملحوظ داخل الموقع ولا في محيطه.</p>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col divide-y divide-line rounded-sm border border-line bg-white">
                 {[...latest.signals]
                   .sort((a, b) => b.area_m2 - a.area_m2)
                   .map((signal) => (
                     <li
                       key={`${signal.threat}-${signal.zone}`}
-                      className="flex items-start gap-3 rounded-xl bg-white/75 p-3"
+                      className="flex items-start gap-3 p-3"
                     >
                       <span
                         className="mt-1.5 inline-block size-3 shrink-0 rounded-sm"
@@ -242,7 +245,7 @@ export function SiteWatch() {
           <h2 id="history-title" className="text-lg font-bold">
             الفحوص السابقة
           </h2>
-          <ol className="flex flex-col divide-y divide-clay/30 rounded-xl bg-white/60">
+          <ol className="flex flex-col divide-y divide-line rounded-sm border border-line bg-white">
             {scans.filter((scan) => scan.id !== latest?.id).map((scan) => {
               const strongest = strongestSignal(scan);
               return (
@@ -250,9 +253,7 @@ export function SiteWatch() {
                   <time dateTime={scan.created_at} className="tabular-nums text-mud">
                     {dateAr(scan.created_at)}
                   </time>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${levelClass[scan.level]}`}>
-                    {levelAr[scan.level]}
-                  </span>
+                  <LevelBadge level={scan.level} />
                   <span>
                     {scan.status !== "ok"
                       ? statusAr[scan.status]
@@ -273,11 +274,11 @@ export function SiteWatch() {
 }
 
 function NoticeText({ notice }: { notice: Notice }) {
-  if (notice.kind === "scan") return <p className="rounded-xl bg-white/75 p-3">انتهى الفحص، والنتيجة أدناه.</p>;
-  if (notice.kind === "ack") return <p className="rounded-xl bg-white/75 p-3">سُجّلت مراجعتك للتنبيه.</p>;
+  if (notice.kind === "scan") return <p className="rounded-sm border border-line bg-white p-3">انتهى الفحص، والنتيجة أدناه.</p>;
+  if (notice.kind === "ack") return <p className="rounded-sm border border-line bg-white p-3">سُجّلت مراجعتك للتنبيه.</p>;
   const { check } = notice;
   return (
-    <p className="rounded-xl bg-white/75 p-3">
+    <p className="rounded-sm border border-line bg-white p-3">
       {check.inspector_visit
         ? "لا توجد واجهات بصور مرجعية لهذا الموقع، لذلك يحتاج زيارة مفتش."
         : check.mission_ids.length === 0

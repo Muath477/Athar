@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StoryView } from "./story-view";
+import { SeverityLabel } from "@/components/brand/severity-label";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { type ObservationState, request } from "@/lib/api";
 import { followObservation } from "@/lib/events";
-import { damageTypeAr, findingLabelAr, retakeAr, severityAr, stageAr } from "@/lib/labels";
+import { damageTypeAr, findingLabelAr, retakeAr, stageAr } from "@/lib/labels";
 
 export function ObservationProgress() {
   const id = useSearchParams().get("id");
@@ -33,7 +35,7 @@ export function ObservationProgress() {
   if (!state || state.status === "received" || state.status === "processing") {
     return (
       <div className="flex flex-col items-center gap-4 pt-16" aria-live="polite">
-        <div className="sadu-band w-40 animate-pulse motion-reduce:animate-none" aria-hidden />
+        <div className="jadwal w-40 animate-pulse motion-reduce:animate-none" aria-hidden />
         <p className="text-lg">{stageAr[state?.detail.stage ?? ""] ?? "استلمنا صورتك"}</p>
       </div>
     );
@@ -46,19 +48,21 @@ export function ObservationProgress() {
         <h1 className="text-xl font-bold">أي واجهة صوّرت؟</h1>
         <div className="grid grid-cols-2 gap-3">
           {detail.options?.map((o) => (
-            <button
+            <Button
               key={o.facade_id}
+              type="button"
+              variant="secondary"
               disabled={answering}
               onClick={() => answer(o.facade_id)}
-              className="rounded-xl border border-ink bg-white/75 p-4"
+              className="h-auto min-h-16 p-4 text-base whitespace-normal"
             >
               {o.name_ar}
-            </button>
+            </Button>
           ))}
         </div>
-        <button disabled={answering} onClick={() => answer(null)} className="self-start text-sm underline">
+        <Button type="button" variant="link" disabled={answering} onClick={() => answer(null)} className="self-start">
           لا أعرف
-        </button>
+        </Button>
       </div>
     );
   }
@@ -74,18 +78,18 @@ export function ObservationProgress() {
       {detail.retake_reason && (
         <section className="flex flex-col gap-2 rounded-xl border border-moderate bg-moderate/10 p-4">
           <p>{retakeAr[detail.retake_reason] ?? "نحتاج صورة أوضح للمقارنة."}</p>
-          <Link href="/capture" className="self-start rounded-full bg-mud px-5 py-2 text-sand">
+          <Link href="/capture" className={buttonVariants({ className: "self-start" })}>
             أعد التصوير
           </Link>
         </section>
       )}
       {detail.findings && detail.findings.length > 0 && (
-        <section className="rounded-xl bg-white/75 p-4">
+        <section className="rounded-sm border border-line bg-white p-4">
           <h2 className="mb-2 font-bold">شكرًا، صورتك ساعدت</h2>
           <ul className="flex flex-col gap-1 text-sm">
             {detail.findings.map((f) => (
               <li key={f.id}>
-                {damageTypeAr[f.damage_type] ?? f.damage_type} · {severityAr[f.severity]} ·{" "}
+                {damageTypeAr[f.damage_type] ?? f.damage_type} · <SeverityLabel severity={f.severity} /> ·{" "}
                 {f.status === "published" ? findingLabelAr[f.label] : "بانتظار مراجعة خبير"}
               </li>
             ))}
@@ -99,7 +103,7 @@ export function ObservationProgress() {
       )}
       <StoryView storyId={detail.story_id ?? null} />
       {detail.site_id && (
-        <Link href={`/sites/${detail.site_id}`} className="self-start rounded-full border border-ink px-5 py-2">
+        <Link href={`/sites/${detail.site_id}`} className={buttonVariants({ variant: "outline", className: "self-start" })}>
           شاهد المكان مجسّمًا وطريق الوصول
         </Link>
       )}

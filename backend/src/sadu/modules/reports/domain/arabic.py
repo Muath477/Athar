@@ -31,7 +31,13 @@ CLASS_AR = {
 
 SEVERITY_AR = {"watch": "مراقبة", "moderate": "متوسط", "urgent": "عاجل"}
 
+CONFIDENCE_AR = {"low": "منخفضة", "medium": "متوسطة", "high": "عالية"}
+
 SOURCE_AR = {"model": "النموذج", "expert": "الخبير"}
+
+CONFIDENCE_AR = {"low": "منخفضة", "medium": "متوسطة", "high": "عالية"}
+
+WALL_STATUS_AR = {"approved": "معتمد", "draft": "مسودة", "not_surveyed": "لم يُمسح"}
 
 DETECTOR_AR = {
     "claude": "نموذج Claude للرؤية",

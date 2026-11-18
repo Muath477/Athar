@@ -35,6 +35,8 @@ Rules: a module owns its tables and no other module reads them; other modules ca
 | **Reports** (`reports`) | PDFs. Built: the wall condition report (map on the rectified photo, damage totals, changes since the last approved map, treatment plan, materials, model agreement, sources), rendered with WeasyPrint. Round 2: site reports as jobs | `wall_report(session, store, map_id, catalog)`, `wall_report_pdf(report)` | none | none | mapping, treatments, sites |
 | **Space watch** (`watch`) | site_scans; Sentinel-2 composites, change classes (water, vegetation loss, construction, sand, earthworks), risk score, evidence images, scene source port (Earth Search, sample, none) ([ADR-025](adr/ADR-025-space-watch.md)) | `build_scene_source(settings)`, `ScanQueue(unit_of_work, store, source)`, `scan_site(unit_of_work, store, source, site_id)`, `site_scans(site_id)`, `rank_sites()`, `due_sites(interval)`, `acknowledge(scan_id, user)`, `request_ground_check(scan_id)` | none | none | sites, missions |
 | **Wall maps** (`mapping`) | damage_maps, damage_map_cells; wall rectification, grid, detector port (Claude or a ready model over HTTP), corrections, approval, change between maps, model accuracy against approved maps | `prepare_wall(photo, quad, wall, rows)`, `detect_damage(detector, prepared)`, `save_map(...)`, `get_map(id)`, `list_maps(...)`, `correct_cells(id, corrections)`, `approve_map(id, reviewer)`, `previous_approved(map)`, `treatment_plan(map, catalog)`, `accuracy(site_id?)` | none | none | sites, capture, treatments |
+| **Ingestion** (`ingest`) | devices, ingest_jobs; camera registry, snapshot and RTSP capture with SSRF checks, bulk upload batches, EXIF GPS reading, GPS-to-facade matching, job worker with retries ([ADR-027](adr/ADR-027-ingestion.md)) | `Ingestion(unit_of_work, store, detector, cameras)` with `capture(device_id)`, `capture_due(interval)`, `queue_uploads(photos, target)`, `retry(job_id)`, `assign_facade(job_id, facade_id)`; `build_camera_client(settings)`, device CRUD, `list_jobs(...)`, `seed_demo_camera()` | none | none | sites, capture, mapping, admin |
+| **Model registry** (`models`) | ml_models; versions of the own damage model (candidate, active, retired, one active at a time), training export of approved maps ([ADR-029](adr/ADR-029-own-model.md)) | `list_models()`, `register_model(model, by)`, `activate_model(id)`, `retire_model(id)`, `active_model()`, `training_export(store, weak)` | none | none | mapping |
 | **Treatments** (`treatments`) | treatment catalog file (per damage type and severity, with materials per m², tools, steps and sources); planning by damaged area | `catalog_at(path)`, `plan_treatments(areas, catalog)` | none | none | none |
 | **Admin** (`admin`) | users, sessions, audit_log, llm_calls (cost counter) | `authenticate(...)`, `record_llm_call(...)`, `audit(...)`, `costs(...)` | none | `PassportDeleted` (audit) | none (other modules call it) |
 
@@ -61,9 +63,13 @@ flowchart TD
   reports --> treatments
   watch --> sites
   watch --> missions
+  ingest --> sites
+  ingest --> capture
+  ingest --> mapping
   mapping --> sites
   mapping --> capture
   mapping --> treatments
+  models --> mapping
   capture -.->|record_llm_call, audit| admin
   inspection -.-> admin
   verification -.-> admin
@@ -145,6 +151,7 @@ PostgreSQL 18 with PostGIS and pgvector, one database ([ADR-004](adr/ADR-004-pos
 | passport_entries | passport | id, passport_id, site_id, observation_id?, created_at | |
 | damage_maps | mapping | id, site_id?, facade_id?, wall_name, width_m, height_m, rows, cols, corners jsonb, photo_key, rectified_key, detector, detector_status, summary_ar, model_cells jsonb, status, created_by, approved_by, approved_at, created_at | `model_cells` keeps the detector's answer unchanged so accuracy can be measured after the expert corrects the map. CHECK: approved maps name their reviewer. |
 | damage_map_cells | mapping | map_id, row, col, damage_type, severity, confidence, source | one row per damaged cell; sound cells have no row |
+| ml_models | models | id, name, version, base_model, adapter_uri, metrics jsonb, status, created_by, activated_at, created_at | UNIQUE (name, version); partial unique index keeps one `active` row |
 | users, sessions, audit_log, llm_calls | admin | users(email, password_hash, role, failed_logins, locked_until); sessions(id_hash, user_id, expires_at); audit_log(actor_id, action, target, details, request_id, at); llm_calls(observation_id?, agent, model, input_tokens, output_tokens, cost_usd, latency_ms, status, trace_id, at) | |
 | checkpoints* | agents | managed by `langgraph-checkpoint-postgres` `setup()` | thread_id = observation id |
 
@@ -206,6 +213,12 @@ REST under `/api/v1`, documented by FastAPI's generated OpenAPI 3.1 at `/api/v1/
 | `POST /sites/{id}/reports` · `GET /reports/{id}` | inspector+ | Round 2: 202 + job; site-wide PDF when ready. |
 | `POST /maps` | inspector+ | Multipart: `photo` (or `meta.observation_id` to reuse a visitor photo), `meta` JSON (facade_id? or wall_name + width_m + height_m, corners? as four `[x, y]` in 0..1, clockwise from top-left). Returns `201` with the full map. `422 photo_unusable`, `invalid_corners`, `wall_size_required`. |
 | `GET /maps?site_id=&facade_id=` · `GET /maps/{id}` | inspector+ | Map list; one map with cells, treatment plan and changes since the previous approved map of the same wall. |
+| `GET /ingest/devices` · `GET /ingest/devices/{id}` | staff | Cameras, drones and upload stations with last capture status and thumbnail; the password is never returned, only its variable name and whether it is set. |
+| `POST /ingest/devices` · `POST /ingest/devices/{id}` · `DELETE /ingest/devices/{id}` | site manager (`manage_devices`) | Create, update, delete (audited). `422 invalid_camera_url`, `device_site_required`, `facade_not_in_site`. |
+| `POST /ingest/devices/{id}/capture` | site manager | Captures one snapshot now and queues it, `202` with the job; an unreachable camera returns a failed job. 60 per user per hour. |
+| `POST /ingest/uploads` | inspector+ | Multipart `files` (1 to 30, 8 MB each) with optional `site_id`, `facade_id`, `device_id`; `202` with the batch. `415 heic_unsupported`, `422 batch_size`. 20 batches per user per hour. |
+| `GET /ingest/batches/{id}` · `GET /ingest/jobs?device_id=` · `GET /ingest/jobs/{id}` | staff | Batch progress and job history with status, Arabic error and the created map. |
+| `POST /ingest/jobs/{id}/retry` · `POST /ingest/jobs/{id}/facade` | inspector+ | Retry a failed job, or `{facade_id}` for a photo that needs a facade. `409 job_not_retryable`. |
 | `GET /maps/glossary` | staff | The unified glossary: types, geometry, measures, classes and colours. |
 | `POST /maps/{id}/elements` | expert | `{edits: [{action: add\|update\|delete, element_id?, element?: {damage_type, points, severity, damage_class?}}]}`; every edit is logged. |
 | `POST /maps/{id}/field-inspection` | expert | Records the specialist's field inspection; approval needs it. |
