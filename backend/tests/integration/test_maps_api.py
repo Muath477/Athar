@@ -153,6 +153,8 @@ async def test_inspector_maps_a_wall_and_expert_corrects_and_approves_it(client,
     listed = (await client.get("/maps", params={"facade_id": facade_id})).json()
     assert [m["id"] for m in listed] == [second["id"], body["id"]]
     assert listed[1]["damaged_cells"] == 2
+    assert listed[0]["urgent_cells"] == 1
+    assert listed[0]["thumbnail_url"].startswith("memory://maps/rectified/")
 
 
 async def test_unregistered_wall_needs_a_name_and_size(client):

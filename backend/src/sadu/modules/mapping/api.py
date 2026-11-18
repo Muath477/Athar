@@ -141,7 +141,9 @@ class MapSummary:
     status: MapStatus
     detector_status: DetectorStatus
     damaged_cells: int
+    urgent_cells: int
     total_cells: int
+    rectified_key: str
     created_at: datetime
 
 
@@ -237,12 +239,16 @@ async def list_maps(
     session: AsyncSession, *, site_id: UUID | None = None, facade_id: UUID | None = None
 ) -> list[MapSummary]:
     damaged = (
-        select(DamageMapCellRow.map_id, func.count().label("damaged"))
+        select(
+            DamageMapCellRow.map_id,
+            func.count().label("damaged"),
+            func.count().filter(DamageMapCellRow.severity == Severity.URGENT).label("urgent"),
+        )
         .group_by(DamageMapCellRow.map_id)
         .subquery()
     )
     query = (
-        select(DamageMapRow, func.coalesce(damaged.c.damaged, 0))
+        select(DamageMapRow, func.coalesce(damaged.c.damaged, 0), func.coalesce(damaged.c.urgent, 0))
         .outerjoin(damaged, damaged.c.map_id == DamageMapRow.id)
         .order_by(DamageMapRow.created_at.desc())
         .limit(DEFAULT_LIST_LIMIT)
@@ -260,10 +266,12 @@ async def list_maps(
             status=MapStatus(row.status),
             detector_status=DetectorStatus(row.detector_status),
             damaged_cells=int(count),
+            urgent_cells=int(urgent),
             total_cells=row.rows * row.cols,
+            rectified_key=row.rectified_key,
             created_at=row.created_at,
         )
-        for row, count in (await session.execute(query)).all()
+        for row, count, urgent in (await session.execute(query)).all()
     ]
 
 

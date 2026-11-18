@@ -132,7 +132,9 @@ class MapSummaryOut(BaseModel):
     status: str
     detector_status: str
     damaged_cells: int
+    urgent_cells: int
     total_cells: int
+    thumbnail_url: str
     created_at: datetime
 
 
@@ -257,7 +259,7 @@ def changes_out(previous: mapping.MapView, current: mapping.MapView) -> ChangesO
     )
 
 
-def summary_out(summary: mapping.MapSummary) -> MapSummaryOut:
+def summary_out(summary: mapping.MapSummary, store: ObjectStore) -> MapSummaryOut:
     return MapSummaryOut(
         id=str(summary.id),
         site_id=_str_or_none(summary.site_id),
@@ -266,7 +268,9 @@ def summary_out(summary: mapping.MapSummary) -> MapSummaryOut:
         status=summary.status,
         detector_status=summary.detector_status,
         damaged_cells=summary.damaged_cells,
+        urgent_cells=summary.urgent_cells,
         total_cells=summary.total_cells,
+        thumbnail_url=store.presigned_url(summary.rectified_key),
         created_at=summary.created_at,
     )
 

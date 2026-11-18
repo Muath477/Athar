@@ -82,9 +82,10 @@ async def create_map(
 
 @router.get("/maps")
 async def list_maps(
-    _: Inspector, session: Session, site_id: UUID | None = None, facade_id: UUID | None = None
+    _: Inspector, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
 ) -> list[MapSummaryOut]:
-    return [summary_out(s) for s in await mapping.list_maps(session, site_id=site_id, facade_id=facade_id)]
+    summaries = await mapping.list_maps(session, site_id=site_id, facade_id=facade_id)
+    return [summary_out(s, state.store) for s in summaries]
 
 
 @router.get("/maps/accuracy")
