@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { MarginNote } from "@/components/brand/margin-note";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { colorFor } from "@/lib/damage-palette";
 import { damageTypeAr, severityAr } from "@/lib/labels";
 import type { TreatmentPlan } from "@/lib/maps";
@@ -21,17 +24,17 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
   }
 
   return (
-    <section className="flex flex-col gap-4 border-t border-clay/40 pt-5">
+    <section className="flex flex-col gap-4 border-t border-line pt-5">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-2xl font-bold">خطة المعالجة</h2>
         {pendingCount > 0 && <p className="text-sm text-mud">تتحدث الخطة بعد حفظ التصحيحات.</p>}
       </header>
 
       {plan.review_status === "draft" && (
-        <p className="max-w-prose rounded-xl border border-watch/60 bg-watch/15 p-3 text-sm leading-relaxed">
+        <MarginNote label="حاشية الكتالوج" className="max-w-prose">
           كتالوج المعالجات (الإصدار <bdi>{plan.catalog_version}</bdi>) مسودة لم يعتمدها مختص ترميم بعد. راجع كل خطوة قبل
           التنفيذ.
-        </p>
+        </MarginNote>
       )}
 
       {plan.items.length === 0 && plan.unmatched.length === 0 ? (
@@ -54,7 +57,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
                       </span>
                     </span>
                     <span className="flex items-center gap-2 text-sm">
-                      {item.specialist_required && <span className="rounded-full bg-urgent/10 px-2.5 py-0.5 font-bold text-urgent">بإشراف مختص</span>}
+                      {item.specialist_required && <Badge variant="outline" className="border-sadu/60 text-sadu">بإشراف مختص</Badge>}
                       <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
                     </span>
                   </summary>
@@ -114,7 +117,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
           </ol>
 
           {totals.length > 0 && (
-            <aside className="flex h-fit flex-col gap-2 rounded-xl bg-ink p-4 text-sand">
+            <aside className="flex h-fit flex-col gap-2 rounded-sm bg-ink p-4 text-sand">
               <h3 className="font-bold">قائمة المواد للجدار كله</h3>
               <ul className="flex flex-col text-sm">
                 {totals.map((m) => (
@@ -126,9 +129,9 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
                   </li>
                 ))}
               </ul>
-              <button type="button" onClick={copyList} className="no-print min-h-11 self-start rounded-full bg-sand px-4 text-sm font-bold text-ink focus-visible:outline-sand">
+              <Button type="button" variant="secondary" onClick={copyList} className="no-print self-start focus-visible:outline-sand">
                 {copied ? "نُسخت القائمة" : "انسخ القائمة"}
-              </button>
+              </Button>
               <p className="text-xs leading-relaxed text-sand/70">{plan.quantities_note_ar}</p>
             </aside>
           )}
@@ -136,7 +139,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
       )}
 
       {plan.unmatched.length > 0 && (
-        <p className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
+        <p className="rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm">
           لا توجد معالجة في الكتالوج لـ:{" "}
           {plan.unmatched.map((u) => `${damageTypeAr[u.damage_type] ?? u.damage_type} (${severityAr[u.severity]})`).join("، ")}.
           يحددها المختص.
