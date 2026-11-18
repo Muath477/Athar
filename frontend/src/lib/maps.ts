@@ -85,7 +85,9 @@ export type MapSummary = {
   status: "draft" | "approved";
   detector_status: "ok" | "failed" | "manual";
   damaged_cells: number;
+  urgent_cells: number;
   total_cells: number;
+  thumbnail_url: string;
   created_at: string;
 };
 

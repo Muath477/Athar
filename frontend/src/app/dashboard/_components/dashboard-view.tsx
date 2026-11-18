@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { EvidencePanel } from "@/components/evidence-panel";
 import { type Coverage, type Finding, request, type Site } from "@/lib/api";
@@ -71,16 +70,7 @@ export function DashboardView() {
             </option>
           ))}
         </select>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/dashboard/maps" className="rounded-full bg-sadu px-4 py-1.5 text-sand">
-            مخططات تلف الجدران
-          </Link>
-          {me.role !== "inspector" && (
-            <Link href="/dashboard/review" className="rounded-full bg-ink px-4 py-1.5 text-sand">
-              قائمة المراجعة
-            </Link>
-          )}
-        </div>
+
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
