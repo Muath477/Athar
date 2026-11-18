@@ -41,7 +41,7 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate De
 | Conservation experts | A damage map of each wall from one photo: seven damage types (crack, plaster loss, moisture, basal erosion, surface erosion, partial collapse, graffiti), colour by type, strength by severity. They paint corrections with a brush and approve. |
 | Site managers | A treatment plan per map: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. Each new map lists what changed since the last approved one. |
 | The authority | Model accuracy measured against expert decisions, cell by cell, so nobody has to take the model's word for it. |
-| Visitors | A verified story of the place read aloud in Arabic and a passport stamp. A 3D view of the site on Google Maps, with walking or driving directions. Their photos keep the condition record current. |
+| Visitors | A verified story of the place read aloud in Arabic and a passport stamp. A 3D view of the site on Google Maps, and the route there: steps in Arabic, a fly-through preview, and live tracking to the door. Their photos keep the condition record current. |
 
 ## How it works
 
