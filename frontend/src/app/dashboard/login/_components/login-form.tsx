@@ -2,17 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ApiError, can, type Me, rememberCsrf, request } from "@/lib/api";
+import { ApiError, homeFor, type Me, rememberCsrf, request } from "@/lib/api";
 
 const ERROR_ID = "login-error";
 const INPUT_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3";
-
-function homeFor(me: Me): string {
-  if (can(me, "review")) return "/dashboard/maps";
-  if (can(me, "manage_site")) return "/dashboard/condition";
-  if (can(me, "survey")) return "/dashboard/maps/new";
-  return "/dashboard";
-}
 
 export function LoginForm() {
   const router = useRouter();

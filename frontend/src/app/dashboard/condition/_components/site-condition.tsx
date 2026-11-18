@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, type Site, can, request, roleAr } from "@/lib/api";
+import { ApiError, type Site, can, conditionExportUrl, request, roleAr } from "@/lib/api";
 import { colorFor } from "@/lib/damage-palette";
 import { damageTypeAr } from "@/lib/labels";
 import { type SiteCondition, type WallCondition, getSiteCondition, setFieldPhotography } from "@/lib/maps";
@@ -155,6 +155,24 @@ export function SiteConditionView() {
           >
             اطبع التقرير الدوري
           </button>
+          {can(me, "export") && (
+            <>
+              <a
+                href={conditionExportUrl(condition.site_id, "pdf")}
+                download
+                className="inline-flex min-h-11 items-center rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand"
+              >
+                نزّل التقرير PDF
+              </a>
+              <a
+                href={conditionExportUrl(condition.site_id, "csv")}
+                download
+                className="inline-flex min-h-11 items-center rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand"
+              >
+                نزّل الجدول CSV
+              </a>
+            </>
+          )}
         </div>
       </header>
 

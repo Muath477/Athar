@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, type Me, rememberCsrf, request } from "@/lib/api";
+import { ApiError, type Me, PASSWORD_PAGE, rememberCsrf, request } from "@/lib/api";
 
 export type MeState = { me: Me | null; error: string | null; retry: () => void };
 
@@ -10,6 +10,7 @@ const ME_FAILED = "تعذر التحقق من جلستك. تحقق من الات
 
 export function useMeState(): MeState {
   const router = useRouter();
+  const pathname = usePathname();
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -33,6 +34,10 @@ export function useMeState(): MeState {
       cancelled = true;
     };
   }, [router, attempt]);
+
+  useEffect(() => {
+    if (me?.must_change_password && pathname !== PASSWORD_PAGE) router.replace(PASSWORD_PAGE);
+  }, [me, pathname, router]);
 
   const retry = useCallback(() => {
     setError(null);
