@@ -1,7 +1,7 @@
 [project]
 name = "sadu"
 version = "0.1.0"
-description = "Sadu: crowdsourced heritage condition monitoring with verified AI agents"
+description = "Athar: crowdsourced heritage condition monitoring with verified AI agents"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "fastapi==0.163.1",
@@ -87,7 +87,7 @@ module = ["cv2.*", "skimage.*", "boto3.*", "botocore.*", "azure.*", "FlagEmbeddi
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["sadu.modules.inspection.infrastructure.opencv_pipeline"]
+module = ["sadu.modules.inspection.infrastructure.opencv_pipeline", "sadu.modules.mapping.infrastructure.imaging"]
 disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
@@ -126,9 +126,9 @@ name = "Module dependency graph from docs/03-architecture.md"
 type = "layers"
 layers = [
     "sadu.modules.agents",
-    "sadu.modules.reports | sadu.modules.missions",
+    "sadu.modules.reports | sadu.modules.missions | sadu.modules.mapping",
     "sadu.modules.verification | sadu.modules.stories | sadu.modules.capture | sadu.modules.passport",
     "sadu.modules.inspection",
-    "sadu.modules.sites",
+    "sadu.modules.sites | sadu.modules.treatments",
     "sadu.modules.admin",
 ]

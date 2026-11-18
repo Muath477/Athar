@@ -15,9 +15,12 @@ import sadu.shared.orm_registry
 from sadu.modules.admin.interface.routes import router as admin_router
 from sadu.modules.agents import api as agents
 from sadu.modules.agents.interface.routes import router as agents_router
+from sadu.modules.mapping import api as mapping
+from sadu.modules.mapping.interface.routes import router as maps_router
 from sadu.modules.missions.interface.routes import router as missions_router
 from sadu.modules.passport.interface.routes import router as passport_router
 from sadu.modules.sites.interface.routes import router as sites_router
+from sadu.modules.treatments.interface.routes import router as treatments_router
 from sadu.modules.verification.interface.routes import router as findings_router
 from sadu.shared.adapters.anthropic_llm import AnthropicLLM
 from sadu.shared.adapters.azure_speech import AzureSpeech, NoSpeech
@@ -39,7 +42,7 @@ MISSION_DISPATCH_INTERVAL_S = 15 * 60
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(
-        title="Sadu API",
+        title="Athar API",
         version="0.1.0",
         lifespan=lifespan,
         docs_url=None if settings.is_prod else "/api/docs",
@@ -60,6 +63,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         agents_router,
         sites_router,
         findings_router,
+        maps_router,
+        treatments_router,
         missions_router,
         passport_router,
         admin_router,
@@ -92,10 +97,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     store = get_object_store()
     await store.ensure_bucket()
+    llm = build_llm(settings)
+    app.state.damage_detector = mapping.build_detector(settings, llm)
     deps = agents.Dependencies(
         unit_of_work=unit_of_work,
         store=store,
-        llm=build_llm(settings),
+        llm=llm,
         tts=build_tts(settings),
         voice=settings.sadu_tts_voice,
     )
@@ -105,7 +112,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.sadu = AppState(settings=settings, unit_of_work=unit_of_work, store=store, runner=runner)
         await runner.recover()
         dispatcher = asyncio.create_task(dispatch_missions_forever())
-        log.info("api_started", env=settings.sadu_env, demo_mode=settings.sadu_demo_mode)
+        log.info(
+            "api_started",
+            env=settings.sadu_env,
+            demo_mode=settings.sadu_demo_mode,
+            damage_detector=app.state.damage_detector.name,
+        )
         try:
             yield
         finally:
