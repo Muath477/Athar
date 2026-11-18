@@ -96,6 +96,15 @@ Details in [ADR-026](docs/adr/ADR-026-diriyah-agent-workflow.md).
 
 Without internet access to the imagery, `SADU_SCENE_SOURCE=sample` serves labelled synthetic scenes with the invented events in `region-packs/riyadh/sample-events.json`. Every scan from it is marked as sample data.
 
+### Photos from cameras, drones and staff
+
+1. Register fixed site cameras at `/dashboard/devices` with the still-image (snapshot) URL most IP cameras and NVRs expose. The API captures each camera every `SADU_CAMERA_INTERVAL_H` hours, or on **التقط الآن**, and keeps every attempt in the camera's history.
+2. Staff upload up to 30 photos at a time at `/dashboard/uploads`, from a phone, a drone survey or an archive, and either pick the wall or let Athar match it from the photo's GPS: the nearest facade facing the photo position, within 60 m of a site. Photos without GPS wait for someone to pick the facade.
+3. Each photo becomes a job. The worker reads the GPS and capture time, blurs faces and strips EXIF, then creates a draft wall map through the same detector, 10-step workflow and specialist approval as a map drawn by hand. The map shows where it came from (inspector, camera name, drone or bulk upload).
+4. Camera addresses inside private networks are refused unless the admin lists them in `SADU_CAMERA_ALLOWED_HOSTS`; camera passwords live only in `SADU_CAMERA_SECRET_*` environment variables. Details in [ADR-027](docs/adr/ADR-027-ingestion.md).
+
+In demo mode, seeding the demo pack adds a camera on the demo building's north facade that reads a test photo served by the API itself, so the camera flow works offline.
+
 ### Changes over time
 
 <p align="center"><img src="docs/assets/change-over-time.svg" alt="Animated comparison of two wall maps with new and resolved cells outlined" width="75%"></p>
@@ -567,6 +576,8 @@ docker compose up --build     # first build takes a few minutes
 | Visitor app | http://localhost:3000 |
 | Dashboard | http://localhost:3000/dashboard |
 | Wall damage maps | http://localhost:3000/dashboard/maps |
+| Bulk photo upload | http://localhost:3000/dashboard/uploads |
+| Cameras and devices | http://localhost:3000/dashboard/devices |
 | API docs | http://localhost:8000/api/docs |
 
 The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/riyadh` holds eleven heritage sites in the Riyadh region, including At-Turaif and Al-Faw at their cited coordinates, with approximate boundaries and no facades yet, so the 3D view, directions and satellite screening cover them ([details](region-packs/riyadh/README.md)). Create a dashboard account with:
@@ -590,6 +601,10 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
 | `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts | Alerts only show on the dashboard |
 | `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
+| `SADU_CAMERA_INTERVAL_H` | Hours between automatic captures for cameras without their own interval, default 24; `0` turns scheduled capture off | Daily |
+| `SADU_CAMERA_ALLOWED_HOSTS` | Comma-separated host names and CIDR ranges of cameras on private networks (`nvr.site.local,10.20.0.0/16`) | Only public camera addresses are fetched |
+| `SADU_CAMERA_SECRET_<NAME>` | One per camera password; the device stores only the variable name. With Compose, add each one to the `api` service environment in a `compose.override.yaml` | Cameras are fetched without a password |
+| `SADU_INGEST_CONCURRENCY` | Photos analysed at the same time, default 2 | Two at a time |
 | `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
 | `SADU_DEMO_MODE` | `true` serves recorded model answers before calling the API | Live calls; recordings are still used if a call fails |
@@ -654,7 +669,7 @@ CI runs all of the above, including the end-to-end tests against the stack in Do
 ```
 backend/                   FastAPI modular monolith (Python 3.13, uv)
   src/sadu/modules/        sites, capture, inspection, verification, stories, missions,
-                           passport, agents, admin, mapping, treatments
+                           passport, agents, admin, mapping, treatments, watch, ingest
     <module>/api.py        the only file other modules import
     <module>/domain/       pure rules, no framework imports
     <module>/application/  use cases and ports (DamageDetector)
@@ -689,8 +704,9 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
 | Satellite screening | [docs/adr/ADR-025-space-watch.md](docs/adr/ADR-025-space-watch.md), [region-packs/riyadh/README.md](region-packs/riyadh/README.md) |
 | Diriyah procedure, glossary and roles | [docs/adr/ADR-026-diriyah-agent-workflow.md](docs/adr/ADR-026-diriyah-agent-workflow.md) |
-| Decisions (ADR-001 to ADR-026) | [docs/adr/](docs/adr/) |
+| Cameras, drones and bulk uploads | [docs/adr/ADR-027-ingestion.md](docs/adr/ADR-027-ingestion.md) |
+| Decisions (ADR-001 to ADR-027) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 
-Faces are blurred and EXIF removed before any photo is stored or sent to a model. Location is used only with consent and discarded once the facade is known. Visitor photos are kept 30 days unless they are evidence for a published finding, and a visitor can delete their passport and every non-evidence photo from the passport page. See [the threat model](docs/06-security/threat-model.md).
+Faces are blurred and EXIF removed before any photo is stored or sent to a model. Location is used only with consent and discarded once the facade is known. Photos from cameras, drones and bulk uploads go through the same blur and strip before they are stored; their GPS and capture time are read first and kept on the job so the wall can be matched. Visitor photos are kept 30 days unless they are evidence for a published finding, and a visitor can delete their passport and every non-evidence photo from the passport page. See [the threat model](docs/06-security/threat-model.md).
