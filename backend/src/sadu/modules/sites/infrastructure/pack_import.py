@@ -63,6 +63,7 @@ class SiteSpec(Strict):
     location: list[float] = Field(min_length=2, max_length=2, description="[lon, lat]")
     boundary: list[list[float]] = Field(min_length=4)
     model_file: str | None = None
+    field_photography_permitted: bool = False
     facade_map_file: str | None = None
     baselines: list[BaselineSpec] = []
     sources_file: str | None = None
@@ -132,6 +133,7 @@ async def _import_site(
         location=f"SRID=4326;POINT({spec.location[0]} {spec.location[1]})",
         boundary=_polygon_wkt(spec.boundary),
         model_key=model_key,
+        field_photography_permitted=spec.field_photography_permitted,
     )
     session.add(site)
     await session.flush()

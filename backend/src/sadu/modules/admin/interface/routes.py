@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import SESSION_COOKIE, Admin, Inspector
+from sadu.modules.admin.interface.auth import SESSION_COOKIE, Admin, Staff
 from sadu.shared.web import Session, State, limit_per_ip, public
 
 router = APIRouter(tags=["auth"])
@@ -20,7 +20,13 @@ class Me(BaseModel):
     id: str
     email: str
     role: str
+    permissions: list[str]
     csrf_token: str | None = None
+
+
+class RoleOut(BaseModel):
+    role: str
+    permissions: list[str]
 
 
 class AgentCostOut(BaseModel):
@@ -51,7 +57,11 @@ async def login(body: LoginRequest, response: Response, session: Session, state:
         session, actor_id=result.user.id, action="login", target_type="user", target_id=str(result.user.id)
     )
     return Me(
-        id=str(result.user.id), email=result.user.email, role=result.user.role, csrf_token=result.csrf_token
+        id=str(result.user.id),
+        email=result.user.email,
+        role=result.user.role,
+        permissions=sorted(result.user.role.permissions),
+        csrf_token=result.csrf_token,
     )
 
 
@@ -64,9 +74,20 @@ async def logout(request: Request, response: Response, session: Session) -> None
 
 
 @router.get("/auth/me")
-async def me(user: Inspector, request: Request, session: Session) -> Me:
+async def me(user: Staff, request: Request, session: Session) -> Me:
     auth = await admin.authenticate(session, request.cookies[SESSION_COOKIE])
-    return Me(id=str(user.id), email=user.email, role=user.role, csrf_token=auth.csrf_token)
+    return Me(
+        id=str(user.id),
+        email=user.email,
+        role=user.role,
+        permissions=sorted(user.role.permissions),
+        csrf_token=auth.csrf_token,
+    )
+
+
+@router.get("/auth/roles")
+async def roles(_: Staff) -> list[RoleOut]:
+    return [RoleOut(role=role, permissions=sorted(role.permissions)) for role in admin.Role]
 
 
 @router.get("/admin/costs")

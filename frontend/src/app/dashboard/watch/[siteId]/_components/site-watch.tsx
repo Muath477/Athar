@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, can } from "@/lib/api";
 import { countAr, missions, scenes } from "@/lib/plural";
 import { useMe } from "@/lib/use-me";
 import {
@@ -79,7 +79,8 @@ export function SiteWatch() {
   const lastAttempt = scans[0] ?? null;
   const failedSince = lastAttempt && lastAttempt.status !== "ok" ? lastAttempt : null;
   const level = latest?.level ?? "unknown";
-  const canAcknowledge = me.role !== "inspector";
+  const canAcknowledge = can(me, "review");
+  const canSurvey = can(me, "survey");
   const hasSignals = latest?.status === "ok" && latest.signals.length > 0;
 
   return (
@@ -113,6 +114,7 @@ export function SiteWatch() {
       )}
 
       <div className="flex flex-wrap gap-2">
+        {canSurvey && (
         <button
           type="button"
           onClick={() => run("scan", () => scanSite(siteId))}
@@ -121,7 +123,8 @@ export function SiteWatch() {
         >
           {busy === "scan" ? "يُفحص…" : "افحص الآن"}
         </button>
-        {hasSignals && latest && !latest.ground_check_at && (
+        )}
+        {canSurvey && hasSignals && latest && !latest.ground_check_at && (
           <button
             type="button"
             onClick={() => run("ground", async () => setCheck(await requestGroundCheck(latest.id)))}

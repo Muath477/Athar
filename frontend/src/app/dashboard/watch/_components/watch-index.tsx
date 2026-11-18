@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, can } from "@/lib/api";
 import { useMe } from "@/lib/use-me";
 import {
   LEVEL_ORDER,
@@ -104,7 +104,7 @@ export function WatchIndex() {
               site={site}
               busy={scanning === site.site_id || site.scanning}
               disabled={scanning !== null || site.scanning}
-              onScan={() => scan(site.site_id)}
+              onScan={can(me, "survey") ? () => scan(site.site_id) : null}
             />
           ))}
         </ol>
@@ -126,7 +126,7 @@ function SiteRow({
   site: SiteRisk;
   busy: boolean;
   disabled: boolean;
-  onScan: () => void;
+  onScan: (() => void) | null;
 }) {
   const scan = site.latest;
   const level = scan?.level ?? "unknown";
@@ -153,6 +153,7 @@ function SiteRow({
         </p>
       </div>
       <span className={`rounded-full px-3 py-0.5 text-sm font-bold ${levelClass[level]}`}>{levelAr[level]}</span>
+      {onScan && (
       <button
         type="button"
         onClick={onScan}
@@ -163,6 +164,7 @@ function SiteRow({
       >
         {busy ? "يُفحص…" : "افحص الآن"}
       </button>
+      )}
     </li>
   );
 }

@@ -6,13 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.mapping import api as mapping
 from sadu.modules.reports.application.assemble import assemble_wall_report
+from sadu.modules.reports.application.site_condition import SiteCondition, site_condition
 from sadu.modules.reports.domain.wall_report import WallReport
 from sadu.modules.reports.infrastructure.pdf import render_pdf, wall_report_html
 from sadu.modules.sites import api as sites
 from sadu.modules.treatments import api as treatments
 from sadu.shared.storage import ObjectStore
 
-__all__ = ["WallReport", "wall_report", "wall_report_pdf"]
+__all__ = ["SiteCondition", "WallReport", "site_condition", "wall_report", "wall_report_pdf"]
 
 
 async def wall_report(

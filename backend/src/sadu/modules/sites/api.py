@@ -34,6 +34,7 @@ class SiteView:
     model_key: str | None
     location: LatLon
     boundary: list[LatLon]
+    field_photography_permitted: bool = False
 
 
 @dataclass(frozen=True)
@@ -131,6 +132,15 @@ async def _one_site(session: AsyncSession, query: Select[SiteRow, float, float, 
     return _site_view(row)
 
 
+async def set_field_photography(session: AsyncSession, site_id: UUID, permitted: bool) -> SiteView:
+    row = await session.get(SiteRow, site_id)
+    if row is None:
+        raise NotFound("not_found")
+    row.field_photography_permitted = permitted
+    await session.flush()
+    return await get_site(session, site_id)
+
+
 def _site_view(row: Row[SiteRow, float, float, str]) -> SiteView:
     site, lat, lon, boundary_geojson = row
     ring = json.loads(boundary_geojson)["coordinates"][0]
@@ -143,6 +153,7 @@ def _site_view(row: Row[SiteRow, float, float, str]) -> SiteView:
         site.model_key,
         LatLon(float(lat), float(lon)),
         [LatLon(float(point[1]), float(point[0])) for point in ring],
+        bool(site.field_photography_permitted),
     )
 
 

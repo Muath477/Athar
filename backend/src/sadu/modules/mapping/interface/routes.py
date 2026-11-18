@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import Expert, Inspector
+from sadu.modules.admin.interface.auth import Expert, Inspector, Staff
 from sadu.modules.capture import api as capture
 from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.schemas import (
@@ -86,24 +86,24 @@ async def create_map(
 
 @router.get("/maps")
 async def list_maps(
-    _: Inspector, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
+    _: Staff, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
 ) -> list[MapSummaryOut]:
     summaries = await mapping.list_maps(session, site_id=site_id, facade_id=facade_id)
     return [summary_out(s, state.store) for s in summaries]
 
 
 @router.get("/maps/accuracy")
-async def map_accuracy(_: Inspector, session: Session, site_id: UUID | None = None) -> AccuracyOut:
+async def map_accuracy(_: Staff, session: Session, site_id: UUID | None = None) -> AccuracyOut:
     return accuracy_out(await mapping.accuracy(session, site_id))
 
 
 @router.get("/maps/glossary")
-async def map_glossary(_: Inspector) -> list[GlossaryEntryOut]:
+async def map_glossary(_: Staff) -> list[GlossaryEntryOut]:
     return glossary_out()
 
 
 @router.get("/maps/{map_id}")
-async def get_map(map_id: UUID, _: Inspector, session: Session, state: State) -> MapOut:
+async def get_map(map_id: UUID, _: Staff, session: Session, state: State) -> MapOut:
     view = await mapping.get_map(session, map_id)
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
 

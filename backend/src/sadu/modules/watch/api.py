@@ -270,7 +270,9 @@ async def request_ground_check(session: AsyncSession, scan_id: UUID) -> GroundCh
         raise Conflict("scan_superseded")
     opened = []
     covered = 0
-    for facade in (await sites.list_facades(session, row.site_id))[:GROUND_CHECK_FACADES]:
+    site = await sites.get_site(session, row.site_id)
+    facades = await sites.list_facades(session, row.site_id) if site.field_photography_permitted else []
+    for facade in facades[:GROUND_CHECK_FACADES]:
         try:
             opened.append(
                 await missions.create_mission(session, facade.id, missions.MissionReason.SATELLITE_ALERT)

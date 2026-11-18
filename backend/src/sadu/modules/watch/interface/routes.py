@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import Expert, Inspector
+from sadu.modules.admin.interface.auth import Expert, Inspector, Staff
 from sadu.modules.watch import api as watch
 from sadu.shared.storage import ObjectStore
 from sadu.shared.web import Session, State
@@ -126,7 +126,7 @@ def scan_out(view: watch.ScanView, store: ObjectStore) -> ScanOut:
 
 
 @router.get("/watch/sites")
-async def watch_overview(_: Inspector, session: Session, state: State, request: Request) -> WatchOverviewOut:
+async def watch_overview(_: Staff, session: Session, state: State, request: Request) -> WatchOverviewOut:
     queue: watch.ScanQueue = request.app.state.scan_queue
     source = queue.source
     ranked = await watch.rank_sites(session, queue)
@@ -154,7 +154,7 @@ async def watch_overview(_: Inspector, session: Session, state: State, request: 
 
 
 @router.get("/watch/sites/{site_id}/scans")
-async def list_scans(site_id: UUID, _: Inspector, session: Session, state: State) -> list[ScanOut]:
+async def list_scans(site_id: UUID, _: Staff, session: Session, state: State) -> list[ScanOut]:
     return [scan_out(v, state.store) for v in await watch.site_scans(session, site_id)]
 
 

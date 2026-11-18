@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ApiError, mapReportUrl } from "@/lib/api";
+import { ApiError, can, mapReportUrl } from "@/lib/api";
 import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
 import { NO_PENDING, type Pending, buildEdits, pendingCount as countPending, withPending } from "@/lib/elements";
 import {
@@ -83,7 +83,7 @@ export function MapEditor() {
 
   const pending = useMemo(() => Object.assign({}, ...strokes) as Stroke, [strokes]);
   const cells = useMemo(() => (map ? withCorrections(map.cells, pending) : []), [map, pending]);
-  const canEdit = !!me && me.role !== "inspector" && map?.status === "draft";
+  const canEdit = can(me, "review") && map?.status === "draft";
   const pendingCount = Object.keys(pending).length;
   const unsaved = pendingCount + elementEdits;
 

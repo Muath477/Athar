@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import Inspector
+from sadu.modules.admin.interface.auth import Inspector, Staff
 from sadu.modules.capture import api as capture
 from sadu.modules.missions import api as missions
 from sadu.modules.missions.domain.priority import MissionReason
@@ -67,7 +67,7 @@ async def nearby_missions(
 
 
 @router.get("/missions")
-async def list_missions(_: Inspector, session: Session, site_id: UUID | None = None) -> list[MissionOut]:
+async def list_missions(_: Staff, session: Session, site_id: UUID | None = None) -> list[MissionOut]:
     return [mission_out(m) for m in await missions.list_missions(session, site_id=site_id)]
 
 
@@ -81,7 +81,7 @@ async def create_mission(body: NewMission, user: Inspector, session: Session) ->
 
 
 @router.get("/sites/{site_id}/coverage")
-async def coverage(site_id: UUID, _: Inspector, session: Session) -> list[FacadeCoverage]:
+async def coverage(site_id: UUID, _: Staff, session: Session) -> list[FacadeCoverage]:
     now = datetime.now(UTC)
     last_photos = await capture.last_usable_photo_per_facade(session, site_id)
     open_by_facade = {m.facade_id: m.id for m in await missions.list_missions(session, site_id=site_id)}

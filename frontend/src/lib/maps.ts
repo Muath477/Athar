@@ -226,3 +226,42 @@ export function editElements(mapId: string, edits: ElementEdit[]): Promise<Damag
 export function recordFieldInspection(mapId: string, notes: string): Promise<DamageMap> {
   return request<DamageMap>(`/maps/${mapId}/field-inspection`, { method: "POST", body: JSON.stringify({ notes }) });
 }
+
+export type WallCondition = {
+  name_ar: string;
+  facade_id: string | null;
+  map_id: string | null;
+  status: "draft" | "approved" | "not_surveyed";
+  surveyed_at: string | null;
+  approved_at: string | null;
+  field_inspected_at: string | null;
+  elements: number;
+  urgent: number;
+  needs_review: number;
+  damaged_area_m2: number;
+  needs_specialist: boolean;
+  survey_due: boolean;
+};
+
+export type SiteCondition = {
+  site_id: string;
+  name_ar: string;
+  building_type: string;
+  field_photography_permitted: boolean;
+  generated_at: string;
+  urgent: number;
+  walls_due: number;
+  awaiting_approval: number;
+  catalog_reviewed: boolean;
+  walls: WallCondition[];
+  totals: { damage_type: string; elements: number; area_m2: number; urgent: number }[];
+  materials: { name_ar: string; unit_ar: string; quantity: number }[];
+};
+
+export function getSiteCondition(siteId: string): Promise<SiteCondition> {
+  return request<SiteCondition>(`/sites/${siteId}/condition`);
+}
+
+export function setFieldPhotography(siteId: string, permitted: boolean): Promise<unknown> {
+  return request(`/sites/${siteId}/field-photography`, { method: "POST", body: JSON.stringify({ permitted }) });
+}

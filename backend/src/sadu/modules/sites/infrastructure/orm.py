@@ -30,6 +30,7 @@ class SiteRow(UuidPk, Timestamped, Base):
     location: Mapped[Any] = mapped_column(Geography("POINT", srid=4326, spatial_index=True))
     boundary: Mapped[Any] = mapped_column(Geography("POLYGON", srid=4326, spatial_index=True))
     model_key: Mapped[str | None] = mapped_column(String(300))
+    field_photography_permitted: Mapped[bool] = mapped_column(default=False)
 
 
 class FacadeRow(UuidPk, Base):
