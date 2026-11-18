@@ -112,6 +112,36 @@ Without internet access to the imagery, `SADU_SCENE_SOURCE=sample` serves labell
 
 Every external call has a timeout, retries and a fallback; status updates stream to the phone over server-sent events.
 
+### Athar assistant
+
+`/dashboard/assistant` is a chat for staff with the `assistant` permission. They attach wall photos, drone photos or PDFs of old inspection reports and ask in Arabic. The assistant picks an inspection skill (a Markdown file in `backend/src/sadu/modules/assistant/skills/`), follows its steps with tools from the other modules, and shows each step as it streams: «اختار مهارة: فحص صورة جدار», «حلّل الصورة: ٣ عناصر».
+
+- Findings use the unified glossary. A photo of a named facade becomes a draft wall map for the specialist; nothing is approved by the assistant.
+- «صياغة ملف التدقيق» renders an Arabic PDF with photos, the elements table, catalog treatments, recommendations and a «يتطلب اعتماد المختص» stamp.
+- Sending the file to specialists is a pending action. It goes out only when the user presses «أكّد الإرسال», and the send is written to the audit log.
+- When the model is down or the daily budget is spent, the chat says so and the «حلّل الصورة» button still analyses photos directly. In demo mode without a model key, a scripted planner runs the same flow offline.
+
+```mermaid
+sequenceDiagram
+  actor Staff
+  participant Chat as Dashboard chat
+  participant API as assistant API
+  participant Tools as Module APIs
+  Staff->>Chat: photo + question
+  Chat->>API: POST /messages, then POST /reply (SSE)
+  API-->>Chat: skill
+  loop each step
+    API->>Tools: analyse_photo, draft_audit_report, ...
+    API-->>Chat: tool_call, tool_result
+  end
+  API-->>Chat: reply with pending send
+  Staff->>Chat: «أكّد الإرسال»
+  Chat->>API: POST /actions/{id}/confirm
+  API->>API: webhook to specialists + audit_log
+```
+
+Details, privacy and failure modes in [ADR-028](docs/adr/ADR-028-assistant.md).
+
 ## Tech stack
 
 | Layer | Technology | Version | Why |
@@ -161,6 +191,7 @@ flowchart LR
 | `mapping` | wall maps and cells, rectification, grid, detector port, corrections, approval, accuracy |
 | `treatments` | treatment catalog and plans scaled by damaged area |
 | `agents` | the LangGraph run for each visitor photo |
+| `assistant` | staff chat: inspection skills, tool calls into other modules, audit PDFs, confirmed sends |
 | `capture` | uploads, EXIF strip, face blur, idempotency |
 | `inspection` | quality gate, alignment, difference map, model judgment |
 | `verification` | evidence rule, findings, expert reviews, claim checks |
@@ -567,6 +598,7 @@ docker compose up --build     # first build takes a few minutes
 | Visitor app | http://localhost:3000 |
 | Dashboard | http://localhost:3000/dashboard |
 | Wall damage maps | http://localhost:3000/dashboard/maps |
+| Athar assistant | http://localhost:3000/dashboard/assistant |
 | API docs | http://localhost:8000/api/docs |
 
 The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/riyadh` holds eleven heritage sites in the Riyadh region, including At-Turaif and Al-Faw at their cited coordinates, with approximate boundaries and no facades yet, so the 3D view, directions and satellite screening cover them ([details](region-packs/riyadh/README.md)). Create a dashboard account with:
@@ -589,6 +621,7 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
 | `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
 | `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts | Alerts only show on the dashboard |
+| `SADU_SPECIALIST_WEBHOOK_URL` | HTTPS webhook that receives audit files the user confirmed in the assistant chat | Confirmed sends are audited but not delivered; the chat asks the user to share the file |
 | `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
 | `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
@@ -654,7 +687,8 @@ CI runs all of the above, including the end-to-end tests against the stack in Do
 ```
 backend/                   FastAPI modular monolith (Python 3.13, uv)
   src/sadu/modules/        sites, capture, inspection, verification, stories, missions,
-                           passport, agents, admin, mapping, treatments
+                           passport, agents, admin, mapping, treatments, watch, reports,
+                           assistant (its skills/ folder holds the inspection skills)
     <module>/api.py        the only file other modules import
     <module>/domain/       pure rules, no framework imports
     <module>/application/  use cases and ports (DamageDetector)
@@ -689,6 +723,7 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
 | Satellite screening | [docs/adr/ADR-025-space-watch.md](docs/adr/ADR-025-space-watch.md), [region-packs/riyadh/README.md](region-packs/riyadh/README.md) |
 | Diriyah procedure, glossary and roles | [docs/adr/ADR-026-diriyah-agent-workflow.md](docs/adr/ADR-026-diriyah-agent-workflow.md) |
+| Athar assistant: skills, tools, confirmed sends | [docs/adr/ADR-028-assistant.md](docs/adr/ADR-028-assistant.md) |
 | Decisions (ADR-001 to ADR-026) | [docs/adr/](docs/adr/) |
 
 ## Privacy
