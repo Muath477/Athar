@@ -3,20 +3,25 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { rememberCsrf, request, roleAr } from "@/lib/api";
+import { type Me, type Permission, can, rememberCsrf, request, roleAr } from "@/lib/api";
 import { useMe } from "@/lib/use-me";
 
-const SECTIONS = [
+type Section = { href: string; label: string; short: string | null; exact: boolean; permission?: Permission };
+
+const SECTIONS: Section[] = [
   { href: "/dashboard", label: "الموقع ثلاثي الأبعاد", short: null, exact: true },
   { href: "/dashboard/condition", label: "حالة الموقع", short: null, exact: false },
   { href: "/dashboard/watch", label: "الرصد من الفضاء", short: null, exact: false },
   { href: "/dashboard/maps", label: "مخططات تلف الجدران", short: "المخططات", exact: false },
   { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
+  { href: "/dashboard/models", label: "نموذج التحليل", short: "النموذج", exact: false, permission: "manage_models" },
 ];
 
 export function DashboardNav() {
   const pathname = usePathname();
   const current = useRef<HTMLAnchorElement>(null);
+  const me = useMe();
+  const sections = SECTIONS.filter((section) => !section.permission || can(me, section.permission));
 
   useEffect(() => {
     current.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
@@ -31,7 +36,7 @@ export function DashboardNav() {
         className="-mx-4 scroll-px-4 overflow-x-auto border-b border-clay/40 px-4 lg:mx-0 lg:min-w-0 lg:flex-1 lg:border-b-0 lg:px-0"
       >
         <ul className="flex min-w-max gap-1">
-          {SECTIONS.map((section) => {
+          {sections.map((section) => {
             const active = section.exact ? pathname === section.href : pathname.startsWith(section.href);
             return (
               <li key={section.href}>
@@ -57,13 +62,12 @@ export function DashboardNav() {
           })}
         </ul>
       </nav>
-      <SignedInUser />
+      <SignedInUser me={me} />
     </div>
   );
 }
 
-function SignedInUser() {
-  const me = useMe();
+function SignedInUser({ me }: { me: Me | null }) {
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

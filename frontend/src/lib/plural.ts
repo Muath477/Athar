@@ -76,3 +76,12 @@ export const unsavedEdits: Forms = {
   many: "تعديلًا غير محفوظ",
   hundred: "تعديل غير محفوظ",
 };
+
+export const modelVersions: Forms = {
+  zero: "لا إصدارات مسجلة بعد",
+  one: "إصدار واحد",
+  two: "إصداران",
+  few: "إصدارات",
+  many: "إصدارًا",
+  hundred: "إصدار",
+};
