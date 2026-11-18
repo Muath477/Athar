@@ -14,6 +14,13 @@ ADD --chmod=644 --checksum=sha256:8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4
     models/face_detection_yunet_2023mar.onnx
 
 FROM python:3.13-slim-trixie
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fontconfig fonts-noto-core \
+    && find /usr/share/fonts/truetype/noto -type f \
+        ! -name 'NotoNaskhArabic-*' ! -name 'NotoSansArabic-*' ! -name 'NotoSans-*' ! -name 'NotoSerif-*' -delete \
+    && fc-cache -f \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --uid 10001 --home-dir /app sadu
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
