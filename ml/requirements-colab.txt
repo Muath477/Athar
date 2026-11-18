@@ -1,0 +1,9 @@
+unsloth==2026.11.6
+unsloth-zoo==2026.11.6
+transformers==5.17.0
+trl==1.15.0
+peft==0.21.3
+accelerate==1.16.0
+datasets==4.8.5
+bitsandbytes==0.50.2
+pyyaml==6.0.3
