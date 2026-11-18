@@ -33,9 +33,7 @@ def upgrade() -> None:
         sa.Column("created_by", sa.Uuid(), nullable=True),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.CheckConstraint(
-            "interval_h IS NULL OR interval_h > 0", name=op.f("ck_devices_positive_interval")
-        ),
+        sa.CheckConstraint("interval_h IS NULL OR interval_h > 0", name=op.f("ck_devices_positive_interval")),
         sa.ForeignKeyConstraint(
             ["created_by"], ["users.id"], name=op.f("fk_devices_created_by_users"), ondelete="SET NULL"
         ),
@@ -82,7 +80,10 @@ def upgrade() -> None:
             ["facade_id"], ["facades.id"], name=op.f("fk_ingest_jobs_facade_id_facades"), ondelete="SET NULL"
         ),
         sa.ForeignKeyConstraint(
-            ["map_id"], ["damage_maps.id"], name=op.f("fk_ingest_jobs_map_id_damage_maps"), ondelete="SET NULL"
+            ["map_id"],
+            ["damage_maps.id"],
+            name=op.f("fk_ingest_jobs_map_id_damage_maps"),
+            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["site_id"], ["sites.id"], name=op.f("fk_ingest_jobs_site_id_sites"), ondelete="SET NULL"
@@ -107,7 +108,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_ingest_jobs_device_recent", table_name="ingest_jobs")
-    op.drop_index("ix_ingest_jobs_due", table_name="ingest_jobs", postgresql_where=sa.text("status = 'queued'"))
+    op.drop_index(
+        "ix_ingest_jobs_due", table_name="ingest_jobs", postgresql_where=sa.text("status = 'queued'")
+    )
     op.drop_index(op.f("ix_ingest_jobs_batch_id"), table_name="ingest_jobs")
     op.drop_table("ingest_jobs")
     op.drop_index(op.f("ix_devices_site_id"), table_name="devices")
