@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, can, mapReportUrl } from "@/lib/api";
-import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
+import { detectorStatusAr, mapSourceText, mapStatusAr } from "@/lib/labels";
 import { NO_PENDING, buildEdits, pendingCount as countPending, withPending } from "@/lib/elements";
 import {
   type CellCorrection,
@@ -272,6 +272,7 @@ export function MapEditor() {
               </span>
             )}
             {detectorStatusAr[map.detector_status]} · {new Date(map.created_at).toLocaleDateString("ar-SA")}
+            {map.source && <> · المصدر: {mapSourceText(map.source, map.source_label)}</>}
           </p>
           <h1 className="text-3xl font-bold leading-snug">{map.wall_name}</h1>
           <p className="text-mud">
