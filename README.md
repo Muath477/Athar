@@ -18,7 +18,7 @@ Visitors' photos keep the map current between expert surveys.
 
 <p align="center"><img src="docs/assets/athar-pipeline.svg" alt="Animated pipeline: a wall photo has faces blurred, is straightened and split into a grid, damaged cells are marked and corrected by an expert, and a treatment plan with materials appears" width="100%"></p>
 
-Built for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate Development Authority challenge: *detecting and mapping damage to mud walls*. Team Athar.
+Built for the agentX Riyadh hackathon, Culture & Heritage track: the Diriyah Gate Development Authority challenge, *detecting and mapping damage to mud walls*, and the Heritage Commission challenge, *seeing heritage from space*. Team Athar.
 
 ## Contents
 
@@ -40,6 +40,7 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate De
 |---|---|
 | Conservation experts | A damage map of each wall from one photo: seven damage types (crack, plaster loss, moisture, basal erosion, surface erosion, partial collapse, graffiti), colour by type, strength by severity. They paint corrections with a brush and approve. |
 | Site managers | A treatment plan per map: steps, materials scaled to the damaged area, tools, whether a specialist must supervise, and sources. Each new map lists what changed since the last approved one. All of it downloads as an Arabic PDF report. |
+| The Heritage Commission | A weekly satellite screen of eleven Riyadh-region heritage sites and the 150 m around each: new building, digging, standing water, palm loss and sand, ranked by risk with before and after images. One click turns an alert into photo missions for the ground. |
 | The authority | Model accuracy measured against expert decisions, cell by cell, so nobody has to take the model's word for it. |
 | Visitors | A verified story of the place read aloud in Arabic and a passport stamp. A 3D view of the site on Google Maps, and the route there: steps in Arabic, a fly-through preview, and live tracking to the door. Their photos keep the condition record current. |
 
@@ -65,6 +66,16 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track, Diriyah Gate De
 | `none` | nothing | the expert draws the map |
 
 Model labels map to damage types with `SADU_DETECTOR_LABELS`, for example `{"spalling": "plaster_loss"}`. If the detector fails, the map is still saved empty so the expert can label it by hand. Details in [ADR-018](docs/adr/ADR-018-damage-detector-port.md).
+
+### From orbit to the wall
+
+1. Each week, and on demand, the API pulls Sentinel-2 scenes for every site from Element 84 Earth Search and builds two median composites: the last 30 days and the year before.
+2. Pixels that moved more than three times their usual spread, in clusters of at least three, are labelled water, vegetation loss, construction, sand or earthworks, inside the site or in its 150 m ring.
+3. A risk score ranks the sites, with World Heritage properties first within a level. The dashboard at `/dashboard/watch` shows the ranking on a region map and, per site, a before/after slider and a change map.
+4. **Ground check** opens high-priority photo missions on the site's facades, so the next visitors photograph the walls the satellite cannot see. Sites without facades get an inspector visit.
+5. 10 m pixels catch changes around a site, not cracks. The satellite layer screens; the wall maps and visitor photos confirm. Details and limits in [ADR-025](docs/adr/ADR-025-space-watch.md).
+
+Without internet access to the imagery, `SADU_SCENE_SOURCE=sample` serves labelled synthetic scenes with the invented events in `region-packs/riyadh/sample-events.json`. Every scan from it is marked as sample data.
 
 ### Changes over time
 
@@ -557,6 +568,8 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `ANTHROPIC_API_KEY` | Damage judgment, wall maps with `claude`, story drafting, claim checks | Changes go to the expert queue unjudged; maps are saved empty for manual labelling |
 | `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification` or `none` | `claude` |
 | `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
+| `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
+| `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
 | `SADU_DETECTOR_MIN_SCORE`, `SADU_MAP_ROWS` | Drop weaker predictions (default 0.35); grid rows (default 8) | Defaults |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Arabic audio (`ar-SA-HamedNeural`) | Story shows as text only |
 | `SADU_DEMO_MODE` | `true` serves recorded model answers before calling the API | Live calls; recordings are still used if a call fails |
@@ -589,6 +602,16 @@ uv run python -m eval.score_maps ../path/to/walls --min-accuracy 0.8
 ```
 
 The folder format is in [docs/10-damage-maps.md](docs/10-damage-maps.md).
+
+Replay satellite screening over past dates and measure its precision:
+
+```bash
+uv run python -m eval.backtest_watch run --sites at-turaif,sudus --start 2024-03-01 --end 2026-11-01 --out watch-backtest
+# fill the truth column of watch-backtest/alerts.csv with yes or no from historical imagery
+uv run python -m eval.backtest_watch score watch-backtest/alerts.csv
+```
+
+The score passes at a precision of 0.6 or more with at least three real changes. The same run against live Sentinel-2 can be started by hand from the **Space watch live check** workflow in GitHub Actions; it uploads the table and the evidence images.
 
 Frontend, from `frontend/`:
 
@@ -644,7 +667,8 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Verification and demo script | [docs/09-verification-and-demo.md](docs/09-verification-and-demo.md) |
 | Wall damage maps | [docs/10-damage-maps.md](docs/10-damage-maps.md) |
 | UML and structure | [docs/11-uml.md](docs/11-uml.md) |
-| Decisions (ADR-001 to ADR-024) | [docs/adr/](docs/adr/) |
+| Satellite screening | [docs/adr/ADR-025-space-watch.md](docs/adr/ADR-025-space-watch.md), [region-packs/riyadh/README.md](region-packs/riyadh/README.md) |
+| Decisions (ADR-001 to ADR-025) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 

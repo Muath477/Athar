@@ -88,6 +88,17 @@ Entry points: `POST /observations` (files + metadata), `POST /observations/{id}/
 | **D**enial of service | Heavy 3D or pin requests. | Pagination (max 100), rate limits, compressed GLB served as static file. |
 | **E**levation of privilege | Inspector calls expert-only review endpoint. | Deny-by-default role dependencies; test asserts every route declares a role or `public()`. |
 
+### 3.4 Satellite screening
+
+| Threat | Example | Mitigation |
+|---|---|---|
+| **S**poofing | A rogue catalog answer points the reader at an attacker's server. | Asset hrefs must be HTTPS on `e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com` and end in `.tif`; anything else drops the item. The search URL comes from settings, never from requests. |
+| **T**ampering | A crafted raster exploits a GDAL driver (GDAL 3.12.2 bundled with rasterio has open CVEs in HDF-EOS, netCDF, MiraMon and zlib `infback9`). | rasterio opens with the GTiff driver only; `CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif`; `GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR`; pip-audit in CI; upgrade when wheels ship GDAL 3.13+. |
+| **R**epudiation | Disputed who asked for a ground check or dismissed an alert. | `watch.scan` and `watch.ground_check` audit rows; acknowledgement stores the expert and time. |
+| **I**nformation disclosure | Evidence images leak. | They show public satellite imagery of public sites; stored in the private bucket behind 5-minute presigned URLs like other evidence. |
+| **D**enial of service | Repeated scans hammer Earth Search and the API threads. | 30 scans per user per hour; reads run on a 4-thread limiter with HTTP timeouts and 3 retries; the scheduler scans only sites past their interval. |
+| **E**levation of privilege | An inspector acknowledges alerts. | Acknowledge is expert-only; a test checks the 403. |
+
 ## 4. Controls mapped to OWASP Top 10 (2021) and ASVS L1
 
 | OWASP Top 10 | Control in Sadu | ASVS area | Status |
