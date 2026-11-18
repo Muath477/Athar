@@ -7,13 +7,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sadu.modules.mapping import api as mapping
 from sadu.modules.reports.application.assemble import assemble_wall_report
 from sadu.modules.reports.application.site_condition import SiteCondition, site_condition
+from sadu.modules.reports.domain.audit_report import AuditElement, AuditPhoto, AuditReport, AuditTreatment
 from sadu.modules.reports.domain.wall_report import WallReport
-from sadu.modules.reports.infrastructure.pdf import render_pdf, wall_report_html
+from sadu.modules.reports.infrastructure.pdf import audit_report_html, render_pdf, wall_report_html
 from sadu.modules.sites import api as sites
 from sadu.modules.treatments import api as treatments
 from sadu.shared.storage import ObjectStore
 
-__all__ = ["SiteCondition", "WallReport", "site_condition", "wall_report", "wall_report_pdf"]
+__all__ = [
+    "AuditElement",
+    "AuditPhoto",
+    "AuditReport",
+    "AuditTreatment",
+    "SiteCondition",
+    "WallReport",
+    "audit_report_pdf",
+    "site_condition",
+    "wall_report",
+    "wall_report_pdf",
+]
 
 
 async def wall_report(
@@ -33,3 +45,7 @@ async def wall_report(
 
 async def wall_report_pdf(report: WallReport) -> bytes:
     return await asyncio.to_thread(render_pdf, wall_report_html(report))
+
+
+async def audit_report_pdf(report: AuditReport) -> bytes:
+    return await asyncio.to_thread(render_pdf, audit_report_html(report))

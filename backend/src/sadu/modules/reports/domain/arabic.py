@@ -31,6 +31,8 @@ CLASS_AR = {
 
 SEVERITY_AR = {"watch": "مراقبة", "moderate": "متوسط", "urgent": "عاجل"}
 
+CONFIDENCE_AR = {"low": "منخفضة", "medium": "متوسطة", "high": "عالية"}
+
 SOURCE_AR = {"model": "النموذج", "expert": "الخبير"}
 
 DETECTOR_AR = {
