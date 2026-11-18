@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { colorFor } from "@/lib/damage-palette";
 import { damageTypeAr } from "@/lib/labels";
 import { type MapAccuracy, getAccuracy } from "@/lib/maps";
+import { approvedMaps, countAr } from "@/lib/plural";
 
 export function AccuracyCard() {
   const [accuracy, setAccuracy] = useState<MapAccuracy | null>(null);
@@ -22,7 +23,7 @@ export function AccuracyCard() {
         <h2 className="text-xl font-bold">هل يوافق النموذج المختص؟</h2>
         {accuracy.maps > 0 && (
           <p className="text-sm text-mud">
-            من {accuracy.maps.toLocaleString("ar-SA")} مخطط معتمد · اتفاق على وجود التلف{" "}
+            من {countAr(accuracy.maps, approvedMaps)} · اتفاق على وجود التلف{" "}
             <strong className="tabular-nums text-ink">{percent(accuracy.damaged_vs_sound_accuracy)}</strong>
           </p>
         )}

@@ -1,11 +1,12 @@
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from sadu.modules.admin.interface.auth import Inspector
+from sadu.modules.admin import api as admin
+from sadu.modules.admin.interface.auth import SiteManager, Staff
 from sadu.modules.sites import api as sites
 from sadu.shared.web import Session, State, limit_public_reads, public
 
@@ -37,6 +38,11 @@ class SiteOut(BaseModel):
     location: LatLonOut
     boundary: list[LatLonOut]
     facades: list[FacadeOut]
+    field_photography_permitted: bool
+
+
+class PermitIn(BaseModel):
+    permitted: bool
 
 
 async def site_out(session: Session, state: State, site: sites.SiteView) -> SiteOut:
@@ -50,6 +56,7 @@ async def site_out(session: Session, state: State, site: sites.SiteView) -> Site
         model_url=state.store.presigned_url(site.model_key) if site.model_key else None,
         location=LatLonOut(lat=site.location.lat, lon=site.location.lon),
         boundary=[LatLonOut(lat=p.lat, lon=p.lon) for p in site.boundary],
+        field_photography_permitted=site.field_photography_permitted,
         facades=[
             FacadeOut(
                 id=str(f.id),
@@ -76,13 +83,30 @@ async def nearby_sites(
 
 
 @router.get("/sites")
-async def list_sites(_: Inspector, session: Session, state: State) -> list[SiteOut]:
+async def list_sites(_: Staff, session: Session, state: State) -> list[SiteOut]:
     return [await site_out(session, state, s) for s in await sites.list_sites(session)]
 
 
 @router.get("/sites/{site_id}", dependencies=[Depends(public), Depends(limit_public_reads)])
 async def get_site(site_id: UUID, session: Session, state: State) -> SiteOut:
     return await site_out(session, state, await sites.get_site(session, site_id))
+
+
+@router.post("/sites/{site_id}/field-photography")
+async def set_field_photography(
+    site_id: UUID, body: PermitIn, user: SiteManager, session: Session, state: State, request: Request
+) -> SiteOut:
+    site = await sites.set_field_photography(session, site_id, body.permitted)
+    await admin.audit(
+        session,
+        actor_id=user.id,
+        action="site.field_photography",
+        target_type="site",
+        target_id=str(site_id),
+        details={"permitted": body.permitted},
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return await site_out(session, state, site)
 
 
 @router.get("/facades/{facade_id}/baseline", dependencies=[Depends(public), Depends(limit_public_reads)])

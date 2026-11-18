@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ApiError, can } from "@/lib/api";
 import { countAr, missions, scenes } from "@/lib/plural";
 import { useMe } from "@/lib/use-me";
 import {
@@ -12,7 +12,6 @@ import {
   type WatchOverview,
   acknowledgeScan,
   areaAr,
-  copernicusCredit,
   getOverview,
   levelAr,
   levelClass,
@@ -23,9 +22,14 @@ import {
   statusAr,
   strongestSignal,
   threatAr,
+  trendAr,
+  warningAr,
   zoneAr,
 } from "@/lib/watch";
+import { CopernicusCredit, LoadError, SiteWatchSkeleton } from "../../_components/watch-states";
 import { CompareImages } from "./compare-images";
+
+type Notice = { kind: "scan" } | { kind: "ack" } | { kind: "ground"; check: GroundCheck };
 
 function dateAr(value: string): string {
   return new Date(value).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" });
@@ -37,8 +41,9 @@ export function SiteWatch() {
   const [overview, setOverview] = useState<WatchOverview | null>(null);
   const [scans, setScans] = useState<Scan[] | null>(null);
   const [busy, setBusy] = useState<"scan" | "ground" | "ack" | null>(null);
-  const [check, setCheck] = useState<GroundCheck | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const load = useCallback(
     () =>
@@ -56,12 +61,15 @@ export function SiteWatch() {
     if (me) load();
   }, [me, load]);
 
-  async function run(kind: "scan" | "ground" | "ack", action: () => Promise<unknown>) {
+  async function run(kind: "scan" | "ground" | "ack", action: () => Promise<Notice>) {
     setBusy(kind);
     setError(null);
+    setNotice(null);
     try {
-      await action();
+      const done = await action();
       await load();
+      setNotice(done);
+      headingRef.current?.focus();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذر تنفيذ الطلب.");
     } finally {
@@ -69,9 +77,14 @@ export function SiteWatch() {
     }
   }
 
+  function retry() {
+    setError(null);
+    load();
+  }
+
   const site = overview?.sites.find((s) => s.site_id === siteId);
   if (!me || !overview || scans === null) {
-    return error ? <p role="alert" className="pt-6">{error}</p> : <p className="pt-6">…</p>;
+    return error ? <LoadError message={error} onRetry={retry} /> : <SiteWatchSkeleton />;
   }
   if (!site) return <p className="pt-6">هذا الموقع غير موجود في الرصد.</p>;
 
@@ -79,7 +92,8 @@ export function SiteWatch() {
   const lastAttempt = scans[0] ?? null;
   const failedSince = lastAttempt && lastAttempt.status !== "ok" ? lastAttempt : null;
   const level = latest?.level ?? "unknown";
-  const canAcknowledge = me.role !== "inspector";
+  const canAcknowledge = can(me, "review");
+  const canSurvey = can(me, "survey");
   const hasSignals = latest?.status === "ok" && latest.signals.length > 0;
 
   return (
@@ -89,10 +103,12 @@ export function SiteWatch() {
           → كل المواقع
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold leading-tight">{site.name_ar}</h1>
+          <h1 ref={headingRef} tabIndex={-1} className="text-3xl font-bold leading-snug">
+            {site.name_ar}
+          </h1>
           <span className={`rounded-full px-3 py-1 text-sm font-bold ${levelClass[level]}`}>{levelAr[level]}</span>
           {latest?.is_sample && (
-            <span className="rounded-full border-2 border-dashed border-sadu px-3 py-0.5 text-sm font-bold text-sadu">
+            <span className="rounded-full border-2 border-dashed border-clay px-3 py-0.5 text-sm font-bold text-mud">
               بيانات تجريبية
             </span>
           )}
@@ -106,59 +122,67 @@ export function SiteWatch() {
         )}
       </header>
 
+      {warningAr(site) && (
+        <p className={`rounded-xl p-3 ${site.alert ? "border border-urgent/40 bg-urgent/10" : "bg-white/75"}`}>
+          {site.alert && <strong>تنبيه للمختصين · </strong>}
+          {warningAr(site)}
+          {site.trend && site.trend !== "new" && <> · {trendAr[site.trend]}</>}
+        </p>
+      )}
+
       {error && (
-        <p role="alert" className="rounded-lg bg-urgent/10 px-4 py-2 text-urgent">
+        <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
           {error}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => run("scan", () => scanSite(siteId))}
-          disabled={busy !== null}
-          className="rounded-full border border-ink/30 px-5 py-2 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
-        >
-          {busy === "scan" ? "يُفحص…" : "افحص الآن"}
-        </button>
-        {hasSignals && latest && !latest.ground_check_at && (
-          <button
-            type="button"
-            onClick={() => run("ground", async () => setCheck(await requestGroundCheck(latest.id)))}
-            disabled={busy !== null}
-            className="rounded-full bg-sadu px-5 py-2 font-bold text-sand transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-          >
-            {busy === "ground" ? "يُرسل…" : "اطلب تحققًا ميدانيًا"}
-          </button>
-        )}
-        {hasSignals && latest && canAcknowledge && !latest.acknowledged_at && (
-          <button
-            type="button"
-            onClick={() => run("ack", () => acknowledgeScan(latest.id))}
-            disabled={busy !== null}
-            className="rounded-full border border-ink/30 px-5 py-2 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
-          >
-            {busy === "ack" ? "يُحفظ…" : "أكّد أنك راجعت التنبيه"}
-          </button>
-        )}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          {canSurvey && (
+            <button
+              type="button"
+              onClick={() =>
+                run("scan", async () => {
+                  await scanSite(siteId);
+                  return { kind: "scan" };
+                })
+              }
+              disabled={busy !== null}
+              className="min-h-11 rounded-full border border-ink/30 px-5 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
+            >
+              {busy === "scan" ? "يُفحص…" : "افحص الآن"}
+            </button>
+          )}
+          {canSurvey && hasSignals && latest && !latest.ground_check_at && (
+            <button
+              type="button"
+              onClick={() => run("ground", async () => ({ kind: "ground", check: await requestGroundCheck(latest.id) }))}
+              disabled={busy !== null}
+              className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand transition-transform hover:-translate-y-0.5 disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-none"
+            >
+              {busy === "ground" ? "يُرسل…" : "اطلب تحققًا ميدانيًا"}
+            </button>
+          )}
+          {hasSignals && latest && canAcknowledge && !latest.acknowledged_at && (
+            <button
+              type="button"
+              onClick={() =>
+                run("ack", async () => {
+                  await acknowledgeScan(latest.id);
+                  return { kind: "ack" };
+                })
+              }
+              disabled={busy !== null}
+              className="min-h-11 rounded-full border border-ink/30 px-5 transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
+            >
+              {busy === "ack" ? "يُحفظ…" : "أكّد أنك راجعت التنبيه"}
+            </button>
+          )}
+        </div>
+        <div role="status">{notice && <NoticeText notice={notice} />}</div>
       </div>
 
-      {check && (
-        <p role="status" className="rounded-lg bg-white/75 px-4 py-3">
-          {check.inspector_visit
-            ? "لا توجد واجهات بصور مرجعية لهذا الموقع، لذلك يحتاج زيارة مفتش."
-            : check.mission_ids.length === 0
-              ? "مهام التصوير مفتوحة مسبقًا على واجهات هذا الموقع."
-              : `فُتحت ${countAr(check.mission_ids.length, missions)} للزوار حول الواجهات.`}{" "}
-          {!check.inspector_visit && (
-            <Link href="/dashboard" className="font-bold text-sadu underline">
-              تابع المهام
-            </Link>
-          )}
-        </p>
-      )}
-
-      {latest?.ground_check_at && !check && (
+      {latest?.ground_check_at && notice?.kind !== "ground" && (
         <p className="text-sm text-mud">طُلب التحقق الميداني في {dateAr(latest.ground_check_at)}.</p>
       )}
 
@@ -197,7 +221,7 @@ export function SiteWatch() {
                       <div>
                         <p className="font-bold">{threatAr[signal.threat]}</p>
                         <p className="text-sm text-mud">
-                          {zoneAr[signal.zone]} · {areaAr(signal.area_m2)} (
+                          {zoneAr[signal.zone]} · <bdi className="whitespace-nowrap">{areaAr(signal.area_m2)}</bdi> (
                           {Math.round((signal.changed_pixels / signal.zone_pixels) * 100).toLocaleString("ar-SA")}٪)
                         </p>
                       </div>
@@ -206,7 +230,7 @@ export function SiteWatch() {
               </ul>
             )}
             <p className="text-xs text-mud">
-              دقة الصور ١٠ م للبكسل: تكشف البناء والحفر والمياه وإزالة النخيل، ولا تكشف شقوق الجدران. ذلك عمل
+              دقة الصور <span className="whitespace-nowrap">١٠{"\u00a0"}م</span> للبكسل: تكشف البناء والحفر والمياه وإزالة النخيل، ولا تكشف شقوق الجدران. ذلك عمل
               التصوير الأرضي.
             </p>
           </section>
@@ -233,7 +257,7 @@ export function SiteWatch() {
                     {scan.status !== "ok"
                       ? statusAr[scan.status]
                       : strongest
-                        ? `${threatAr[strongest.threat]} · ${areaAr(strongest.area_m2)}`
+                        ? <>{threatAr[strongest.threat]} · <bdi className="whitespace-nowrap">{areaAr(strongest.area_m2)}</bdi></>
                         : "لا تغيّر ملحوظ"}
                   </span>
                 </li>
@@ -243,7 +267,27 @@ export function SiteWatch() {
         </section>
       )}
 
-      <p className="text-xs text-mud">{copernicusCredit(latest)}</p>
+      <CopernicusCredit scan={latest} />
     </div>
+  );
+}
+
+function NoticeText({ notice }: { notice: Notice }) {
+  if (notice.kind === "scan") return <p className="rounded-xl bg-white/75 p-3">انتهى الفحص، والنتيجة أدناه.</p>;
+  if (notice.kind === "ack") return <p className="rounded-xl bg-white/75 p-3">سُجّلت مراجعتك للتنبيه.</p>;
+  const { check } = notice;
+  return (
+    <p className="rounded-xl bg-white/75 p-3">
+      {check.inspector_visit
+        ? "لا توجد واجهات بصور مرجعية لهذا الموقع، لذلك يحتاج زيارة مفتش."
+        : check.mission_ids.length === 0
+          ? "مهام التصوير مفتوحة مسبقًا على واجهات هذا الموقع."
+          : `فُتحت ${countAr(check.mission_ids.length, missions)} للزوار حول الواجهات.`}{" "}
+      {!check.inspector_visit && (
+        <Link href="/dashboard" className="font-bold text-sadu underline">
+          تابع المهام
+        </Link>
+      )}
+    </p>
   );
 }

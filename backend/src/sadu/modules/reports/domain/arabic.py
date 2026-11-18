@@ -4,13 +4,29 @@ from zoneinfo import ZoneInfo
 REPORT_ZONE = ZoneInfo("Asia/Riyadh")
 
 DAMAGE_TYPE_AR = {
-    "crack": "تشقق",
-    "plaster_loss": "تساقط اللياسة",
+    "plaster_loss": "فقدان اللياسة",
+    "crack": "التشققات",
+    "basal_erosion": "تآكل القاعدة",
+    "rain_gully": "أخاديد الأمطار",
+    "salt_efflorescence": "تزهّر الأملاح",
+    "cavity": "الفجوات والجحور",
+    "wall_head": "تلف رؤوس الجدران والشرفات",
+    "cement_repair": "ترميمات إسمنتية سابقة",
     "moisture": "رطوبة",
-    "basal_erosion": "تآكل في أسفل الجدار",
     "surface_erosion": "تآكل السطح",
     "partial_collapse": "انهيار جزئي",
     "graffiti": "كتابة على الجدار",
+}
+
+CLASS_AR = {
+    "under_1mm": "أقل من ١ ملم",
+    "from_1_to_5mm": "من ١ إلى ٥ ملم",
+    "over_5mm": "أكثر من ٥ ملم",
+    "shallow": "سطحي",
+    "medium": "متوسط",
+    "deep": "عميق",
+    "small": "صغير",
+    "large": "كبير",
 }
 
 SEVERITY_AR = {"watch": "مراقبة", "moderate": "متوسط", "urgent": "عاجل"}

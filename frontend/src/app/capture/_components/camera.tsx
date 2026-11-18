@@ -57,11 +57,26 @@ export function Camera({ overlayUrl, onPhoto }: Props) {
         </div>
       )}
       {live === "on" && (
-        <button onClick={shoot} className="self-center rounded-full bg-sadu px-10 py-3 text-lg font-bold text-sand">
+        <button
+          type="button"
+          onClick={shoot}
+          className="min-h-11 self-center rounded-full bg-sadu px-10 py-3 text-lg font-bold text-sand hover:bg-ink"
+        >
           التقط الصورة
         </button>
       )}
-      <label className="self-center cursor-pointer rounded-full border border-ink px-6 py-2 text-sm">
+      {live === "unavailable" && (
+        <p className="rounded-xl bg-white/75 p-4 text-sm leading-relaxed">
+          لم نتمكن من فتح الكاميرا. اسمح بالوصول إليها من إعدادات المتصفح، أو التقط صورة بكاميرا الجوال.
+        </p>
+      )}
+      <label
+        className={`inline-flex min-h-11 cursor-pointer items-center self-center rounded-full has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-sadu ${
+          live === "unavailable"
+            ? "bg-sadu px-8 text-lg font-bold text-sand hover:bg-ink"
+            : "border border-ink/30 px-5 text-sm hover:bg-ink hover:text-sand"
+        }`}
+      >
         {live === "on" ? "أو اختر صورة من الجوال" : "افتح الكاميرا"}
         <input
           type="file"

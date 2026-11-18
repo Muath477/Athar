@@ -2,7 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ApiError, type Me, rememberCsrf, request } from "@/lib/api";
+import { ApiError, can, type Me, rememberCsrf, request } from "@/lib/api";
+
+const ERROR_ID = "login-error";
+const INPUT_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3";
+
+function homeFor(me: Me): string {
+  if (can(me, "review")) return "/dashboard/maps";
+  if (can(me, "manage_site")) return "/dashboard/condition";
+  if (can(me, "survey")) return "/dashboard/maps/new";
+  return "/dashboard";
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -18,29 +28,56 @@ export function LoginForm() {
         body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
       });
       rememberCsrf(me.csrf_token);
-      router.push("/dashboard");
+      router.push(homeFor(me));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "تعذر تسجيل الدخول.");
+      setError(e instanceof ApiError ? e.message : "تعذر تسجيل الدخول. تحقق من الاتصال وأعد المحاولة.");
     } finally {
       setPending(false);
     }
   }
 
+  const invalid = error !== null;
+
   return (
-    <form action={submit} className="mx-auto mt-10 flex w-full max-w-sm flex-col gap-3">
-      <h1 className="text-2xl font-bold">دخول المفتشين والخبراء</h1>
+    <form action={submit} className="mx-auto mt-10 flex w-full max-w-sm flex-col gap-4">
+      <h1 className="text-3xl font-bold leading-snug">دخول المفتشين والخبراء</h1>
       <label className="flex flex-col gap-1">
         البريد الإلكتروني
-        <input name="email" type="email" required autoComplete="username" dir="ltr" className="rounded-lg border p-2" />
+        <input
+          name="email"
+          type="email"
+          required
+          autoComplete="username"
+          dir="ltr"
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? ERROR_ID : undefined}
+          className={INPUT_CLASS}
+        />
       </label>
       <label className="flex flex-col gap-1">
         كلمة المرور
-        <input name="password" type="password" required autoComplete="current-password" dir="ltr" className="rounded-lg border p-2" />
+        <input
+          name="password"
+          type="password"
+          required
+          autoComplete="current-password"
+          dir="ltr"
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? ERROR_ID : undefined}
+          className={INPUT_CLASS}
+        />
       </label>
-      <button disabled={pending} className="rounded-full bg-ink py-2 text-sand">
-        {pending ? "…" : "دخول"}
+      <button
+        disabled={pending}
+        className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
+      >
+        {pending ? "جارٍ الدخول…" : "دخول"}
       </button>
-      {error && <p role="alert" className="text-urgent">{error}</p>}
+      {error && (
+        <p id={ERROR_ID} role="alert" className="text-urgent">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

@@ -4,15 +4,21 @@ import cv2
 import numpy as np
 
 from sadu.modules.mapping.domain.damage_map import MapCell
+from sadu.modules.mapping.domain.elements import Element
+from sadu.modules.mapping.domain.glossary import Geometry
 from sadu.modules.mapping.domain.grid import Grid
 from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY, bgr
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.shared.errors import SaduError
+from sadu.shared.vocabulary import DamageType
 
 RECTIFIED_LONG_SIDE_PX = 1200
 JPEG_QUALITY = 88
 GRID_COLOR = (255, 255, 255)
 LABEL_BACKGROUND = (0, 0, 0)
+OUTLINE_BGR = (60, 60, 60)
+LABEL_BGR = (0, 0, 0)
+LABEL_TEXT_BGR = (255, 255, 255)
 
 
 @dataclass(frozen=True)
@@ -77,6 +83,57 @@ def paint_damage(rectified_jpeg: bytes, grid: Grid, cells: tuple[MapCell, ...]) 
         opacity = SEVERITY_OPACITY[cell.severity]
         image[y0:y1, x0:x1] = cv2.addWeighted(fill, opacity, tile, 1 - opacity, 0)
     return _encode(draw_grid(image, grid))
+
+
+def paint_elements(rectified_jpeg: bytes, grid: Grid, elements: tuple[Element, ...]) -> bytes:
+    image = cv2.imdecode(np.frombuffer(rectified_jpeg, np.uint8), cv2.IMREAD_COLOR)
+    if image is None:
+        raise SaduError("unsupported_image", status=415)
+    height, width = image.shape[:2]
+    image = draw_grid(image, grid)
+    stroke = max(2, round(min(width, height) / 160))
+    for element in elements:
+        colour = bgr(DAMAGE_COLORS[element.damage_type])
+        outline = OUTLINE_BGR if element.damage_type is DamageType.SALT_EFFLORESCENCE else colour
+        pixels = np.array([[round(x * width), round(y * height)] for x, y in element.points], np.int32)
+        if element.geometry is Geometry.AREA:
+            layer = image.copy()
+            cv2.fillPoly(layer, [pixels], colour)
+            image = cv2.addWeighted(
+                layer, SEVERITY_OPACITY[element.severity], image, 1 - SEVERITY_OPACITY[element.severity], 0
+            )
+            cv2.polylines(
+                image, [pixels], isClosed=True, color=outline, thickness=stroke, lineType=cv2.LINE_AA
+            )
+        elif element.geometry is Geometry.LINE:
+            cv2.polylines(
+                image, [pixels], isClosed=False, color=colour, thickness=stroke + 1, lineType=cv2.LINE_AA
+            )
+        else:
+            cv2.circle(image, tuple(int(v) for v in pixels[0]), stroke * 3, colour, -1, cv2.LINE_AA)
+            cv2.circle(image, tuple(int(v) for v in pixels[0]), stroke * 3, OUTLINE_BGR, 1, cv2.LINE_AA)
+        x, y = pixels[0]
+        cv2.putText(
+            image,
+            element.id,
+            (int(x) + stroke * 2, int(y) - stroke * 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.4 + stroke / 10,
+            LABEL_BGR,
+            stroke,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            image,
+            element.id,
+            (int(x) + stroke * 2, int(y) - stroke * 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.4 + stroke / 10,
+            LABEL_TEXT_BGR,
+            max(1, stroke // 2),
+            cv2.LINE_AA,
+        )
+    return _encode(image)
 
 
 def crop_cells(rectified_jpeg: bytes, grid: Grid) -> dict[str, bytes]:

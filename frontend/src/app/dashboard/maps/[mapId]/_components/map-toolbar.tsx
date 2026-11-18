@@ -14,6 +14,9 @@ export function MapToolbar({
   brush,
   onBrush,
   pendingCount,
+  unsaved,
+  fieldInspected,
+  unreviewed,
   canUndo,
   canRedo,
   busy,
@@ -26,6 +29,9 @@ export function MapToolbar({
   brush: Brush;
   onBrush: (brush: Brush) => void;
   pendingCount: number;
+  unsaved: number;
+  fieldInspected: boolean;
+  unreviewed: number;
   canUndo: boolean;
   canRedo: boolean;
   busy: boolean;
@@ -36,6 +42,9 @@ export function MapToolbar({
 }) {
   const [confirming, setConfirming] = useState(false);
   const erasing = brush.damage_type === "none";
+  const approveBlocked = busy || !fieldInspected || unsaved > 0 || unreviewed > 0;
+  const focusRing = "focus-visible:outline-sand";
+  if (confirming && approveBlocked) setConfirming(false);
 
   return (
     <section aria-label="أدوات التصحيح" className="no-print flex flex-col gap-3 rounded-xl bg-ink p-3 text-sand">
@@ -51,7 +60,7 @@ export function MapToolbar({
                 role="radio"
                 aria-checked={selected}
                 onClick={() => onBrush({ ...brush, damage_type: type })}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm transition-colors ${focusRing} ${
                   selected ? "bg-sand text-ink" : "hover:bg-sand/15"
                 }`}
               >
@@ -65,7 +74,7 @@ export function MapToolbar({
             role="radio"
             aria-checked={erasing}
             onClick={() => onBrush({ ...brush, damage_type: "none" })}
-            className={`rounded-full border border-dashed border-sand/60 px-3 py-1.5 text-sm ${
+            className={`min-h-11 rounded-full border border-dashed border-sand/60 px-3 text-sm ${focusRing} ${
               erasing ? "bg-sand text-ink" : "hover:bg-sand/15"
             }`}
           >
@@ -85,7 +94,7 @@ export function MapToolbar({
               aria-checked={brush.severity === severity}
               disabled={erasing}
               onClick={() => onBrush({ ...brush, severity })}
-              className={`rounded-full px-3 py-1 text-sm ${
+              className={`min-h-11 rounded-full px-3 text-sm ${focusRing} ${
                 brush.severity === severity ? "bg-sand font-bold text-ink" : "hover:bg-sand/15"
               }`}
             >
@@ -95,27 +104,46 @@ export function MapToolbar({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={onUndo} disabled={!canUndo} className="rounded-full px-3 py-1 text-sm hover:bg-sand/15 disabled:opacity-30" title="Ctrl+Z">
+          <button
+            type="button"
+            onClick={onUndo}
+            disabled={!canUndo}
+            aria-keyshortcuts="Control+Z"
+            className={`min-h-11 rounded-full px-3 text-sm hover:bg-sand/15 disabled:opacity-30 ${focusRing}`}
+          >
             تراجع
           </button>
-          <button type="button" onClick={onRedo} disabled={!canRedo} className="rounded-full px-3 py-1 text-sm hover:bg-sand/15 disabled:opacity-30" title="Ctrl+Shift+Z">
+          <button
+            type="button"
+            onClick={onRedo}
+            disabled={!canRedo}
+            aria-keyshortcuts="Control+Shift+Z"
+            className={`min-h-11 rounded-full px-3 text-sm hover:bg-sand/15 disabled:opacity-30 ${focusRing}`}
+          >
             إعادة
           </button>
           <button
             type="button"
             onClick={onSave}
             disabled={busy || pendingCount === 0}
-            className="rounded-full bg-sand px-4 py-1.5 text-sm font-bold text-ink disabled:opacity-30"
+            className={`min-h-11 rounded-full bg-sand px-4 text-sm font-bold text-ink disabled:opacity-30 ${focusRing}`}
           >
             {busy ? "نحفظ…" : pendingCount > 0 ? `احفظ ${countAr(pendingCount, corrections)}` : "احفظ التصحيحات"}
           </button>
           {confirming ? (
-            <span className="flex items-center gap-2 rounded-full bg-sadu px-3 py-1 text-sm">
+            <span role="group" aria-label="تأكيد الاعتماد" className="flex items-center gap-2 rounded-full bg-mud ps-3 text-sm text-sand">
               يُجمَّد المخطط بعد الاعتماد.
-              <button type="button" onClick={() => { setConfirming(false); onApprove(); }} className="font-bold underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false);
+                  onApprove();
+                }}
+                className={`min-h-11 px-2 font-bold underline ${focusRing}`}
+              >
                 اعتمد
               </button>
-              <button type="button" onClick={() => setConfirming(false)} className="underline">
+              <button type="button" onClick={() => setConfirming(false)} className={`min-h-11 pe-3 ps-2 underline ${focusRing}`}>
                 إلغاء
               </button>
             </span>
@@ -123,16 +151,31 @@ export function MapToolbar({
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              disabled={busy || pendingCount > 0}
-              title={pendingCount > 0 ? "احفظ التصحيحات أولًا" : undefined}
-              className="rounded-full bg-sadu px-4 py-1.5 text-sm font-bold text-sand disabled:opacity-30"
+              disabled={approveBlocked}
+              aria-describedby={approveBlocked && !busy ? "grid-approve-reason" : undefined}
+              className={`min-h-11 rounded-full bg-sadu px-4 text-sm font-bold text-sand disabled:opacity-30 ${focusRing}`}
             >
               اعتمد المخطط
             </button>
           )}
         </div>
       </div>
-      <p className="text-xs text-sand/60">اسحب على الخلايا لتلوينها، أو تنقّل بالأسهم واضغط مسافة. Ctrl+Z للتراجع.</p>
+      {!busy && approveBlocked && (
+        <p id="grid-approve-reason" className="text-xs text-sand/70">
+          {!fieldInspected
+            ? "الاعتماد متاح بعد تسجيل الفحص الميداني."
+            : unsaved > 0
+              ? "احفظ التعديلات أولًا ثم اعتمد."
+              : "راجع العناصر منخفضة الثقة في وضع «عناصر التلف بالمسرد» قبل الاعتماد."}
+        </p>
+      )}
+      <p className="text-xs text-sand/60">
+        اسحب على الخلايا لتلوينها، أو تنقّل بالأسهم واضغط زر المسافة.{" "}
+        <kbd dir="ltr" className="rounded bg-clay/20 px-1">
+          Ctrl+Z
+        </kbd>{" "}
+        للتراجع.
+      </p>
     </section>
   );
 }

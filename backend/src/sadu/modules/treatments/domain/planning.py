@@ -12,6 +12,7 @@ class DamagedArea:
     severity: Severity
     area_m2: float
     cells: int
+    locations: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class PlanItem:
     area_m2: float
     cells: int
     materials: tuple[MaterialNeed, ...]
+    locations: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -56,7 +58,9 @@ def plan_treatments(areas: Iterable[DamagedArea], catalog: Catalog) -> Treatment
             MaterialNeed(m.name_ar, m.name_en, m.unit_ar, round_up(m.per_m2 * area.area_m2))
             for m in treatment.materials
         )
-        items.append(PlanItem(treatment, area.severity, round(area.area_m2, 2), area.cells, needs))
+        items.append(
+            PlanItem(treatment, area.severity, round(area.area_m2, 2), area.cells, needs, area.locations)
+        )
     return TreatmentPlan(
         catalog.version, catalog.review_status, catalog.quantities_note_ar, tuple(items), tuple(unmatched)
     )

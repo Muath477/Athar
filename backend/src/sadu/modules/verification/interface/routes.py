@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from sadu.modules.admin.interface.auth import Expert, Inspector
+from sadu.modules.admin.interface.auth import Expert, Staff
 from sadu.modules.sites import api as sites
 from sadu.modules.verification import api as verification
 from sadu.shared.storage import ObjectStore
@@ -66,7 +66,7 @@ def finding_out(finding: verification.FindingView, store: ObjectStore | None = N
 @router.get("/sites/{site_id}/pins")
 async def pins(
     site_id: UUID,
-    _: Inspector,
+    _: Staff,
     session: Session,
     label: Annotated[str | None, Query(pattern="^(confirmed|likely)$")] = None,
     facade_id: UUID | None = None,
@@ -77,7 +77,7 @@ async def pins(
 
 
 @router.get("/findings/{finding_id}")
-async def get_finding(finding_id: UUID, _: Inspector, session: Session, state: State) -> FindingOut:
+async def get_finding(finding_id: UUID, _: Staff, session: Session, state: State) -> FindingOut:
     return finding_out(await verification.get_finding(session, finding_id), state.store)
 
 

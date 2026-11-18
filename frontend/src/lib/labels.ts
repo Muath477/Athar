@@ -1,10 +1,15 @@
 
 export const damageTypeAr: Record<string, string> = {
-  crack: "تشقق",
-  basal_erosion: "تآكل في أسفل الجدار",
+  crack: "التشققات",
+  plaster_loss: "فقدان اللياسة",
+  basal_erosion: "تآكل القاعدة",
+  rain_gully: "أخاديد الأمطار",
+  salt_efflorescence: "تزهّر الأملاح",
+  cavity: "الفجوات والجحور",
+  wall_head: "تلف رؤوس الجدران والشرفات",
+  cement_repair: "ترميمات إسمنتية سابقة",
   surface_erosion: "تآكل السطح",
   moisture: "رطوبة",
-  plaster_loss: "تساقط اللياسة",
   missing_element: "عنصر مفقود",
   partial_collapse: "انهيار جزئي",
   graffiti: "كتابة على الجدار",

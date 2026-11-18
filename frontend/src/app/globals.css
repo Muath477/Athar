@@ -32,6 +32,12 @@ body {
     var(--color-sand);
 }
 
+kbd,
+code {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 :focus-visible {
   outline: 3px solid var(--color-sadu);
   outline-offset: 2px;
@@ -51,5 +57,11 @@ body {
   article,
   figure {
     break-inside: avoid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
   }
 }

@@ -22,14 +22,34 @@ _hasher = PasswordHasher()
 _DUMMY_HASH = _hasher.hash(secrets.token_hex(16))
 
 
+class Permission(StrEnum):
+    READ = "read"
+    SURVEY = "survey"
+    REVIEW = "review"
+    MANAGE_SITE = "manage_site"
+    ADMINISTER = "administer"
+
+
 class Role(StrEnum):
     INSPECTOR = "inspector"
+    SITE_MANAGER = "site_manager"
     EXPERT = "expert"
     ADMIN = "admin"
 
-    def allows(self, required: "Role") -> bool:
-        order = [Role.INSPECTOR, Role.EXPERT, Role.ADMIN]
-        return order.index(self) >= order.index(required)
+    @property
+    def permissions(self) -> frozenset[Permission]:
+        return ROLE_PERMISSIONS[self]
+
+    def allows(self, required: Permission) -> bool:
+        return required in self.permissions
+
+
+ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
+    Role.INSPECTOR: frozenset({Permission.READ, Permission.SURVEY}),
+    Role.SITE_MANAGER: frozenset({Permission.READ, Permission.MANAGE_SITE}),
+    Role.EXPERT: frozenset({Permission.READ, Permission.SURVEY, Permission.REVIEW}),
+    Role.ADMIN: frozenset(Permission),
+}
 
 
 @dataclass(frozen=True)

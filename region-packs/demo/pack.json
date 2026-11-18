@@ -9,6 +9,7 @@
       "name_ar": "بيت طيني تجريبي",
       "name_en": "Demo mud-brick house",
       "building_type": "mud_brick_house",
+      "field_photography_permitted": true,
       "location": [
         46.6753,
         24.7136

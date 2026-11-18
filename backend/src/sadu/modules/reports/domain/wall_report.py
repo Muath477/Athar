@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 SEVERITY_RANK = {"watch": 0, "moderate": 1, "urgent": 2}
+LINE_BAND_M = 0.1
+POINT_AREA_M2 = 0.04
 
 
 @dataclass(frozen=True)
@@ -11,6 +13,20 @@ class ReportCell:
     damage_type: str
     severity: str
     source: str
+
+
+@dataclass(frozen=True)
+class ElementLine:
+    id: str
+    damage_type: str
+    location: str
+    area_m2: float
+    length_m: float
+    count: int
+    damage_class: str | None
+    severity: str
+    source: str
+    needs_review: bool
 
 
 @dataclass(frozen=True)
@@ -48,6 +64,7 @@ class TreatmentLine:
     tools_ar: tuple[str, ...]
     specialist_required: bool
     source_ids: tuple[str, ...]
+    locations: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -95,6 +112,10 @@ class WallReport:
     quantities_note_ar: str
     sources: tuple[SourceLine, ...]
     agreement: ModelAgreement
+    elements: tuple[ElementLine, ...] = ()
+    field_inspected_at: datetime | None = None
+    field_notes: str = ""
+    corrections_logged: int = 0
 
     @property
     def wall_area_m2(self) -> float:
@@ -102,7 +123,13 @@ class WallReport:
 
     @property
     def damaged_area_m2(self) -> float:
+        if self.elements:
+            return sum(e.area_m2 + e.length_m * LINE_BAND_M + e.count * POINT_AREA_M2 for e in self.elements)
         return len(self.cells) * self.cell_area_m2
+
+    @property
+    def needs_review(self) -> int:
+        return sum(1 for e in self.elements if e.needs_review)
 
     @property
     def damaged_share(self) -> float:
@@ -127,6 +154,22 @@ def damage_totals(cells: Iterable[ReportCell], cell_area_m2: float) -> tuple[Dam
             cells=len(group),
             area_m2=len(group) * cell_area_m2,
             worst_severity=max((c.severity for c in group), key=SEVERITY_RANK.__getitem__),
+        )
+        for damage_type, group in grouped.items()
+    ]
+    return tuple(sorted(totals, key=lambda t: (-SEVERITY_RANK[t.worst_severity], -t.cells, t.damage_type)))
+
+
+def element_totals(elements: Iterable[ElementLine]) -> tuple[DamageTotal, ...]:
+    grouped: dict[str, list[ElementLine]] = {}
+    for element in elements:
+        grouped.setdefault(element.damage_type, []).append(element)
+    totals = [
+        DamageTotal(
+            damage_type=damage_type,
+            cells=len(group),
+            area_m2=sum(e.area_m2 + e.length_m * LINE_BAND_M + e.count * POINT_AREA_M2 for e in group),
+            worst_severity=max((e.severity for e in group), key=SEVERITY_RANK.__getitem__),
         )
         for damage_type, group in grouped.items()
     ]

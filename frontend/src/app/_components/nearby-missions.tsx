@@ -24,23 +24,28 @@ export function NearbyMissions() {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-clay/40 p-4">
+    <section className="flex flex-col gap-3 rounded-xl bg-white/75 p-4">
       <h2 className="text-xl font-bold">مهام قريبة منك</h2>
       <p className="text-sm">بعض الواجهات تحتاج صورة جديدة. صوّرها لتساعد في التأكد من حالتها.</p>
       {missions === null ? (
-        <button onClick={look} disabled={loading} className="self-start rounded-full border border-ink px-5 py-2">
+        <button
+          type="button"
+          onClick={look}
+          disabled={loading}
+          className="min-h-11 self-start rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand disabled:opacity-50"
+        >
           {loading ? "نبحث…" : "ابحث بموقعي الآن"}
         </button>
       ) : missions.length === 0 ? (
-        <p>لا توجد مهام قريبة الآن.</p>
+        <p>لا مهام قريبة منك الآن. يمكنك تصوير أي واجهة تراثية أمامك.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {missions.map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-3 rounded-lg bg-white/70 p-3">
+            <li key={m.id} className="flex items-center justify-between gap-3 rounded-xl bg-white/60 p-3">
               <span>{m.instruction_ar}</span>
               <Link
                 href={`/capture?mission=${m.id}&site=${m.site_id}&facade=${m.facade_id}`}
-                className="shrink-0 rounded-full bg-mud px-4 py-1 text-sand"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-mud px-5 text-sand hover:bg-ink"
               >
                 صوّر
               </Link>
@@ -48,7 +53,7 @@ export function NearbyMissions() {
           ))}
         </ul>
       )}
-      {error && <p className="text-sm text-urgent">{error}</p>}
+      {error && <p role="alert" className="text-sm text-urgent">{error}</p>}
     </section>
   );
 }

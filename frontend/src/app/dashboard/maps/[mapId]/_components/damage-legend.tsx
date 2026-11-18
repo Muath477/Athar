@@ -1,6 +1,7 @@
 import { colorFor, severityOpacity } from "@/lib/damage-palette";
 import { damageTypeAr, severityAr } from "@/lib/labels";
 import type { DamageMap, MapCell } from "@/lib/maps";
+import { cells as cellForms, countAr } from "@/lib/plural";
 
 export function DamageLegend({
   map,
@@ -73,7 +74,7 @@ export function DamageLegend({
 
       <p className="border-t border-clay/40 pt-3 text-base">
         <strong className="tabular-nums">{Math.round((damaged / total) * 100).toLocaleString("ar-SA")}٪</strong> من
-        الجدار متضرر ({damaged.toLocaleString("ar-SA")} من {total.toLocaleString("ar-SA")} خلية)
+        الجدار متضرر ({damaged.toLocaleString("ar-SA")} من {countAr(total, cellForms)})
       </p>
     </aside>
   );

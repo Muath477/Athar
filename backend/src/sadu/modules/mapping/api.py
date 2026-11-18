@@ -26,19 +26,32 @@ from sadu.modules.mapping.domain.damage_map import (
     MapCell,
     MapStatus,
     apply_corrections,
-    tally_areas,
 )
+from sadu.modules.mapping.domain.elements import (
+    EditAction,
+    Element,
+    ElementEdit,
+    Measurement,
+    apply_edits,
+    element_from_json,
+    element_json,
+    elements_from_cells,
+    location_label,
+    measure,
+)
+from sadu.modules.mapping.domain.glossary import CLASS_VALUES, GLOSSARY, ClassKind, Geometry, GlossaryEntry
 from sadu.modules.mapping.domain.grid import CellRef, Grid, WallSize
 from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.modules.mapping.domain.scoring import MapScore, ScoredPair, TypeScore, score_maps
+from sadu.modules.mapping.domain.workflow import Step, StepState, WorkflowFacts, workflow
 from sadu.modules.mapping.infrastructure.http_detector import (
     HttpCellClassifier,
     HttpDetectionModel,
     HttpModelClient,
     LabelMap,
 )
-from sadu.modules.mapping.infrastructure.imaging import RectifiedWall, paint_damage, rectify_wall
+from sadu.modules.mapping.infrastructure.imaging import RectifiedWall, paint_elements, rectify_wall
 from sadu.modules.mapping.infrastructure.orm import DamageMapCellRow, DamageMapRow
 from sadu.modules.treatments import api as treatments
 from sadu.shared.config import DetectorKind, Settings
@@ -49,7 +62,9 @@ from sadu.shared.storage import ObjectStore, new_object_key
 from sadu.shared.vocabulary import DamageType, ModelConfidence, RetakeReason, Severity
 
 __all__ = [
+    "CLASS_VALUES",
     "DAMAGE_COLORS",
+    "GLOSSARY",
     "MAP_DAMAGE_TYPES",
     "SEVERITY_OPACITY",
     "CellChange",
@@ -57,16 +72,31 @@ __all__ = [
     "CellRef",
     "CellSource",
     "ChangeKind",
+    "ClassKind",
     "DamageDetector",
     "DetectionInput",
     "DetectionOutput",
+    "EditAction",
+    "Element",
+    "ElementEdit",
+    "Geometry",
+    "GlossaryEntry",
     "Grid",
     "MapCell",
     "MapScore",
     "MapStatus",
+    "Measurement",
+    "ModelConfidence",
     "Quad",
+    "Step",
+    "StepState",
     "TypeScore",
     "WallSize",
+    "edit_elements",
+    "location_label",
+    "map_workflow",
+    "measure",
+    "record_field_inspection",
 ]
 
 DEFAULT_LIST_LIMIT = 100
@@ -131,10 +161,19 @@ class MapView:
     model_cells: tuple[MapCell, ...]
     created_at: datetime
     approved_at: datetime | None
+    elements: tuple[Element, ...] = ()
+    elements_edited: bool = False
+    correction_log: tuple[dict[str, Any], ...] = ()
+    field_inspected_at: datetime | None = None
+    field_notes: str = ""
 
     @property
     def damaged_area_m2(self) -> float:
-        return len(self.cells) * self.grid.cell_area_m2(self.wall)
+        return round(sum(measure(e, self.wall).footprint_m2 for e in self.elements), 3)
+
+    @property
+    def low_confidence(self) -> tuple[Element, ...]:
+        return tuple(e for e in self.elements if e.needs_review)
 
 
 @dataclass(frozen=True)
@@ -223,6 +262,10 @@ async def save_map(
         detector_status=run.status,
         summary_ar=run.output.summary_ar,
         model_cells=[_cell_json(c) for c in run.output.cells],
+        elements=[element_json(e) for e in elements_from_cells(run.output.cells, prepared.grid)],
+        elements_edited=False,
+        correction_log=[],
+        field_notes="",
         status=MapStatus.DRAFT,
         created_by=created_by,
     )
@@ -241,7 +284,11 @@ async def get_map(session: AsyncSession, map_id: UUID) -> MapView:
 
 
 async def list_maps(
-    session: AsyncSession, *, site_id: UUID | None = None, facade_id: UUID | None = None
+    session: AsyncSession,
+    *,
+    site_id: UUID | None = None,
+    facade_id: UUID | None = None,
+    limit: int | None = DEFAULT_LIST_LIMIT,
 ) -> list[MapSummary]:
     damaged = (
         select(
@@ -256,7 +303,7 @@ async def list_maps(
         select(DamageMapRow, func.coalesce(damaged.c.damaged, 0), func.coalesce(damaged.c.urgent, 0))
         .outerjoin(damaged, damaged.c.map_id == DamageMapRow.id)
         .order_by(DamageMapRow.created_at.desc())
-        .limit(DEFAULT_LIST_LIMIT)
+        .limit(limit)
     )
     if site_id is not None:
         query = query.where(DamageMapRow.site_id == site_id)
@@ -270,8 +317,10 @@ async def list_maps(
             wall_name=row.wall_name,
             status=MapStatus(row.status),
             detector_status=DetectorStatus(row.detector_status),
-            damaged_cells=int(count),
-            urgent_cells=int(urgent),
+            damaged_cells=len(row.elements) if row.elements else int(count),
+            urgent_cells=sum(1 for e in row.elements if e.get("severity") == Severity.URGENT)
+            if row.elements
+            else int(urgent),
             total_cells=row.rows * row.cols,
             rectified_key=row.rectified_key,
             created_at=row.created_at,
@@ -284,6 +333,8 @@ async def correct_cells(
     session: AsyncSession, map_id: UUID, corrections: Iterable[CellCorrection]
 ) -> MapView:
     row = await _draft_row(session, map_id)
+    if row.elements_edited:
+        raise Conflict("elements_already_edited")
     grid = Grid(row.rows, row.cols)
     try:
         cells = apply_corrections(await _cells(session, map_id), corrections, grid)
@@ -291,12 +342,49 @@ async def correct_cells(
         raise SaduError("validation_failed", status=422) from error
     await session.execute(delete(DamageMapCellRow).where(DamageMapCellRow.map_id == map_id))
     _add_cell_rows(session, map_id, cells)
+    if not row.elements_edited:
+        row.elements = [element_json(e) for e in elements_from_cells(cells, grid)]
     await session.flush()
     return _view(row, cells)
 
 
+async def edit_elements(
+    session: AsyncSession, map_id: UUID, edits: Iterable[ElementEdit], editor_id: UUID
+) -> MapView:
+    row = await _draft_row(session, map_id)
+    cells = await _cells(session, map_id)
+    current = _view(row, cells).elements
+    try:
+        used = [str(entry.get("element_id", "")) for entry in row.correction_log]
+        result = apply_edits(current, edits, used)
+    except ValueError as error:
+        raise SaduError("validation_failed", status=422) from error
+    stamp = {"at": datetime.now(UTC).isoformat(), "by": str(editor_id)}
+    row.elements = [element_json(e) for e in result.elements]
+    row.elements_edited = True
+    row.correction_log = [*row.correction_log, *({**entry, **stamp} for entry in result.log)]
+    await session.flush()
+    return _view(row, cells)
+
+
+async def record_field_inspection(
+    session: AsyncSession, map_id: UUID, inspector_id: UUID, notes: str
+) -> MapView:
+    row = await _draft_row(session, map_id)
+    row.field_inspected_at = datetime.now(UTC)
+    row.field_inspected_by = inspector_id
+    row.field_notes = notes
+    await session.flush()
+    return _view(row, await _cells(session, map_id))
+
+
 async def approve_map(session: AsyncSession, map_id: UUID, reviewer_id: UUID) -> MapView:
     row = await _draft_row(session, map_id)
+    if row.field_inspected_at is None:
+        raise Conflict("field_inspection_required")
+    cells = await _cells(session, map_id)
+    if _view(row, cells).low_confidence:
+        raise Conflict("low_confidence_unreviewed")
     row.status = MapStatus.APPROVED
     row.approved_by = reviewer_id
     row.approved_at = datetime.now(UTC)
@@ -324,7 +412,7 @@ async def previous_approved(session: AsyncSession, view: MapView) -> MapView | N
 
 async def damage_overlay(store: ObjectStore, view: MapView) -> bytes:
     rectified = await store.get(view.rectified_key)
-    return await asyncio.to_thread(paint_damage, rectified, view.grid, view.cells)
+    return await asyncio.to_thread(paint_elements, rectified, view.grid, view.elements)
 
 
 def changes_between(before: MapView, after: MapView) -> list[CellChange] | None:
@@ -334,11 +422,36 @@ def changes_between(before: MapView, after: MapView) -> list[CellChange] | None:
 
 
 def treatment_plan(view: MapView, catalog: treatments.Catalog) -> treatments.TreatmentPlan:
+    groups: dict[tuple[DamageType, Severity], list[Element]] = {}
+    for element in view.elements:
+        groups.setdefault((element.damage_type, element.severity), []).append(element)
     areas = [
-        treatments.DamagedArea(t.damage_type, t.severity, t.area_m2, t.cells)
-        for t in tally_areas(view.cells, view.grid, view.wall)
+        treatments.DamagedArea(
+            damage_type,
+            severity,
+            sum(measure(e, view.wall).footprint_m2 for e in elements),
+            len(elements),
+            tuple(f"{e.id} · {location_label(e, view.grid)}" for e in elements),
+        )
+        for (damage_type, severity), elements in groups.items()
     ]
     return treatments.plan_treatments(areas, catalog)
+
+
+def map_workflow(view: MapView, plan: treatments.TreatmentPlan) -> tuple[Step, ...]:
+    corrections = len(view.correction_log) + sum(1 for c in view.cells if c.source is CellSource.EXPERT)
+    return workflow(
+        WorkflowFacts(
+            elements=len(view.elements),
+            low_confidence=len(view.low_confidence),
+            treatments_matched=len(plan.items),
+            treatments_unmatched=len(plan.unmatched),
+            material_lines=sum(len(item.materials) for item in plan.items),
+            corrections=corrections,
+            field_inspected=view.field_inspected_at is not None,
+            approved=view.status is MapStatus.APPROVED,
+        )
+    )
 
 
 async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapScore:
@@ -441,4 +554,17 @@ def _view(row: DamageMapRow, cells: tuple[MapCell, ...]) -> MapView:
         model_cells=_cells_from_json(row.model_cells),
         created_at=row.created_at,
         approved_at=row.approved_at,
+        elements=_elements(row, cells),
+        elements_edited=bool(row.elements_edited),
+        correction_log=tuple(row.correction_log or ()),
+        field_inspected_at=row.field_inspected_at,
+        field_notes=row.field_notes or "",
     )
+
+
+def _elements(row: DamageMapRow, cells: tuple[MapCell, ...]) -> tuple[Element, ...]:
+    if row.elements:
+        return tuple(element_from_json(item) for item in row.elements)
+    if row.elements_edited:
+        return ()
+    return elements_from_cells(cells, Grid(row.rows, row.cols))

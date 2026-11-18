@@ -23,6 +23,11 @@
       "id": "gci-course-2025",
       "title": "International Course on the Conservation of Earthen Architecture: Accompanying Essays (Getty Conservation Institute and DCT Abu Dhabi, 2025)",
       "url": "https://www.getty.edu/conservation/publications_resources/pdf_publications/international-course-conservation-of-earthen-architecture-accompanying-essays.html"
+    },
+    {
+      "id": "dgda-brief",
+      "title": "Diriyah Gate Development Authority, agentX Riyadh 2026 challenge brief: damage-to-treatment examples (indicative, presented to participants, not published online)",
+      "url": "https://www.dgda.gov.sa"
     }
   ],
   "treatments": [
@@ -268,6 +273,133 @@
       "tools_ar": ["فرشاة ناعمة", "مالج صغير", "كاميرا"],
       "specialist_required": false,
       "sources": ["gci-nonfabric"]
+    },
+    {
+      "code": "salt-dry-brush",
+      "damage_type": "salt_efflorescence",
+      "severities": ["watch"],
+      "title_ar": "إزالة تزهّر الأملاح بالفرشاة الجافة",
+      "steps_ar": [
+        "حدّد مصدر الرطوبة الذي يحمل الأملاح إلى السطح وعالجه أولًا.",
+        "أزل الأملاح المتزهّرة بفرشاة ناعمة جافة دون ماء.",
+        "اجمع الأملاح بمكنسة شفط حتى لا تعود إلى الجدار.",
+        "أعد الفحص بعد موسم الأمطار."
+      ],
+      "materials": [],
+      "tools_ar": ["فراشي ناعمة", "مكنسة شفط"],
+      "specialist_required": false,
+      "sources": ["dgda-brief", "gci-nonfabric"]
+    },
+    {
+      "code": "salt-poultice",
+      "damage_type": "salt_efflorescence",
+      "severities": ["moderate", "urgent"],
+      "title_ar": "سحب الأملاح بالكمادات بعد معالجة الرطوبة",
+      "steps_ar": [
+        "عالج مصدر الرطوبة أولًا.",
+        "أزل الأملاح السطحية بالفرشاة الجافة.",
+        "جرّب كمادة سحب الأملاح على منطقة صغيرة وراقب أثرها.",
+        "طبّق الكمادات على المساحة المتأثرة إذا نجحت التجربة، وأزلها بعد جفافها."
+      ],
+      "materials": [
+        {"name_ar": "كمادات سحب الأملاح", "name_en": "Desalination poultice", "unit_ar": "كغ", "per_m2": 4},
+        {"name_ar": "ماء مقطّر", "name_en": "Distilled water", "unit_ar": "لتر", "per_m2": 3}
+      ],
+      "tools_ar": ["فراشي ناعمة", "مكنسة شفط", "مالج"],
+      "specialist_required": true,
+      "sources": ["dgda-brief", "gci-nonfabric"]
+    },
+    {
+      "code": "gully-fill",
+      "damage_type": "rain_gully",
+      "severities": ["watch", "moderate", "urgent"],
+      "title_ar": "إصلاح التصريف وملء أخاديد الأمطار",
+      "steps_ar": [
+        "أصلح الشرفات وأزل انسداد المزاريب التي توجّه الماء إلى الجدار.",
+        "نظّف الأخدود من الأجزاء المفككة.",
+        "املأ الأخدود بمونة طينية متوافقة على طبقات، واضغط كل طبقة.",
+        "طابق ملمس السطح مع اللياسة المحيطة."
+      ],
+      "materials": [
+        {"name_ar": "مونة طينية", "name_en": "Earth mortar", "unit_ar": "كغ", "per_m2": 25}
+      ],
+      "tools_ar": ["مسطرين", "فراشي ناعمة", "سلم"],
+      "specialist_required": false,
+      "sources": ["dgda-brief", "gci-nonfabric"]
+    },
+    {
+      "code": "cavity-fill",
+      "damage_type": "cavity",
+      "severities": ["watch", "moderate", "urgent"],
+      "title_ar": "تنظيف الفجوات والجحور وملؤها",
+      "steps_ar": [
+        "نظّف الفجوة من الغبار والمخلفات.",
+        "كافح الآفات المسببة للجحور قبل الإغلاق.",
+        "املأ الفجوة بمونة الطين، واستعمل كسر اللبن للفراغات الكبيرة."
+      ],
+      "materials": [
+        {"name_ar": "مونة طينية", "name_en": "Earth mortar", "unit_ar": "كغ", "per_m2": 20},
+        {"name_ar": "كسر لبن", "name_en": "Mud-brick fragments", "unit_ar": "كغ", "per_m2": 10}
+      ],
+      "tools_ar": ["ملعقة صغيرة", "مسطرين"],
+      "specialist_required": false,
+      "sources": ["dgda-brief", "gci-fabric"]
+    },
+    {
+      "code": "wall-head-cap",
+      "damage_type": "wall_head",
+      "severities": ["watch", "moderate"],
+      "title_ar": "تتويج رأس الجدار بميول لتصريف المطر",
+      "steps_ar": [
+        "أزل الأجزاء المفككة من رأس الجدار.",
+        "أعد بناء الطبقة العلوية باللبن والطين المحلي.",
+        "شكّل التتويج بميول تصرف المطر بعيدًا عن وجه الجدار."
+      ],
+      "materials": [
+        {"name_ar": "طين محلي", "name_en": "Local earth", "unit_ar": "كغ", "per_m2": 40},
+        {"name_ar": "تبن", "name_en": "Straw", "unit_ar": "كغ", "per_m2": 1.5},
+        {"name_ar": "لبن", "name_en": "Mud bricks", "unit_ar": "حبة", "per_m2": 12}
+      ],
+      "tools_ar": ["مسطرين", "ميزان ماء"],
+      "specialist_required": false,
+      "sources": ["dgda-brief", "gci-structural"]
+    },
+    {
+      "code": "wall-head-rebuild",
+      "damage_type": "wall_head",
+      "severities": ["urgent"],
+      "title_ar": "إعادة بناء رأس الجدار المنهار بإشراف مختص",
+      "steps_ar": [
+        "أبعد الزوار عن الجدار حتى يُفحص.",
+        "يقيّم المختص الإنشائي ثبات الجزء العلوي.",
+        "أعد البناء باللبن والطين المحلي وتوّج الجدار بميول لتصريف المطر."
+      ],
+      "materials": [
+        {"name_ar": "طين محلي", "name_en": "Local earth", "unit_ar": "كغ", "per_m2": 60},
+        {"name_ar": "تبن", "name_en": "Straw", "unit_ar": "كغ", "per_m2": 2},
+        {"name_ar": "لبن", "name_en": "Mud bricks", "unit_ar": "حبة", "per_m2": 20}
+      ],
+      "tools_ar": ["مسطرين", "ميزان ماء", "سقالة"],
+      "specialist_required": true,
+      "sources": ["dgda-brief", "gci-structural"]
+    },
+    {
+      "code": "cement-remove",
+      "damage_type": "cement_repair",
+      "severities": ["watch", "moderate", "urgent"],
+      "title_ar": "إزالة الترميمات الإسمنتية واستبدالها بمونة طينية",
+      "steps_ar": [
+        "وثّق الترميم الإسمنتي وحدوده بالصور قبل أي عمل.",
+        "أزله يدويًا بحذر دون إتلاف اللبن الأصلي حوله.",
+        "استبدله بمونة طينية متوافقة مع تركيب الجدار.",
+        "لا تستعمل الإسمنت أو حديد التسليح أو أي مادة حديثة غير متوافقة مع الطين."
+      ],
+      "materials": [
+        {"name_ar": "مونة طينية", "name_en": "Earth mortar", "unit_ar": "كغ", "per_m2": 30}
+      ],
+      "tools_ar": ["أزاميل يدوية", "فراشي"],
+      "specialist_required": true,
+      "sources": ["dgda-brief", "gci-fabric"]
     }
   ]
 }

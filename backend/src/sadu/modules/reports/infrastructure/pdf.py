@@ -21,6 +21,7 @@ TEMPLATES.globals.update(
     damage=lambda code: arabic.DAMAGE_TYPE_AR.get(code, code),
     severity=lambda code: arabic.SEVERITY_AR.get(code, code),
     source=lambda code: arabic.SOURCE_AR.get(code, code),
+    damage_class=lambda code: arabic.CLASS_AR.get(code, code) if code else "—",
     change=lambda code: arabic.CHANGE_AR.get(code, code),
     detector=lambda code: arabic.DETECTOR_AR.get(code, code),
 )

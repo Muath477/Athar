@@ -106,7 +106,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await store.ensure_bucket()
     llm = build_llm(settings)
     app.state.damage_detector = mapping.build_detector(settings, llm)
-    app.state.scan_queue = watch.ScanQueue(unit_of_work, store, watch.build_scene_source(settings))
+    app.state.scan_queue = watch.ScanQueue(
+        unit_of_work,
+        store,
+        watch.build_scene_source(settings),
+        notifier=watch.build_notifier(settings),
+        public_origin=settings.sadu_public_origin,
+    )
     deps = agents.Dependencies(
         unit_of_work=unit_of_work,
         store=store,

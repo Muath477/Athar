@@ -68,6 +68,8 @@ async def plan_missions(
 ) -> list[MissionView]:
     now = now or datetime.now(UTC)
     await expire_missions(session, now)
+    if not (await sites.get_site(session, site_id)).field_photography_permitted:
+        return []
     facades = await sites.list_facades(session, site_id)
     facade_ids = [f.id for f in facades]
     last_photos = await capture.last_usable_photo_per_facade(session, site_id)
@@ -112,6 +114,8 @@ async def create_mission(
     session: AsyncSession, facade_id: UUID, reason: MissionReason, finding_id: UUID | None = None
 ) -> MissionView:
     facade = await sites.get_facade(session, facade_id)
+    if not (await sites.get_site(session, facade.site_id)).field_photography_permitted:
+        raise Conflict("field_photography_not_permitted")
     if any(m.facade_id == facade_id for m in await list_missions(session, site_id=facade.site_id)):
         raise Conflict("mission_already_open")
     return await _open(

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import Expert, Inspector
+from sadu.modules.admin.interface.auth import Expert, Inspector, Staff
 from sadu.modules.watch import api as watch
 from sadu.shared.storage import ObjectStore
 from sadu.shared.web import Session, State
@@ -54,6 +54,11 @@ class LatLonOut(BaseModel):
     lon: float
 
 
+class SignalKeyOut(BaseModel):
+    threat: str
+    zone: str
+
+
 class SiteRiskOut(BaseModel):
     site_id: str
     slug: str
@@ -66,12 +71,17 @@ class SiteRiskOut(BaseModel):
     scanning: bool
     latest: ScanOut | None
     failed_attempt: ScanOut | None
+    trend: str | None
+    confidence: str | None
+    confirmed_threats: list[SignalKeyOut]
+    alert: bool
 
 
 class WatchOverviewOut(BaseModel):
     source: str
     is_sample: bool
     threat_colors: dict[str, str]
+    alerts_pending: int
     sites: list[SiteRiskOut]
 
 
@@ -126,7 +136,7 @@ def scan_out(view: watch.ScanView, store: ObjectStore) -> ScanOut:
 
 
 @router.get("/watch/sites")
-async def watch_overview(_: Inspector, session: Session, state: State, request: Request) -> WatchOverviewOut:
+async def watch_overview(_: Staff, session: Session, state: State, request: Request) -> WatchOverviewOut:
     queue: watch.ScanQueue = request.app.state.scan_queue
     source = queue.source
     ranked = await watch.rank_sites(session, queue)
@@ -134,6 +144,11 @@ async def watch_overview(_: Inspector, session: Session, state: State, request: 
         source=source.name,
         is_sample=source.is_sample,
         threat_colors={str(k): v for k, v in watch.THREAT_COLORS.items()},
+        alerts_pending=sum(
+            1
+            for r in ranked
+            if r.warning and r.warning.alert and r.latest and r.latest.acknowledged_at is None
+        ),
         sites=[
             SiteRiskOut(
                 site_id=str(r.site.id),
@@ -147,6 +162,13 @@ async def watch_overview(_: Inspector, session: Session, state: State, request: 
                 scanning=r.scanning,
                 latest=scan_out(r.latest, state.store) if r.latest else None,
                 failed_attempt=scan_out(r.failed_attempt, state.store) if r.failed_attempt else None,
+                trend=r.warning.trend if r.warning else None,
+                confidence=r.warning.confidence if r.warning else None,
+                confirmed_threats=[
+                    SignalKeyOut(threat=t, zone=z)
+                    for t, z in sorted(r.warning.confirmed_threats if r.warning else ())
+                ],
+                alert=bool(r.warning and r.warning.alert),
             )
             for r in ranked
         ],
@@ -154,7 +176,7 @@ async def watch_overview(_: Inspector, session: Session, state: State, request: 
 
 
 @router.get("/watch/sites/{site_id}/scans")
-async def list_scans(site_id: UUID, _: Inspector, session: Session, state: State) -> list[ScanOut]:
+async def list_scans(site_id: UUID, _: Staff, session: Session, state: State) -> list[ScanOut]:
     return [scan_out(v, state.store) for v in await watch.site_scans(session, site_id)]
 
 

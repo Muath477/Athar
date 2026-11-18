@@ -78,23 +78,46 @@
 
   <div class="facts">
     <div class="fact"><span class="value num">{{ number(r.damaged_area_m2) }} م²</span><span class="label">مساحة متضررة من {{ number(r.wall_area_m2) }} م² ({{ percent(r.damaged_share) }})</span></div>
-    <div class="fact urgent"><span class="value num">{{ digits(r.urgent_cells) }}</span><span class="label">خلية عاجلة</span></div>
-    <div class="fact"><span class="value num">{{ digits(r.totals|length) }}</span><span class="label">أنواع تلف</span></div>
+    <div class="fact"><span class="value num">{{ digits(r.elements|length) }}</span><span class="label">عنصر تلف{% if r.needs_review %}، {{ digits(r.needs_review) }} بثقة منخفضة{% endif %}</span></div>
+    <div class="fact"><span class="value">{% if r.field_inspected_at %}{{ date(r.field_inspected_at) }}{% else %}لم يتم{% endif %}</span><span class="label">الفحص الميداني</span></div>
     <div class="fact"><span class="value">{% if r.needs_specialist %}نعم{% else %}لا{% endif %}</span><span class="label">يحتاج إشراف مختص</span></div>
   </div>
 
   <figure>
     <img src="data:image/jpeg;base64,{{ overlay }}" alt="مخطط التلف على صورة الجدار المصححة">
-    <figcaption>صورة الجدار بعد تصحيح المنظور، مقسمة إلى {{ digits(r.rows) }} صفوف × {{ digits(r.cols) }} أعمدة؛ كل خلية {{ number(r.cell_area_m2, 2) }} م². اللون يدل على نوع التلف وقوته على شدته.</figcaption>
+    <figcaption>صورة الجدار بعد تصحيح المنظور مع الشبكة المرجعية ({{ digits(r.rows) }} صفوف × {{ digits(r.cols) }} أعمدة). المضلعات مساحات والخطوط أطوال والنقاط أعداد، بألوان المسرد الموحد، وكل عنصر يحمل رقمه.</figcaption>
     <div class="legend">
       {% for t in r.totals %}<span><span class="swatch" style="background: {{ r.damage_colors[t.damage_type] }}"></span>{{ damage(t.damage_type) }}</span>{% endfor %}
     </div>
   </figure>
 
+  <h2>عناصر التلف</h2>
+  {% if r.elements %}
+  <table>
+    <thead><tr><th>العنصر</th><th>النوع</th><th>الموقع</th><th>القياس</th><th>الفئة</th><th>الشدة</th><th>المعد</th></tr></thead>
+    <tbody>
+    {% for e in r.elements %}
+      <tr>
+        <td><bdi>{{ e.id }}</bdi>{% if e.needs_review %} <span class="sev-urgent">ثقة منخفضة</span>{% endif %}</td>
+        <td><span class="swatch" style="background: {{ r.damage_colors[e.damage_type] }}"></span>{{ damage(e.damage_type) }}</td>
+        <td><bdi>{{ e.location }}</bdi></td>
+        <td class="num">{% if e.count %}{{ digits(e.count) }}{% elif e.length_m %}{{ number(e.length_m) }} م{% else %}{{ number(e.area_m2) }} م²{% endif %}</td>
+        <td>{{ damage_class(e.damage_class) }}</td>
+        <td class="{% if e.severity == 'urgent' %}sev-urgent{% endif %}">{{ severity(e.severity) }}</td>
+        <td>{{ source(e.source) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="meta">يحمل كل عنصر رقم الجدار وتاريخ المسح ومصدره (النموذج أو المختص) ودرجة شدته، ويُحفظ اسم المحرر في سجل التصحيحات. سجل التصحيحات: {{ digits(r.corrections_logged) }} تعديل.{% if r.field_notes %} ملاحظات الفحص الميداني: {{ r.field_notes }}{% endif %}</p>
+  {% else %}
+  <p>لا يظهر في هذا المخطط تلف على الجدار.</p>
+  {% endif %}
+
   <h2>ملخص التلف</h2>
   {% if r.totals %}
   <table>
-    <thead><tr><th>النوع</th><th>الخلايا</th><th>المساحة</th><th>أشد درجة</th></tr></thead>
+    <thead><tr><th>النوع</th><th>العناصر</th><th>المساحة التقديرية</th><th>أشد درجة</th></tr></thead>
     <tbody>
     {% for t in r.totals %}
       <tr>
@@ -139,8 +162,9 @@
   {% for t in r.treatments %}
   <div class="treatment">
     <h3>{{ t.title_ar }}</h3>
-    <p class="meta">{{ damage(t.damage_type) }} · {{ severity(t.severity) }} · {{ digits(t.cells) }} خلية · {{ number(t.area_m2) }} م²
+    <p class="meta">{{ damage(t.damage_type) }} · {{ severity(t.severity) }} · {{ digits(t.cells) }} عنصر · {{ number(t.area_m2) }} م²
       {% if t.specialist_required %} · <span class="specialist">بإشراف مختص</span>{% endif %}</p>
+    {% if t.locations %}<p><strong>مواقع الاستخدام على الواجهة:</strong> {% for l in t.locations %}<bdi>{{ l }}</bdi>{% if not loop.last %}، {% endif %}{% endfor %}</p>{% endif %}
     <ol>{% for step in t.steps_ar %}<li>{{ step }}</li>{% endfor %}</ol>
     {% if t.materials %}<p><strong>المواد:</strong> {% for m in t.materials %}{{ m.name_ar }} {{ number(m.quantity) }} {{ m.unit_ar }}{% if not loop.last %}، {% endif %}{% endfor %}</p>{% endif %}
     {% if t.tools_ar %}<p><strong>الأدوات:</strong> {{ t.tools_ar|join("، ") }}</p>{% endif %}
@@ -150,7 +174,7 @@
   {% endfor %}
   {% if r.unmatched %}
   <h3>تلف بلا معالجة في الكتالوج</h3>
-  <ul>{% for u in r.unmatched %}<li>{{ damage(u.damage_type) }} · {{ severity(u.worst_severity) }} · {{ digits(u.cells) }} خلية — يحتاج رأي مختص.</li>{% endfor %}</ul>
+  <ul>{% for u in r.unmatched %}<li>{{ damage(u.damage_type) }} · {{ severity(u.worst_severity) }} · {{ digits(u.cells) }} عنصر — يحتاج رأي مختص.</li>{% endfor %}</ul>
   {% endif %}
 
   {% if r.material_totals %}

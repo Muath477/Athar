@@ -14,7 +14,7 @@ export function StoryView({ storyId }: { storyId: string | null }) {
 
   if (!storyId) {
     return (
-      <section className="rounded-xl bg-white/70 p-4">
+      <section className="rounded-xl bg-white/75 p-4">
         <p>ليس لدينا مصدر موثّق عن هذا المعلم بعد، لذلك لن نروي حكاية غير مؤكدة.</p>
       </section>
     );
@@ -22,7 +22,7 @@ export function StoryView({ storyId }: { storyId: string | null }) {
   if (!story) return <p>نحضّر الحكاية…</p>;
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl bg-white/70 p-4">
+    <section className="flex flex-col gap-3 rounded-xl bg-white/75 p-4">
       <h2 className="text-xl font-bold">حكاية المكان</h2>
       {story.audio_url && <audio controls src={story.audio_url} className="w-full" />}
       <ol className="flex flex-col gap-3 leading-loose">

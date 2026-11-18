@@ -68,39 +68,41 @@ export function CaptureFlow() {
 
   return (
     <div className="flex flex-col gap-5 pt-4">
-      <h1 className="text-2xl font-bold">صوّر الواجهة من الأمام</h1>
+      <h1 className="text-3xl font-bold leading-snug">صوّر الواجهة من الأمام</h1>
       <p className="text-sm leading-relaxed">
         قف أمام الواجهة واجعلها تملأ الإطار.
         {facadeId && " طابق الصورة الباهتة فوق الكاميرا قدر الإمكان."}
       </p>
 
-      <fieldset className="flex flex-col gap-2 rounded-xl bg-white/60 p-3 text-sm">
+      <fieldset className="flex flex-col gap-2 rounded-xl bg-white/60 p-4 text-sm">
         <legend className="sr-only">الموافقات</legend>
-        <label className="flex items-start gap-2">
+        <label className="flex min-h-11 items-start gap-2">
           <input
             type="checkbox"
             checked={consent.location}
             onChange={(e) => setConsent({ ...consent, location: e.target.checked })}
+            className="mt-0.5 size-5 shrink-0 accent-sadu"
           />
           <span>استخدم موقعي لتحديد المبنى. يُحذف الموقع بعد معرفة المبنى.</span>
         </label>
-        <label className="flex items-start gap-2">
+        <label className="flex min-h-11 items-start gap-2">
           <input
             type="checkbox"
             checked={consent.heading}
             onChange={(e) => setConsent({ ...consent, heading: e.target.checked })}
+            className="mt-0.5 size-5 shrink-0 accent-sadu"
           />
           <span>استخدم اتجاه الجوال لمعرفة الواجهة.</span>
         </label>
       </fieldset>
 
       {sending ? (
-        <p className="text-center text-lg">نرسل صورتك…</p>
+        <p role="status" className="text-center text-lg">نرسل صورتك…</p>
       ) : (
         <Camera overlayUrl={facadeId ? baselineUrl(facadeId) : null} onPhoto={send} />
       )}
       {error && (
-        <p role="alert" className="rounded-lg bg-urgent/10 p-3 text-urgent">
+        <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3">
           {error}
         </p>
       )}

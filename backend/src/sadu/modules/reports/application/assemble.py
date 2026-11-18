@@ -4,12 +4,14 @@ from sadu.modules.mapping import api as mapping
 from sadu.modules.reports.domain.wall_report import (
     ChangeLine,
     DamageTotal,
+    ElementLine,
     MaterialLine,
     ReportCell,
     SourceLine,
     TreatmentLine,
     WallReport,
     damage_totals,
+    element_totals,
     material_totals,
     model_agreement,
 )
@@ -31,6 +33,7 @@ def assemble_wall_report(
     treatment_lines = tuple(_treatment(item) for item in plan.items)
     changes = mapping.changes_between(previous, view) if previous else None
     cited = sorted({source_id for line in treatment_lines for source_id in line.source_ids})
+    element_lines = tuple(_element(e, view) for e in view.elements)
 
     return WallReport(
         map_id=str(view.id),
@@ -49,7 +52,7 @@ def assemble_wall_report(
         overlay_jpeg=overlay_jpeg,
         damage_colors={str(k): v for k, v in mapping.DAMAGE_COLORS.items()},
         cells=cells,
-        totals=damage_totals(cells, cell_area),
+        totals=element_totals(element_lines) if element_lines else damage_totals(cells, cell_area),
         previous_approved_at=previous.approved_at if previous else None,
         changes=tuple(_change(c) for c in changes) if changes is not None else None,
         treatments=treatment_lines,
@@ -62,6 +65,26 @@ def assemble_wall_report(
         quantities_note_ar=plan.quantities_note_ar,
         sources=tuple(SourceLine(s, catalog.sources[s].title, catalog.sources[s].url) for s in cited),
         agreement=model_agreement((_cell(c) for c in view.model_cells), cells),
+        elements=element_lines,
+        field_inspected_at=view.field_inspected_at,
+        field_notes=view.field_notes,
+        corrections_logged=len(view.correction_log),
+    )
+
+
+def _element(element: mapping.Element, view: mapping.MapView) -> ElementLine:
+    size = mapping.measure(element, view.wall)
+    return ElementLine(
+        id=element.id,
+        damage_type=str(element.damage_type),
+        location=mapping.location_label(element, view.grid),
+        area_m2=size.area_m2,
+        length_m=size.length_m,
+        count=size.count,
+        damage_class=element.damage_class,
+        severity=str(element.severity),
+        source=str(element.source),
+        needs_review=element.needs_review,
     )
 
 
@@ -90,4 +113,5 @@ def _treatment(item: treatments.PlanItem) -> TreatmentLine:
         tools_ar=item.treatment.tools_ar,
         specialist_required=item.treatment.specialist_required,
         source_ids=item.treatment.source_ids,
+        locations=item.locations,
     )

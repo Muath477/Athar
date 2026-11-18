@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from sadu.modules.admin.interface.auth import Inspector
+from sadu.modules.admin.interface.auth import Staff
 from sadu.modules.treatments import api as treatments
 from sadu.shared.web import State
 
@@ -59,7 +59,7 @@ def treatment_out(treatment: treatments.Treatment, catalog: treatments.Catalog) 
 
 
 @router.get("/treatments/catalog")
-async def get_catalog(_: Inspector, state: State) -> CatalogOut:
+async def get_catalog(_: Staff, state: State) -> CatalogOut:
     catalog = treatments.catalog_at(state.settings.treatment_catalog_path)
     return CatalogOut(
         version=catalog.version,

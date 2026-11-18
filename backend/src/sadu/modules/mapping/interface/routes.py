@@ -7,16 +7,20 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sadu.modules.admin import api as admin
-from sadu.modules.admin.interface.auth import Expert, Inspector
+from sadu.modules.admin.interface.auth import Expert, Inspector, Staff
 from sadu.modules.capture import api as capture
 from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.schemas import (
     AccuracyOut,
     CorrectionsIn,
+    ElementEditsIn,
+    FieldInspectionIn,
+    GlossaryEntryOut,
     MapOut,
     MapSummaryOut,
     NewMapMeta,
     accuracy_out,
+    glossary_out,
     map_out,
     summary_out,
 )
@@ -82,19 +86,24 @@ async def create_map(
 
 @router.get("/maps")
 async def list_maps(
-    _: Inspector, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
+    _: Staff, session: Session, state: State, site_id: UUID | None = None, facade_id: UUID | None = None
 ) -> list[MapSummaryOut]:
     summaries = await mapping.list_maps(session, site_id=site_id, facade_id=facade_id)
     return [summary_out(s, state.store) for s in summaries]
 
 
 @router.get("/maps/accuracy")
-async def map_accuracy(_: Inspector, session: Session, site_id: UUID | None = None) -> AccuracyOut:
+async def map_accuracy(_: Staff, session: Session, site_id: UUID | None = None) -> AccuracyOut:
     return accuracy_out(await mapping.accuracy(session, site_id))
 
 
+@router.get("/maps/glossary")
+async def map_glossary(_: Staff) -> list[GlossaryEntryOut]:
+    return glossary_out()
+
+
 @router.get("/maps/{map_id}")
-async def get_map(map_id: UUID, _: Inspector, session: Session, state: State) -> MapOut:
+async def get_map(map_id: UUID, _: Staff, session: Session, state: State) -> MapOut:
     view = await mapping.get_map(session, map_id)
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
 
@@ -119,6 +128,60 @@ async def correct_cells(
         target_type="damage_map",
         target_id=str(map_id),
         details={"cells": [c.cell for c in body.corrections]},
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
+
+
+@router.post("/maps/{map_id}/elements")
+async def edit_elements(
+    map_id: UUID, body: ElementEditsIn, user: Expert, session: Session, state: State, request: Request
+) -> MapOut:
+    try:
+        edits = [
+            mapping.ElementEdit(
+                edit.action,
+                edit.element_id,
+                mapping.Element(
+                    "new",
+                    edit.element.damage_type,
+                    tuple((float(p[0]), float(p[1])) for p in edit.element.points),
+                    edit.element.severity,
+                    mapping.ModelConfidence.HIGH,
+                    mapping.CellSource.EXPERT,
+                    edit.element.damage_class,
+                )
+                if edit.element is not None
+                else None,
+            )
+            for edit in body.edits
+        ]
+    except (ValueError, IndexError) as error:
+        raise SaduError("validation_failed", status=422) from error
+    view = await mapping.edit_elements(session, map_id, edits, user.id)
+    await admin.audit(
+        session,
+        actor_id=user.id,
+        action="map.edit_elements",
+        target_type="damage_map",
+        target_id=str(map_id),
+        details={"edits": [f"{e.action}:{e.element_id or 'new'}" for e in body.edits]},
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
+
+
+@router.post("/maps/{map_id}/field-inspection")
+async def record_field_inspection(
+    map_id: UUID, body: FieldInspectionIn, user: Expert, session: Session, state: State, request: Request
+) -> MapOut:
+    view = await mapping.record_field_inspection(session, map_id, user.id, body.notes.strip())
+    await admin.audit(
+        session,
+        actor_id=user.id,
+        action="map.field_inspection",
+        target_type="damage_map",
+        target_id=str(map_id),
         request_id=getattr(request.state, "request_id", None),
     )
     return map_out(view, state.store, _catalog(state), await mapping.previous_approved(session, view))
