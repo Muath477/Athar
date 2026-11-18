@@ -7,10 +7,15 @@ from sadu.modules.mapping.domain.grid import CellRef, Grid, WallSize
 from sadu.shared.vocabulary import DamageType, ModelConfidence, Severity
 
 MAP_DAMAGE_TYPES = (
-    DamageType.CRACK,
     DamageType.PLASTER_LOSS,
-    DamageType.MOISTURE,
+    DamageType.CRACK,
     DamageType.BASAL_EROSION,
+    DamageType.RAIN_GULLY,
+    DamageType.SALT_EFFLORESCENCE,
+    DamageType.CAVITY,
+    DamageType.WALL_HEAD,
+    DamageType.CEMENT_REPAIR,
+    DamageType.MOISTURE,
     DamageType.SURFACE_EROSION,
     DamageType.PARTIAL_COLLAPSE,
     DamageType.GRAFFITI,

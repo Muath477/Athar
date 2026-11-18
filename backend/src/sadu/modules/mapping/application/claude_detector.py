@@ -13,7 +13,7 @@ from sadu.shared.ports.llm import (
 )
 from sadu.shared.vocabulary import DamageType, ModelConfidence, RetakeReason, Severity
 
-PROMPT_VERSION = "wall-map-v1"
+PROMPT_VERSION = "wall-map-v2"
 NO_RETAKE = "none"
 _ENUM = "enum"
 
@@ -24,10 +24,15 @@ Each cell has its label printed in its top-left corner.
 
 List every grid cell where the wall shows damage, with the single most important damage type
 for that cell:
-- crack: a visible crack or fissure in the plaster or the bricks.
 - plaster_loss: the earthen plaster has fallen away and bricks or an older layer show through.
-- moisture: dark staining, salt bloom or softening caused by water.
-- basal_erosion: material lost at the foot of the wall, undercutting it.
+- crack: a visible crack or fissure in the plaster or the bricks.
+- basal_erosion: material lost at the foot of the wall from rising damp or splash, undercutting it.
+- rain_gully: a vertical channel or groove washed down the face by rainwater.
+- salt_efflorescence: white crystalline bloom or powdery salt on the surface.
+- cavity: a hole, burrow or pocket in the wall (insects, birds, rodents or lost bricks).
+- wall_head: damage to the top of the wall, its crenellations or parapet.
+- cement_repair: an earlier repair in cement or another modern material.
+- moisture: dark staining or softening caused by water, without salt bloom.
 - surface_erosion: a rough, washed or pitted surface where the outer layer is wearing away.
 - partial_collapse: part of the wall, parapet or an opening has fallen.
 - graffiti: writing, scratching or paint added by people.
