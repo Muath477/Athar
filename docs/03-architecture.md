@@ -187,7 +187,7 @@ REST under `/api/v1`, documented by FastAPI's generated OpenAPI 3.1 at `/api/v1/
 | `POST /passports` · `GET /passport` · `DELETE /passport` | token | Create anonymous passport; summary; delete everything. |
 | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` | public / session | Dashboard session. |
 | `GET /sites` | inspector+ | All sites. |
-| `GET /sites/nearby?lat=&lon=` · `GET /sites/{id}` · `GET /facades/{id}/baseline` | public | Site with facades for the visitor app; baseline photo for the retake overlay. |
+| `GET /sites/nearby?lat=&lon=` · `GET /sites/{id}` · `GET /facades/{id}/baseline` | public | Site with facades, location and boundary (lat/lon) for the visitor app and its 3D map; baseline photo for the retake overlay. |
 | `GET /sites/{id}/pins?label=&facade_id=&cursor=&limit=` | inspector+ | Published findings as pins. |
 | `GET /findings/{id}` | inspector+ | Evidence panel data (presigned URLs). |
 | `GET /review-queue` | expert | Findings paused for review. |
