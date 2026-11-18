@@ -9,6 +9,7 @@ ignore = ["PLR0913", "PLR2004", "S310", "S311"]
 "tests/**" = ["S101"]
 "notebooks/**" = ["E501", "E402", "S101", "S603", "S607", "B007"]
 "train/train.py" = ["PLC0415"]
+"data/fetch.py" = ["PLC0415", "S603"]
 
 [lint.isort]
 known-first-party = ["ml", "sadu"]

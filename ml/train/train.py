@@ -12,6 +12,7 @@ from unsloth.trainer import UnslothVisionDataCollator
 
 from ml import REPO_ROOT
 from ml.eval.evaluate import evaluate_rows
+from ml.eval.tags import evaluate_tags
 from ml.train.profiles import TrainConfig, fallback_ladder, load_config, pick_profile
 
 GPU_MISSING = (
@@ -132,6 +133,11 @@ def build_trainer(model: Any, tokenizer: Any, config: TrainConfig, train: list, 
     )
 
 
+def load_untrained(config: TrainConfig) -> TrainedModel:
+    model, tokenizer = load_model(config)
+    return TrainedModel(config, model, tokenizer, trainer=None)
+
+
 def train_once(config: TrainConfig) -> TrainedModel:
     model, tokenizer = load_model(config)
     train = with_images(read_rows(config.data.train), config)
@@ -220,6 +226,8 @@ def main() -> None:
         print(f"Merged 16-bit model saved to {save_merged(trained)}")
     test_rows = [r for r in read_rows(trained.config.data.test) if r["task"] == "wall_map"]
     report = evaluate_rows(test_rows, predict(trained, test_rows))
+    public_rows = read_rows(trained.config.data.public_test)
+    report["public_tags"] = evaluate_tags(public_rows, predict(trained, public_rows))
     metrics_path = resolve(trained.config.output_dir) / "metrics.json"
     metrics_path.write_text(json.dumps(report, ensure_ascii=False, indent=2))
     print(f"Test metrics saved to {metrics_path}")

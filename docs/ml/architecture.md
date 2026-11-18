@@ -14,7 +14,7 @@ flowchart LR
     workflow["draft map → field inspection<br/>→ expert approval"]
   end
   subgraph data [Data]
-    public["public CC BY 4.0 sets<br/>ml/data/collect.py"]
+    public["public CC BY 4.0 sets<br/>Zenodo, Mendeley, Hugging Face<br/>ml/data/collect.py"]
     build["build_dataset.py<br/>splits by site, report"]
   end
   subgraph colab [Colab GPU]
@@ -48,10 +48,13 @@ flowchart LR
 2. **Export.** A model engineer downloads the zip from `GET /api/v1/ml/training-export`. Only approved maps,
    plus draft maps as weak labels if asked; no user or visitor data. The export is audited.
 3. **Build.** `python -m ml.data.build_dataset` writes chat-format JSONL, splitting by site, and a class
-   balance report. Public crack and heritage-surface sets are added to training only, as their own tasks.
+   balance report. Public crack and heritage-surface sets (catalogue in `ml/data/sources.py`, fetched by
+   `ml/data/collect.py`) are added as their own tasks; 10% of their close-ups are held out in
+   `public_test.jsonl` and never trained on.
 4. **Train on Colab.** The notebook picks the profile from GPU memory (4B on the L4 by default), trains a bf16
    LoRA, keeps the best epoch by validation loss, and steps down on out-of-memory.
-5. **Evaluate.** On held-out sites: JSON validity, per-type cell precision, recall and F1 with the
+5. **Evaluate.** The base model is scored before training and the fine-tuned model after it, on the same
+   held-out public close-ups (JSON validity, exact tag match, precision and recall per tag). On held-out sites: JSON validity, per-type cell precision, recall and F1 with the
    backend's own `score_maps`, length and area error, and a table against the detector that drafted those
    maps. Metrics go into the registration body.
 6. **Export for inference.** Merged 16-bit weights for vLLM, GGUF Q4_K_M and Q8_0 plus the `mmproj`
@@ -71,7 +74,7 @@ flowchart LR
 ```bash
 python -m ml.data.export_athar --url https://athar.example --email engineer@example.org
 python -m ml.data.collect list
-python -m ml.data.collect organise --only rfsat_masonry
+python -m ml.data.collect organise --keep-going
 python -m ml.data.build_dataset
 python -m ml.train.train --config qwen35_4b_l4
 python -m ml.eval.predict --url http://127.0.0.1:8080/v1 --model athar-damage-v1
