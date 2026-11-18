@@ -52,6 +52,41 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "حاول بعد {minutes} دقيقة.",
         "en": "Try again in {minutes} minutes.",
     },
+    "problem.account_disabled.title": {"ar": "الحساب موقوف", "en": "Account disabled"},
+    "problem.account_disabled.detail": {
+        "ar": "أوقف مسؤول النظام هذا الحساب. تواصل معه لإعادة تفعيله.",
+        "en": "An administrator disabled this account. Ask them to reactivate it.",
+    },
+    "problem.password_change_required.title": {"ar": "غيّر كلمة المرور", "en": "Password change required"},
+    "problem.password_change_required.detail": {
+        "ar": "عيّن كلمة مرور جديدة قبل المتابعة.",
+        "en": "Set a new password before you continue.",
+    },
+    "problem.weak_password.title": {"ar": "كلمة المرور قصيرة", "en": "Password too short"},
+    "problem.weak_password.detail": {
+        "ar": "استخدم {min_length} حرفًا على الأقل.",
+        "en": "Use at least {min_length} characters.",
+    },
+    "problem.password_unchanged.title": {"ar": "كلمة المرور لم تتغير", "en": "Password unchanged"},
+    "problem.password_unchanged.detail": {
+        "ar": "اختر كلمة مرور مختلفة عن الحالية.",
+        "en": "Choose a password different from the current one.",
+    },
+    "problem.user_exists.title": {"ar": "الحساب موجود", "en": "User exists"},
+    "problem.user_exists.detail": {
+        "ar": "يوجد حساب بهذا البريد.",
+        "en": "An account with this email already exists.",
+    },
+    "problem.own_account.title": {"ar": "لا يمكن تعديل حسابك", "en": "Cannot change your own account"},
+    "problem.own_account.detail": {
+        "ar": "لا يغيّر المسؤول دوره ولا يوقف حسابه بنفسه. اطلب ذلك من مسؤول آخر.",
+        "en": "Administrators cannot change their own role or disable themselves. Ask another administrator.",
+    },
+    "problem.unknown_site.title": {"ar": "موقع غير معروف", "en": "Unknown site"},
+    "problem.unknown_site.detail": {
+        "ar": "أحد المواقع المختارة غير مسجل.",
+        "en": "One of the selected sites is not registered.",
+    },
     "problem.forbidden.title": {"ar": "غير مسموح", "en": "Forbidden"},
     "problem.forbidden.detail": {"ar": "لا تملك صلاحية لهذا الإجراء.", "en": "You cannot do this."},
     "problem.csrf_failed.title": {"ar": "طلب مرفوض", "en": "Request rejected"},

@@ -52,6 +52,7 @@ __all__ = [
     "build_notifier",
     "build_scene_source",
     "due_sites",
+    "get_scan",
     "rank_sites",
     "request_ground_check",
     "scan_site",
@@ -325,6 +326,10 @@ def _level_rank(scan: ScanView | None) -> int:
 
 def priority_of(scan: ScanView, *, world_heritage: bool) -> float:
     return priority(Risk(scan.score, scan.level, ()), world_heritage=world_heritage)
+
+
+async def get_scan(session: AsyncSession, scan_id: UUID) -> ScanView:
+    return _view(await _row(session, scan_id))
 
 
 async def acknowledge(session: AsyncSession, scan_id: UUID, user_id: UUID) -> ScanView:
