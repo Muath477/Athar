@@ -77,7 +77,13 @@ async def create_map(
             action="map.create",
             target_type="damage_map",
             target_id=str(view.id),
-            details={"detector": run.detector, "detector_status": run.status, "cells": len(view.cells)},
+            details={
+                "detector": run.detector,
+                "detector_status": run.status,
+                "cells": len(view.cells),
+                "model": run.output.model,
+                "prompt_version": run.output.prompt_version,
+            },
             request_id=getattr(request.state, "request_id", None),
         )
         previous = await mapping.previous_approved(session, view)

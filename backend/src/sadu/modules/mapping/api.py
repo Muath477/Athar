@@ -13,10 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sadu.modules.mapping.application.claude_detector import ClaudeGridDetector
 from sadu.modules.mapping.application.manual_detector import ManualOnly
 from sadu.modules.mapping.application.ports import (
+    ActiveModelLookup,
     DamageDetector,
     DetectionInput,
     DetectionOutput,
     DetectorUnavailable,
+    ModelChoice,
 )
 from sadu.modules.mapping.domain.changes import CellChange, ChangeKind, compare_maps
 from sadu.modules.mapping.domain.damage_map import (
@@ -53,6 +55,7 @@ from sadu.modules.mapping.infrastructure.http_detector import (
 )
 from sadu.modules.mapping.infrastructure.imaging import RectifiedWall, paint_elements, rectify_wall
 from sadu.modules.mapping.infrastructure.orm import DamageMapCellRow, DamageMapRow
+from sadu.modules.mapping.infrastructure.qwen_detector import QwenEndpoint, QwenVisionDetector
 from sadu.modules.treatments import api as treatments
 from sadu.shared.config import DetectorKind, Settings
 from sadu.shared.errors import Conflict, NotFound, SaduError
@@ -82,21 +85,28 @@ __all__ = [
     "Geometry",
     "GlossaryEntry",
     "Grid",
+    "LabelQuality",
     "MapCell",
     "MapScore",
     "MapStatus",
     "Measurement",
+    "ModelChoice",
     "ModelConfidence",
     "Quad",
     "Step",
     "StepState",
+    "TrainingExample",
     "TypeScore",
     "WallSize",
+    "approved_examples",
+    "cell_json",
     "edit_elements",
+    "element_json",
     "location_label",
     "map_workflow",
     "measure",
     "record_field_inspection",
+    "weak_examples",
 ]
 
 DEFAULT_LIST_LIMIT = 100
@@ -191,6 +201,25 @@ class MapSummary:
     created_at: datetime
 
 
+class LabelQuality(StrEnum):
+    EXPERT = "expert"
+    WEAK = "weak"
+
+
+@dataclass(frozen=True)
+class TrainingExample:
+    map_id: UUID
+    site_id: UUID | None
+    facade_id: UUID | None
+    wall: WallSize
+    grid: Grid
+    rectified_key: str
+    elements: tuple[Element, ...]
+    model_cells: tuple[MapCell, ...]
+    detector: str
+    label_quality: LabelQuality
+
+
 class PhotoUnusable(SaduError):
     status = 422
 
@@ -200,12 +229,16 @@ class PhotoUnusable(SaduError):
         self.reason = reason
 
 
-def build_detector(settings: Settings, llm: LLMPort) -> DamageDetector:
+def build_detector(
+    settings: Settings, llm: LLMPort, active_model: ActiveModelLookup | None = None
+) -> DamageDetector:
     kind = settings.sadu_damage_detector
     if kind is DetectorKind.CLAUDE:
         return ClaudeGridDetector(llm)
     if kind is DetectorKind.NONE:
         return ManualOnly()
+    if kind is DetectorKind.QWEN:
+        return QwenVisionDetector(_qwen_endpoint(settings), active_model)
     if not settings.sadu_detector_url:
         raise ValueError(f"SADU_DETECTOR_URL is required when SADU_DAMAGE_DETECTOR={kind}")
     token = settings.sadu_detector_token.get_secret_value() if settings.sadu_detector_token else None
@@ -214,6 +247,17 @@ def build_detector(settings: Settings, llm: LLMPort) -> DamageDetector:
     if kind is DetectorKind.HTTP_DETECTION:
         return HttpDetectionModel(client, labels, settings.sadu_detector_min_score)
     return HttpCellClassifier(client, labels, settings.sadu_detector_min_score)
+
+
+def _qwen_endpoint(settings: Settings) -> QwenEndpoint:
+    token = settings.sadu_qwen_token.get_secret_value() if settings.sadu_qwen_token else None
+    return QwenEndpoint(
+        url=settings.sadu_qwen_url,
+        model=settings.sadu_qwen_model,
+        timeout_s=settings.sadu_qwen_timeout_s,
+        token=token,
+        json_schema=settings.sadu_qwen_json_schema,
+    )
 
 
 def prepare_wall(photo_jpeg: bytes, quad: Quad, wall: WallSize, rows: int) -> PreparedWall:
@@ -261,8 +305,8 @@ async def save_map(
         detector=run.detector,
         detector_status=run.status,
         summary_ar=run.output.summary_ar,
-        model_cells=[_cell_json(c) for c in run.output.cells],
-        elements=[element_json(e) for e in elements_from_cells(run.output.cells, prepared.grid)],
+        model_cells=[cell_json(c) for c in run.output.cells],
+        elements=[element_json(e) for e in _model_elements(run.output, prepared.grid)],
         elements_edited=False,
         correction_log=[],
         field_notes="",
@@ -274,6 +318,12 @@ async def save_map(
     _add_cell_rows(session, row.id, run.output.cells)
     await session.flush()
     return _view(row, run.output.cells)
+
+
+def _model_elements(output: DetectionOutput, grid: Grid) -> tuple[Element, ...]:
+    if output.elements:
+        return output.elements
+    return elements_from_cells(output.cells, grid)
 
 
 async def get_map(session: AsyncSession, map_id: UUID) -> MapView:
@@ -468,6 +518,42 @@ async def accuracy(session: AsyncSession, site_id: UUID | None = None) -> MapSco
     return score_maps(pairs)
 
 
+async def approved_examples(session: AsyncSession) -> list[TrainingExample]:
+    query = select(DamageMapRow).where(DamageMapRow.status == MapStatus.APPROVED)
+    return [
+        await _example(session, row, LabelQuality.EXPERT)
+        for row in await session.scalars(query.order_by(DamageMapRow.created_at))
+    ]
+
+
+async def weak_examples(session: AsyncSession) -> list[TrainingExample]:
+    query = select(DamageMapRow).where(
+        DamageMapRow.status == MapStatus.DRAFT,
+        DamageMapRow.detector_status == DetectorStatus.OK,
+        DamageMapRow.elements_edited.is_(False),
+    )
+    return [
+        await _example(session, row, LabelQuality.WEAK)
+        for row in await session.scalars(query.order_by(DamageMapRow.created_at))
+    ]
+
+
+async def _example(session: AsyncSession, row: DamageMapRow, quality: LabelQuality) -> TrainingExample:
+    view = _view(row, await _cells(session, row.id))
+    return TrainingExample(
+        map_id=view.id,
+        site_id=view.site_id,
+        facade_id=view.facade_id,
+        wall=view.wall,
+        grid=view.grid,
+        rectified_key=view.rectified_key,
+        elements=view.elements,
+        model_cells=view.model_cells,
+        detector=view.detector,
+        label_quality=quality,
+    )
+
+
 async def _draft_row(session: AsyncSession, map_id: UUID) -> DamageMapRow:
     row = await session.get(DamageMapRow, map_id, with_for_update=True)
     if row is None:
@@ -510,7 +596,7 @@ def _add_cell_rows(session: AsyncSession, map_id: UUID, cells: Iterable[MapCell]
     )
 
 
-def _cell_json(cell: MapCell) -> dict[str, Any]:
+def cell_json(cell: MapCell) -> dict[str, Any]:
     return {
         "row": cell.ref.row,
         "col": cell.ref.col,

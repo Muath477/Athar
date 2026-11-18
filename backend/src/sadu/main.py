@@ -19,6 +19,8 @@ from sadu.modules.agents.interface.routes import router as agents_router
 from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.routes import router as maps_router
 from sadu.modules.missions.interface.routes import router as missions_router
+from sadu.modules.models import api as models
+from sadu.modules.models.interface.routes import router as models_router
 from sadu.modules.passport.interface.routes import router as passport_router
 from sadu.modules.reports.interface.routes import router as reports_router
 from sadu.modules.sites.interface.routes import router as sites_router
@@ -74,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         treatments_router,
         missions_router,
         passport_router,
+        models_router,
         admin_router,
         health_router,
     ):
@@ -105,7 +108,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = get_object_store()
     await store.ensure_bucket()
     llm = build_llm(settings)
-    app.state.damage_detector = mapping.build_detector(settings, llm)
+    app.state.damage_detector = mapping.build_detector(settings, llm, active_model)
     app.state.scan_queue = watch.ScanQueue(
         unit_of_work,
         store,
@@ -143,6 +146,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                     await task
             await runner.wait()
     await get_engine().dispose()
+
+
+async def active_model() -> mapping.ModelChoice | None:
+    async with unit_of_work() as session:
+        return await models.active_model(session)
 
 
 def build_llm(settings: Settings) -> LLMPort:
