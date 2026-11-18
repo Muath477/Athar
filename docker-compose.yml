@@ -58,7 +58,7 @@ services:
   seed:
     build: backend
     image: sadu-api:dev
-    command: ["python", "-m", "sadu.cli", "seed", "--pack", "demo"]
+    command: ["sh", "-c", "python -m sadu.cli seed --pack demo && python -m sadu.cli seed --pack diriyah"]
     environment: *api-env
     volumes: ["./region-packs:/region-packs:ro"]
     depends_on:

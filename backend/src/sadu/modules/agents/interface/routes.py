@@ -22,7 +22,7 @@ from sadu.modules.verification.interface.routes import FindingOut, finding_out
 from sadu.shared.errors import Forbidden, SaduError
 from sadu.shared.i18n import translate
 from sadu.shared.vocabulary import DamageType, Severity
-from sadu.shared.web import Session, State, client_ip, limit_per_ip, public
+from sadu.shared.web import Session, State, client_ip, limit_per_ip, limit_public_reads, public
 
 router = APIRouter()
 
@@ -142,7 +142,11 @@ async def submit_observation(
     )
 
 
-@router.get("/observations/{observation_id}", tags=["observations"], dependencies=[Depends(public)])
+@router.get(
+    "/observations/{observation_id}",
+    tags=["observations"],
+    dependencies=[Depends(public), Depends(limit_public_reads)],
+)
 async def get_observation(
     observation_id: UUID, session: Session, passport_id: OptionalPassport
 ) -> ObservationOut:
@@ -152,7 +156,11 @@ async def get_observation(
     )
 
 
-@router.get("/observations/{observation_id}/events", tags=["observations"], dependencies=[Depends(public)])
+@router.get(
+    "/observations/{observation_id}/events",
+    tags=["observations"],
+    dependencies=[Depends(public), Depends(limit_per_ip("events", 30, 60))],
+)
 async def observation_events(
     observation_id: UUID, state: State, passport_id: OptionalPassport
 ) -> EventSourceResponse:
@@ -187,7 +195,7 @@ async def observation_events(
     "/observations/{observation_id}/answers",
     status_code=202,
     tags=["observations"],
-    dependencies=[Depends(public)],
+    dependencies=[Depends(public), Depends(limit_per_ip("answer", 30, 60))],
 )
 async def answer_question(
     observation_id: UUID, body: Answer, state: State, passport_id: OptionalPassport
@@ -224,7 +232,9 @@ async def site_story(
     return _story_out(story, state)
 
 
-@router.get("/stories/{story_id}", tags=["stories"], dependencies=[Depends(public)])
+@router.get(
+    "/stories/{story_id}", tags=["stories"], dependencies=[Depends(public), Depends(limit_public_reads)]
+)
 async def get_story(story_id: UUID, session: Session, state: State) -> StoryOut:
     return _story_out(await stories.get_story(session, story_id), state)
 

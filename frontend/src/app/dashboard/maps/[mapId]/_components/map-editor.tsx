@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, mapReportUrl } from "@/lib/api";
 import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
 import { type CellCorrection, type DamageMap, type MapCell, approveMap, correctCells, getMap } from "@/lib/maps";
 import { useMe } from "@/lib/use-me";
@@ -127,13 +127,16 @@ export function MapEditor() {
           </p>
           {map.summary_ar && <p className="leading-relaxed">{map.summary_ar}</p>}
         </div>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="no-print rounded-full border border-ink px-4 py-1.5 text-sm hover:bg-ink hover:text-sand"
-        >
-          اطبع المخطط وخطة المعالجة
-        </button>
+        <div className="no-print flex flex-col items-start gap-1">
+          <a
+            href={mapReportUrl(map.id)}
+            download
+            className="min-h-11 content-center rounded-full bg-sadu px-5 text-sm font-bold text-sand hover:bg-ink"
+          >
+            حمّل التقرير PDF
+          </a>
+          {pendingCount > 0 && <p className="text-xs text-mud">احفظ تصحيحاتك أولًا ليتضمنها التقرير.</p>}
+        </div>
       </header>
 
       {canEdit && (

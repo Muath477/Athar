@@ -111,9 +111,14 @@ class _Nodes:
                 )
                 return {"site_id": None, "plan": []}
             facade_count = len(await sites.list_facades(session, site_id))
+            if facade_count == 0:
+                await capture.attach_location_result(session, observation_id, site_id=site_id, facade_id=None)
 
         context = ObservationContext(
-            has_location=observation.has_location, has_site=True, on_mission=mission is not None
+            has_location=observation.has_location,
+            has_site=True,
+            on_mission=mission is not None,
+            has_facades=facade_count > 0,
         )
         steps = await plan_steps(
             self.deps.llm, context, has_heading=observation.heading_deg is not None, facade_count=facade_count

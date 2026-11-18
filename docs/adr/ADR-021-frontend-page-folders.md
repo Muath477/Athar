@@ -24,8 +24,9 @@ src/app/
   dashboard/maps/new/           _components/new-map-form.tsx, stepper.tsx, corner-picker.tsx,
                                 analysis-progress.tsx
   sites/[siteId]/               _components/site-explorer.tsx, view-switch.tsx, place-3d.tsx,
-                                route-controls.tsx, use-route-to-site.ts, directions-panel.tsx,
-                                footprint-sketch.tsx
+                                route-panel.tsx, route-steps.tsx, next-turn.tsx, maneuver-arrow.tsx,
+                                route-progress.ts, use-route-to-site.ts, use-live-position.ts,
+                                directions-panel.tsx, footprint-sketch.tsx, viewport.ts
   dashboard/maps/[mapId]/       _components/map-editor.tsx, map-toolbar.tsx, layer-controls.tsx,
                                 damage-grid.tsx, cell-inspector.tsx, damage-legend.tsx,
                                 map-changes.tsx, treatment-plan.tsx

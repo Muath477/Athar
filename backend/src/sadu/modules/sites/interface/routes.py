@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from sadu.modules.admin.interface.auth import Inspector
 from sadu.modules.sites import api as sites
-from sadu.shared.web import Session, State, public
+from sadu.shared.web import Session, State, limit_public_reads, public
 
 router = APIRouter(tags=["sites"])
 
@@ -65,7 +65,7 @@ async def site_out(session: Session, state: State, site: sites.SiteView) -> Site
     )
 
 
-@router.get("/sites/nearby", dependencies=[Depends(public)])
+@router.get("/sites/nearby", dependencies=[Depends(public), Depends(limit_public_reads)])
 async def nearby_sites(
     session: Session,
     state: State,
@@ -80,12 +80,12 @@ async def list_sites(_: Inspector, session: Session, state: State) -> list[SiteO
     return [await site_out(session, state, s) for s in await sites.list_sites(session)]
 
 
-@router.get("/sites/{site_id}", dependencies=[Depends(public)])
+@router.get("/sites/{site_id}", dependencies=[Depends(public), Depends(limit_public_reads)])
 async def get_site(site_id: UUID, session: Session, state: State) -> SiteOut:
     return await site_out(session, state, await sites.get_site(session, site_id))
 
 
-@router.get("/facades/{facade_id}/baseline", dependencies=[Depends(public)])
+@router.get("/facades/{facade_id}/baseline", dependencies=[Depends(public), Depends(limit_public_reads)])
 async def baseline_image(facade_id: UUID, session: Session, state: State) -> RedirectResponse:
     baseline = await sites.primary_baseline(session, facade_id)
     return RedirectResponse(state.store.presigned_url(baseline.object_key), status_code=307)

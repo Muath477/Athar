@@ -1,3 +1,4 @@
+import asyncio
 import json
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ from sadu.modules.mapping.domain.damage_map import (
     tally_areas,
 )
 from sadu.modules.mapping.domain.grid import CellRef, Grid, WallSize
+from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.modules.mapping.domain.scoring import MapScore, ScoredPair, TypeScore, score_maps
 from sadu.modules.mapping.infrastructure.http_detector import (
@@ -36,7 +38,7 @@ from sadu.modules.mapping.infrastructure.http_detector import (
     HttpModelClient,
     LabelMap,
 )
-from sadu.modules.mapping.infrastructure.imaging import RectifiedWall, rectify_wall
+from sadu.modules.mapping.infrastructure.imaging import RectifiedWall, paint_damage, rectify_wall
 from sadu.modules.mapping.infrastructure.orm import DamageMapCellRow, DamageMapRow
 from sadu.modules.treatments import api as treatments
 from sadu.shared.config import DetectorKind, Settings
@@ -47,10 +49,13 @@ from sadu.shared.storage import ObjectStore, new_object_key
 from sadu.shared.vocabulary import DamageType, ModelConfidence, RetakeReason, Severity
 
 __all__ = [
+    "DAMAGE_COLORS",
     "MAP_DAMAGE_TYPES",
+    "SEVERITY_OPACITY",
     "CellChange",
     "CellCorrection",
     "CellRef",
+    "CellSource",
     "ChangeKind",
     "DamageDetector",
     "DetectionInput",
@@ -315,6 +320,11 @@ async def previous_approved(session: AsyncSession, view: MapView) -> MapView | N
     if row is None:
         return None
     return _view(row, await _cells(session, row.id))
+
+
+async def damage_overlay(store: ObjectStore, view: MapView) -> bytes:
+    rectified = await store.get(view.rectified_key)
+    return await asyncio.to_thread(paint_damage, rectified, view.grid, view.cells)
 
 
 def changes_between(before: MapView, after: MapView) -> list[CellChange] | None:

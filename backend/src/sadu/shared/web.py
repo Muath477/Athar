@@ -1,5 +1,5 @@
 import time
-from collections import defaultdict, deque
+from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
@@ -17,18 +17,38 @@ type UnitOfWork = Callable[[], AbstractAsyncContextManager[AsyncSession]]
 API_PREFIX = "/api/v1"
 
 
+FORGET_IDLE_EVERY_CHECKS = 1000
+
+
 class RateLimiter:
-    def __init__(self) -> None:
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+        self._hits: dict[str, deque[float]] = {}
+        self._windows: dict[str, int] = {}
+        self._clock = clock
+        self._checks = 0
 
     def check(self, key: str, limit: int, window_s: int) -> None:
-        now = time.monotonic()
-        hits = self._hits[key]
+        now = self._clock()
+        self._checks += 1
+        if self._checks % FORGET_IDLE_EVERY_CHECKS == 0:
+            self._forget_idle(now)
+        hits = self._hits.setdefault(key, deque())
+        self._windows[key] = window_s
         while hits and hits[0] <= now - window_s:
             hits.popleft()
         if len(hits) >= limit:
             raise TooManyRequests("rate_limited", retry_after_s=int(hits[0] + window_s - now) + 1)
         hits.append(now)
+
+    @property
+    def tracked_keys(self) -> int:
+        return len(self._hits)
+
+    def _forget_idle(self, now: float) -> None:
+        idle = [key for key, hits in self._hits.items() if not hits or hits[-1] <= now - self._windows[key]]
+        for key in idle:
+            del self._hits[key]
+            del self._windows[key]
 
 
 @dataclass
@@ -62,6 +82,9 @@ def limit_per_ip(name: str, limit: int, window_s: int) -> Callable[[Request, App
         state.rate_limiter.check(f"{name}:{client_ip(request)}", limit, window_s)
 
     return dependency
+
+
+limit_public_reads = limit_per_ip("read", 240, 60)
 
 
 def client_ip(request: Request) -> str:

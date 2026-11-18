@@ -19,6 +19,7 @@ from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.routes import router as maps_router
 from sadu.modules.missions.interface.routes import router as missions_router
 from sadu.modules.passport.interface.routes import router as passport_router
+from sadu.modules.reports.interface.routes import router as reports_router
 from sadu.modules.sites.interface.routes import router as sites_router
 from sadu.modules.treatments.interface.routes import router as treatments_router
 from sadu.modules.verification.interface.routes import router as findings_router
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         sites_router,
         findings_router,
         maps_router,
+        reports_router,
         treatments_router,
         missions_router,
         passport_router,

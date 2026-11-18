@@ -11,7 +11,7 @@ from sadu.modules.capture import api as capture
 from sadu.modules.missions import api as missions
 from sadu.modules.missions.domain.priority import MissionReason
 from sadu.modules.sites import api as sites
-from sadu.shared.web import Session, public
+from sadu.shared.web import Session, limit_public_reads, public
 
 router = APIRouter(tags=["missions"])
 
@@ -54,7 +54,7 @@ def mission_out(mission: missions.MissionView) -> MissionOut:
     )
 
 
-@router.get("/missions/nearby", dependencies=[Depends(public)])
+@router.get("/missions/nearby", dependencies=[Depends(public), Depends(limit_public_reads)])
 async def nearby_missions(
     session: Session,
     lat: Annotated[float, Query(ge=-90, le=90)],

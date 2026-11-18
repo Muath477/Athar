@@ -5,17 +5,28 @@ import { useCallback, useState } from "react";
 import type { LatLon } from "@/lib/api";
 import { googleTravelMode, type TravelMode } from "@/lib/directions";
 import { currentPosition } from "@/lib/geo";
+import type { Point } from "@/lib/route-geometry";
+
+export type RouteStep = {
+  instruction: string;
+  maneuver: string | null;
+  distanceMeters: number;
+  start: Point;
+  path: Point[];
+};
+
+export type PlannedRoute = {
+  mode: TravelMode;
+  origin: Point;
+  path: Point[];
+  steps: RouteStep[];
+  distanceMeters: number;
+  durationMillis: number;
+};
 
 export type RouteState =
   | { status: "idle" | "locating" | "routing" | "no_location" | "no_route" | "failed" }
-  | {
-      status: "ready";
-      mode: TravelMode;
-      origin: google.maps.LatLngLiteral;
-      path: google.maps.LatLngLiteral[];
-      distanceMeters: number;
-      durationMillis: number;
-    };
+  | ({ status: "ready" } & PlannedRoute);
 
 export function useRouteToSite(destination: LatLon, mode: TravelMode) {
   const routes = useMapsLibrary("routes");
@@ -24,7 +35,7 @@ export function useRouteToSite(destination: LatLon, mode: TravelMode) {
   const find = useCallback(async () => {
     if (!routes) return;
     setState({ status: "locating" });
-    let origin: google.maps.LatLngLiteral;
+    let origin: Point;
     try {
       const position = await currentPosition();
       origin = { lat: position.lat, lng: position.lon };
@@ -39,7 +50,7 @@ export function useRouteToSite(destination: LatLon, mode: TravelMode) {
         origin,
         destination: { lat: destination.lat, lng: destination.lon },
         travelMode: googleTravelMode(mode),
-        fields: ["path", "distanceMeters", "durationMillis"],
+        fields: ["path", "distanceMeters", "durationMillis", "legs"],
         language: "ar",
         region: "SA",
       });
@@ -52,7 +63,8 @@ export function useRouteToSite(destination: LatLon, mode: TravelMode) {
         status: "ready",
         mode,
         origin,
-        path: best.path.map((point) => ({ lat: point.lat, lng: point.lng })),
+        path: best.path.map(toPoint),
+        steps: (best.legs ?? []).flatMap((leg) => leg.steps.map(toStep)),
         distanceMeters: best.distanceMeters ?? 0,
         durationMillis: best.durationMillis ?? 0,
       });
@@ -64,4 +76,19 @@ export function useRouteToSite(destination: LatLon, mode: TravelMode) {
   const clear = useCallback(() => setState({ status: "idle" }), []);
 
   return { state, find, clear, available: routes !== null };
+}
+
+function toPoint(point: google.maps.LatLngAltitude): Point {
+  return { lat: point.lat, lng: point.lng };
+}
+
+function toStep(step: google.maps.routes.RouteLegStep): RouteStep {
+  const path = step.path.map(toPoint);
+  return {
+    instruction: step.instructions?.trim() || "تابع على الطريق",
+    maneuver: step.maneuver,
+    distanceMeters: step.distanceMeters,
+    start: step.startLocation ? toPoint(step.startLocation) : path[0],
+    path,
+  };
 }

@@ -26,6 +26,8 @@ PLAN_SCHEMA: dict[str, Any] = {
 async def plan_steps(
     llm: LLMPort, context: ObservationContext, *, has_heading: bool, facade_count: int
 ) -> tuple[Step, ...]:
+    if not context.has_facades:
+        return accept_plan([], context)
     request = StructuredRequest(
         agent="orchestrator",
         role=ModelRole.FAST,
