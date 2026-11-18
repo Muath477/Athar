@@ -198,6 +198,8 @@ class MapOut(BaseModel):
     field_notes: str
     treatment_plan: PlanOut
     changes: ChangesOut | None
+    source: str | None
+    source_label: str | None
 
 
 class MapSummaryOut(BaseModel):
@@ -212,6 +214,8 @@ class MapSummaryOut(BaseModel):
     total_cells: int
     thumbnail_url: str
     created_at: datetime
+    source: str | None
+    source_label: str | None
 
 
 class TypeScoreOut(BaseModel):
@@ -269,6 +273,8 @@ def map_out(
         field_notes=view.field_notes,
         treatment_plan=plan_out(plan, catalog),
         changes=changes_out(previous, view) if previous is not None else None,
+        source=view.source,
+        source_label=view.source_label,
     )
 
 
@@ -355,6 +361,8 @@ def summary_out(summary: mapping.MapSummary, store: ObjectStore) -> MapSummaryOu
         total_cells=summary.total_cells,
         thumbnail_url=store.presigned_url(summary.rectified_key),
         created_at=summary.created_at,
+        source=summary.source,
+        source_label=summary.source_label,
     )
 
 

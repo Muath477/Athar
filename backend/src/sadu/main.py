@@ -16,6 +16,8 @@ import sadu.shared.orm_registry
 from sadu.modules.admin.interface.routes import router as admin_router
 from sadu.modules.agents import api as agents
 from sadu.modules.agents.interface.routes import router as agents_router
+from sadu.modules.ingest import api as ingest
+from sadu.modules.ingest.interface.routes import router as ingest_router
 from sadu.modules.mapping import api as mapping
 from sadu.modules.mapping.interface.routes import router as maps_router
 from sadu.modules.missions.interface.routes import router as missions_router
@@ -42,6 +44,8 @@ log = structlog.get_logger()
 
 MISSION_DISPATCH_INTERVAL_S = 15 * 60
 WATCH_POLL_INTERVAL_S = 60 * 60
+CAMERA_POLL_INTERVAL_S = 15 * 60
+INGEST_POLL_INTERVAL_S = 30
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -74,6 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         treatments_router,
         missions_router,
         passport_router,
+        ingest_router,
         admin_router,
         health_router,
     ):
@@ -113,6 +118,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         notifier=watch.build_notifier(settings),
         public_origin=settings.sadu_public_origin,
     )
+    app.state.ingestion = ingest.Ingestion(
+        unit_of_work,
+        store,
+        app.state.damage_detector,
+        ingest.build_camera_client(settings),
+        map_rows=settings.sadu_map_rows,
+        concurrency=settings.sadu_ingest_concurrency,
+    )
     deps = agents.Dependencies(
         unit_of_work=unit_of_work,
         store=store,
@@ -125,8 +138,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         runner = agents.AgentRunner(deps, checkpointer, settings.sadu_max_concurrent_runs)
         app.state.sadu = AppState(settings=settings, unit_of_work=unit_of_work, store=store, runner=runner)
         await runner.recover()
+        await app.state.ingestion.recover()
         dispatcher = asyncio.create_task(dispatch_missions_forever())
         watcher = asyncio.create_task(scan_sites_forever(settings, app.state.scan_queue))
+        ingester = asyncio.create_task(process_ingest_jobs_forever(app.state.ingestion))
+        camera_poller = asyncio.create_task(capture_cameras_forever(settings, app.state.ingestion))
         log.info(
             "api_started",
             env=settings.sadu_env,
@@ -137,7 +153,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         try:
             yield
         finally:
-            for task in (dispatcher, watcher):
+            for task in (dispatcher, watcher, ingester, camera_poller):
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
@@ -181,6 +197,29 @@ async def scan_sites_forever(settings: Settings, queue: watch.ScanQueue) -> None
         except Exception:
             log.exception("site_scan_round_failed")
         await asyncio.sleep(WATCH_POLL_INTERVAL_S)
+
+
+async def process_ingest_jobs_forever(ingestion: ingest.Ingestion) -> None:
+    while True:
+        try:
+            ingestion.kick()
+            await ingestion.join()
+        except Exception:
+            log.exception("ingest_round_failed")
+        await asyncio.sleep(INGEST_POLL_INTERVAL_S)
+
+
+async def capture_cameras_forever(settings: Settings, ingestion: ingest.Ingestion) -> None:
+    if settings.sadu_camera_interval_h == 0:
+        return
+    interval = timedelta(hours=settings.sadu_camera_interval_h)
+    while True:
+        try:
+            captured = await ingestion.capture_due(interval)
+            log.info("cameras_captured", devices=captured)
+        except Exception:
+            log.exception("camera_round_failed")
+        await asyncio.sleep(CAMERA_POLL_INTERVAL_S)
 
 
 app = create_app()

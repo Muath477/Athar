@@ -88,6 +88,71 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "أرفق صورة الجدار أو اختر مشاركة زائر.",
         "en": "Attach a wall photo or pick a visitor observation.",
     },
+    "problem.heic_unsupported.title": {"ar": "صيغة HEIC غير مدعومة", "en": "HEIC is not supported"},
+    "problem.heic_unsupported.detail": {
+        "ar": "لا يقرأ الخادم صور HEIC بعد ({file_name}). صدّرها بصيغة JPEG أو غيّر إعداد كاميرا الجوال.",
+        "en": "This server cannot read HEIC photos yet ({file_name}). Export them as JPEG.",
+    },
+    "problem.batch_size.title": {"ar": "عدد الصور غير مقبول", "en": "Wrong number of photos"},
+    "problem.batch_size.detail": {
+        "ar": "أرسل من صورة واحدة إلى {max_files} صورة في الدفعة.",
+        "en": "Send between 1 and {max_files} photos per batch.",
+    },
+    "problem.facade_not_in_site.title": {"ar": "الواجهة لا تتبع الموقع", "en": "Facade is not in this site"},
+    "problem.facade_not_in_site.detail": {
+        "ar": "اختر واجهة من الموقع نفسه.",
+        "en": "Pick a facade that belongs to the chosen site.",
+    },
+    "problem.device_site_required.title": {"ar": "الموقع مطلوب", "en": "Site required"},
+    "problem.device_site_required.detail": {
+        "ar": "الكاميرا الثابتة تحتاج موقعًا تراقبه.",
+        "en": "A fixed camera needs the site it watches.",
+    },
+    "problem.invalid_camera_url.title": {"ar": "رابط الكاميرا غير مقبول", "en": "Camera URL rejected"},
+    "problem.invalid_camera_url.detail": {
+        "ar": "استخدم رابط http أو https للقطة (أو rtsp للبث) دون كلمة مرور داخل الرابط.",
+        "en": "Use an http(s) snapshot URL (or rtsp stream) with no password inside the URL.",
+    },
+    "problem.device_has_no_source.title": {"ar": "لا رابط للالتقاط", "en": "Nothing to capture from"},
+    "problem.device_has_no_source.detail": {
+        "ar": "أضف رابط لقطة أو بث لهذا الجهاز أولًا.",
+        "en": "Add a snapshot or stream URL to this device first.",
+    },
+    "problem.job_not_retryable.title": {"ar": "لا يمكن إعادة المحاولة", "en": "Cannot retry"},
+    "problem.job_not_retryable.detail": {
+        "ar": "تُعاد المحاولة للصور المتعثرة المحفوظة فقط.",
+        "en": "Only failed jobs with a stored photo can be retried.",
+    },
+    "problem.ingest_failed.title": {"ar": "تعذر تحليل الصورة", "en": "Photo could not be analysed"},
+    "problem.ingest_failed.detail": {
+        "ar": "تعذر تحليل الصورة بعد عدة محاولات. أعد المحاولة لاحقًا.",
+        "en": "The photo could not be analysed after several attempts. Retry later.",
+    },
+    "camera.invalid_url": {"ar": "رابط الكاميرا غير مقبول.", "en": "The camera URL is not accepted."},
+    "camera.unresolvable": {"ar": "تعذر العثور على عنوان الكاميرا.", "en": "The camera host was not found."},
+    "camera.blocked_address": {
+        "ar": "عنوان الكاميرا داخلي. أضفه إلى SADU_CAMERA_ALLOWED_HOSTS إن كانت الكاميرا على شبكة الموقع.",
+        "en": "The camera address is internal. Allow it in SADU_CAMERA_ALLOWED_HOSTS if it is on site.",
+    },
+    "camera.timeout": {
+        "ar": "لم تستجب الكاميرا في الوقت المحدد.",
+        "en": "The camera did not answer in time.",
+    },
+    "camera.connection": {"ar": "تعذر الاتصال بالكاميرا.", "en": "Could not connect to the camera."},
+    "camera.http_status": {
+        "ar": "ردّت الكاميرا بالرمز {status}.",
+        "en": "The camera answered with status {status}.",
+    },
+    "camera.not_image": {"ar": "لم ترسل الكاميرا صورة.", "en": "The camera did not send an image."},
+    "camera.too_large": {
+        "ar": "لقطة الكاميرا أكبر من الحد المسموح.",
+        "en": "The snapshot is larger than allowed.",
+    },
+    "camera.rtsp_unavailable": {
+        "ar": "التقاط البث RTSP يحتاج ffmpeg على الخادم.",
+        "en": "RTSP capture needs ffmpeg on the server.",
+    },
+    "camera.no_source": {"ar": "لا رابط لقطة لهذا الجهاز.", "en": "This device has no snapshot URL."},
     "retake.blurry": {"ar": "الصورة غير واضحة. ثبّت الجوال وصوّر مرة أخرى.", "en": "The photo is blurry."},
     "retake.too_dark": {"ar": "الصورة مظلمة جدًا. صوّر في إضاءة أفضل.", "en": "The photo is too dark."},
     "retake.too_bright": {"ar": "الصورة ساطعة جدًا. تجنّب الشمس المباشرة.", "en": "The photo is too bright."},

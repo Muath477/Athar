@@ -7,6 +7,7 @@ from pathlib import Path
 import sadu.shared.orm_registry
 from sadu.modules.admin import api as admin
 from sadu.modules.agents import api as agents
+from sadu.modules.ingest import api as ingest
 from sadu.shared.config import get_settings
 from sadu.shared.db import get_engine, unit_of_work
 from sadu.shared.storage import get_object_store
@@ -18,6 +19,9 @@ async def seed(pack: str) -> None:
     pack_dir = Path(get_settings().sadu_region_packs_dir) / pack
     async with unit_of_work() as session:
         slugs = await agents.seed_region_pack(session, store, pack_dir)
+        if ingest.DEMO_SITE_SLUG in slugs and get_settings().sadu_demo_mode:
+            camera = await ingest.seed_demo_camera(session)
+            print(f"Demo camera ready: {camera.name_ar}")
     print(f"Imported {', '.join(slugs)} from {pack_dir}")
 
 
