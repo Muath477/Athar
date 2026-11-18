@@ -25,6 +25,10 @@ const PERMISSIONS_AR: Record<string, string> = {
   survey: "التصوير والفحص",
   review: "المراجعة والاعتماد",
   manage_site: "إدارة الموقع",
+  manage_devices: "إدارة الكاميرات والأجهزة",
+  export: "تصدير البيانات والتقارير",
+  assistant: "استخدام مساعد أثر",
+  manage_models: "إدارة النماذج والتدريب",
   administer: "إدارة النظام",
 };
 

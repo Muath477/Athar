@@ -27,6 +27,10 @@ class Permission(StrEnum):
     SURVEY = "survey"
     REVIEW = "review"
     MANAGE_SITE = "manage_site"
+    MANAGE_DEVICES = "manage_devices"
+    EXPORT = "export"
+    ASSIST = "assistant"
+    MANAGE_MODELS = "manage_models"
     ADMINISTER = "administer"
 
 
@@ -34,6 +38,8 @@ class Role(StrEnum):
     INSPECTOR = "inspector"
     SITE_MANAGER = "site_manager"
     EXPERT = "expert"
+    AUTHORITY = "authority"
+    ML_ENGINEER = "ml_engineer"
     ADMIN = "admin"
 
     @property
@@ -45,9 +51,21 @@ class Role(StrEnum):
 
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
-    Role.INSPECTOR: frozenset({Permission.READ, Permission.SURVEY}),
-    Role.SITE_MANAGER: frozenset({Permission.READ, Permission.MANAGE_SITE}),
-    Role.EXPERT: frozenset({Permission.READ, Permission.SURVEY, Permission.REVIEW}),
+    Role.INSPECTOR: frozenset({Permission.READ, Permission.SURVEY, Permission.ASSIST}),
+    Role.SITE_MANAGER: frozenset(
+        {
+            Permission.READ,
+            Permission.MANAGE_SITE,
+            Permission.MANAGE_DEVICES,
+            Permission.EXPORT,
+            Permission.ASSIST,
+        }
+    ),
+    Role.EXPERT: frozenset(
+        {Permission.READ, Permission.SURVEY, Permission.REVIEW, Permission.EXPORT, Permission.ASSIST}
+    ),
+    Role.AUTHORITY: frozenset({Permission.READ, Permission.EXPORT, Permission.ASSIST}),
+    Role.ML_ENGINEER: frozenset({Permission.READ, Permission.EXPORT, Permission.MANAGE_MODELS}),
     Role.ADMIN: frozenset(Permission),
 }
 

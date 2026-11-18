@@ -98,12 +98,21 @@ export type Coverage = {
   open_mission_id: string | null;
 };
 
-export type Permission = "read" | "survey" | "review" | "manage_site" | "administer";
+export type Permission =
+  | "read"
+  | "survey"
+  | "review"
+  | "manage_site"
+  | "manage_devices"
+  | "export"
+  | "assistant"
+  | "manage_models"
+  | "administer";
 
 export type Me = {
   id: string;
   email: string;
-  role: "inspector" | "site_manager" | "expert" | "admin";
+  role: "inspector" | "site_manager" | "expert" | "authority" | "ml_engineer" | "admin";
   permissions: Permission[];
   csrf_token: string | null;
 };
@@ -112,6 +121,8 @@ export const roleAr: Record<Me["role"], string> = {
   inspector: "المساح الميداني",
   site_manager: "مدير الموقع",
   expert: "أخصائي الترميم",
+  authority: "ممثل هيئة التراث",
+  ml_engineer: "مهندس النماذج",
   admin: "مسؤول النظام",
 };
 
