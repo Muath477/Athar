@@ -7,6 +7,7 @@ from weasyprint.urls import URLFetcher
 
 from sadu.modules.reports.application.site_condition import SiteCondition
 from sadu.modules.reports.domain import arabic
+from sadu.modules.reports.domain.audit_report import AuditReport
 from sadu.modules.reports.domain.wall_report import WallReport
 
 TEMPLATES = Environment(
@@ -26,6 +27,8 @@ TEMPLATES.globals.update(
     change=lambda code: arabic.CHANGE_AR.get(code, code),
     detector=lambda code: arabic.DETECTOR_AR.get(code, code),
     wall_status=lambda code: arabic.WALL_STATUS_AR.get(code, code),
+    confidence=lambda code: arabic.CONFIDENCE_AR.get(code, code),
+    photo=lambda jpeg: base64.b64encode(jpeg).decode("ascii"),
 )
 
 
@@ -36,6 +39,10 @@ def wall_report_html(report: WallReport) -> str:
 
 def site_condition_html(condition: SiteCondition) -> str:
     return TEMPLATES.get_template("site_condition.html.j2").render(c=condition)
+
+
+def audit_report_html(report: AuditReport) -> str:
+    return TEMPLATES.get_template("audit_report.html.j2").render(r=report)
 
 
 def render_pdf(html: str) -> bytes:

@@ -133,6 +133,36 @@ In demo mode, seeding the demo pack adds a camera on the demo building's north f
 
 Every external call has a timeout, retries and a fallback; status updates stream to the phone over server-sent events.
 
+### Athar assistant
+
+`/dashboard/assistant` is a chat for staff with the `assistant` permission. They attach wall photos, drone photos or PDFs of old inspection reports and ask in Arabic. The assistant picks an inspection skill (a Markdown file in `backend/src/sadu/modules/assistant/skills/`), follows its steps with tools from the other modules, and shows each step as it streams: «اختار مهارة: فحص صورة جدار», «حلّل الصورة: ٣ عناصر».
+
+- Findings use the unified glossary. A photo of a named facade becomes a draft wall map for the specialist; nothing is approved by the assistant.
+- «صياغة ملف التدقيق» renders an Arabic PDF with photos, the elements table, catalog treatments, recommendations and a «يتطلب اعتماد المختص» stamp.
+- Sending the file to specialists is a pending action. It goes out only when the user presses «أكّد الإرسال», and the send is written to the audit log.
+- When the model is down or the daily budget is spent, the chat says so and the «حلّل الصورة» button still analyses photos directly. In demo mode without a model key, a scripted planner runs the same flow offline.
+
+```mermaid
+sequenceDiagram
+  actor Staff
+  participant Chat as Dashboard chat
+  participant API as assistant API
+  participant Tools as Module APIs
+  Staff->>Chat: photo + question
+  Chat->>API: POST /messages, then POST /reply (SSE)
+  API-->>Chat: skill
+  loop each step
+    API->>Tools: analyse_photo, draft_audit_report, ...
+    API-->>Chat: tool_call, tool_result
+  end
+  API-->>Chat: reply with pending send
+  Staff->>Chat: «أكّد الإرسال»
+  Chat->>API: POST /actions/{id}/confirm
+  API->>API: webhook to specialists + audit_log
+```
+
+Details, privacy and failure modes in [ADR-028](docs/adr/ADR-028-assistant.md).
+
 ## Tech stack
 
 | Layer | Technology | Version | Why |
@@ -182,6 +212,7 @@ flowchart LR
 | `mapping` | wall maps and cells, rectification, grid, detector port, corrections, approval, accuracy |
 | `treatments` | treatment catalog and plans scaled by damaged area |
 | `agents` | the LangGraph run for each visitor photo |
+| `assistant` | staff chat: inspection skills, tool calls into other modules, audit PDFs, confirmed sends |
 | `capture` | uploads, EXIF strip, face blur, idempotency |
 | `inspection` | quality gate, alignment, difference map, model judgment |
 | `verification` | evidence rule, findings, expert reviews, claim checks |
@@ -590,6 +621,7 @@ docker compose up --build     # first build takes a few minutes
 | Wall damage maps | http://localhost:3000/dashboard/maps |
 | Bulk photo upload | http://localhost:3000/dashboard/uploads |
 | Cameras and devices | http://localhost:3000/dashboard/devices |
+| Athar assistant | http://localhost:3000/dashboard/assistant |
 | API docs | http://localhost:8000/api/docs |
 
 The `seed` service loads two region packs. `region-packs/demo` is a synthetic test building with four facades; it is not a heritage site. `region-packs/riyadh` holds eleven heritage sites in the Riyadh region, including At-Turaif and Al-Faw at their cited coordinates, with approximate boundaries and no facades yet, so the 3D view, directions and satellite screening cover them ([details](region-packs/riyadh/README.md)). Create a dashboard account with:
@@ -615,6 +647,8 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts, urgent-damage notices and overdue-approval reminders | Alerts only show on the dashboard |
 | `SADU_RETENTION_INTERVAL_H` | Hours between purges of visitor photos past their 30-day retention, default 24; `0` turns the purge off | Daily |
 | `SADU_APPROVAL_OVERDUE_DAYS` | Days a draft map may wait for approval before a reminder is sent, default 7; `0` turns reminders off | Weekly |
+| `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts | Alerts only show on the dashboard |
+| `SADU_SPECIALIST_WEBHOOK_URL` | HTTPS webhook that receives audit files the user confirmed in the assistant chat | Confirmed sends are audited but not delivered; the chat asks the user to share the file |
 | `SADU_WATCH_INTERVAL_H` | Hours between automatic scans per site, default 168; `0` turns the schedule off | Weekly |
 | `SADU_CAMERA_INTERVAL_H` | Hours between automatic captures for cameras without their own interval, default 24; `0` turns scheduled capture off | Daily |
 | `SADU_CAMERA_ALLOWED_HOSTS` | Comma-separated host names and CIDR ranges of cameras on private networks (`nvr.site.local,10.20.0.0/16`) | Only public camera addresses are fetched |
@@ -692,6 +726,8 @@ backend/                   FastAPI modular monolith (Python 3.13, uv)
   src/sadu/modules/        sites, capture, inspection, verification, stories, missions,
                            passport, agents, admin, mapping, treatments, watch, ingest
                            passport, agents, admin, mapping, treatments, models
+                           passport, agents, admin, mapping, treatments, watch, reports,
+                           assistant (its skills/ folder holds the inspection skills)
     <module>/api.py        the only file other modules import
     <module>/domain/       pure rules, no framework imports
     <module>/application/  use cases and ports (DamageDetector)
@@ -731,6 +767,8 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Decisions (ADR-001 to ADR-027) | [docs/adr/](docs/adr/) |
 | Own damage model: data, training, evaluation, serving | [docs/ml/architecture.md](docs/ml/architecture.md), [ADR-029](docs/adr/ADR-029-own-model.md) |
 | Decisions | [docs/adr/](docs/adr/) |
+| Athar assistant: skills, tools, confirmed sends | [docs/adr/ADR-028-assistant.md](docs/adr/ADR-028-assistant.md) |
+| Decisions (ADR-001 to ADR-026) | [docs/adr/](docs/adr/) |
 
 ## Privacy
 

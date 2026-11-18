@@ -19,6 +19,7 @@ const SECTIONS: Section[] = [
   { href: "/dashboard/uploads", label: "رفع الصور", short: null, exact: false, permission: "survey" },
   { href: "/dashboard/devices", label: "الكاميرات والأجهزة", short: "الأجهزة", exact: false, permission: "read" },
   { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
+  { href: "/dashboard/assistant", label: "مساعد أثر", short: "المساعد", exact: false, permission: "assistant" },
   { href: "/dashboard/users", label: "الحسابات والصلاحيات", short: "الحسابات", exact: false, permission: "administer" },
   { href: "/dashboard/audit", label: "سجل التدقيق", short: "التدقيق", exact: false, permission: "read_audit" },
   { href: "/dashboard/models", label: "نموذج التحليل", short: "النموذج", exact: false, permission: "manage_models" },

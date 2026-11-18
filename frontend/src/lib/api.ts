@@ -178,6 +178,10 @@ export function forgetPassportLocally(): void {
   removeStorage(PASSPORT_KEY);
 }
 
+export function csrfToken(): string | null {
+  return readStorage(CSRF_KEY);
+}
+
 export function rememberCsrf(token: string | null): void {
   if (token) writeStorage(CSRF_KEY, token);
   else removeStorage(CSRF_KEY);

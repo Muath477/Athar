@@ -13,8 +13,14 @@ from sadu.modules.reports.application.exports import (
     element_rows,
 )
 from sadu.modules.reports.application.site_condition import SiteCondition, site_condition
+from sadu.modules.reports.domain.audit_report import AuditElement, AuditPhoto, AuditReport, AuditTreatment
 from sadu.modules.reports.domain.wall_report import WallReport
-from sadu.modules.reports.infrastructure.pdf import render_pdf, site_condition_html, wall_report_html
+from sadu.modules.reports.infrastructure.pdf import (
+    audit_report_html,
+    render_pdf,
+    site_condition_html,
+    wall_report_html,
+)
 from sadu.modules.sites import api as sites
 from sadu.modules.treatments import api as treatments
 from sadu.shared.storage import ObjectStore
@@ -22,8 +28,13 @@ from sadu.shared.storage import ObjectStore
 __all__ = [
     "CONDITION_HEADER",
     "ELEMENTS_HEADER",
+    "AuditElement",
+    "AuditPhoto",
+    "AuditReport",
+    "AuditTreatment",
     "SiteCondition",
     "WallReport",
+    "audit_report_pdf",
     "condition_rows",
     "element_rows",
     "site_condition",
@@ -54,3 +65,7 @@ async def wall_report_pdf(report: WallReport) -> bytes:
 
 async def site_condition_pdf(condition: SiteCondition) -> bytes:
     return await asyncio.to_thread(render_pdf, site_condition_html(condition))
+
+
+async def audit_report_pdf(report: AuditReport) -> bytes:
+    return await asyncio.to_thread(render_pdf, audit_report_html(report))

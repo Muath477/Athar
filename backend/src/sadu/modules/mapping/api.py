@@ -303,6 +303,10 @@ async def detect_damage(detector: DamageDetector, prepared: PreparedWall) -> Det
     return DetectionRun(detector.name, status, output)
 
 
+def draft_elements(prepared: PreparedWall, run: DetectionRun) -> tuple[Element, ...]:
+    return elements_from_cells(run.output.cells, prepared.grid)
+
+
 async def save_map(
     session: AsyncSession,
     store: ObjectStore,
