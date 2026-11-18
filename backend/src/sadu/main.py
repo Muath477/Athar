@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 from pathlib import Path
 
 import sentry_sdk
@@ -23,21 +24,24 @@ from sadu.modules.reports.interface.routes import router as reports_router
 from sadu.modules.sites.interface.routes import router as sites_router
 from sadu.modules.treatments.interface.routes import router as treatments_router
 from sadu.modules.verification.interface.routes import router as findings_router
+from sadu.modules.watch import api as watch
+from sadu.modules.watch.interface.routes import router as watch_router
 from sadu.shared.adapters.anthropic_llm import AnthropicLLM
 from sadu.shared.adapters.azure_speech import AzureSpeech, NoSpeech
 from sadu.shared.adapters.cached_llm import CachedLLM
-from sadu.shared.config import Settings, get_settings
+from sadu.shared.config import SceneSourceKind, Settings, get_settings
 from sadu.shared.db import get_engine, plain_postgres_url, unit_of_work
 from sadu.shared.errors import install_error_handlers
 from sadu.shared.logging import configure_logging, request_id_middleware
 from sadu.shared.ports.llm import LLMPort
 from sadu.shared.ports.speech import TextToSpeechPort
-from sadu.shared.storage import get_object_store
+from sadu.shared.storage import ObjectStore, get_object_store
 from sadu.shared.web import API_PREFIX, AppState, Session, public, security_headers_middleware
 
 log = structlog.get_logger()
 
 MISSION_DISPATCH_INTERVAL_S = 15 * 60
+WATCH_POLL_INTERVAL_S = 60 * 60
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -66,6 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         findings_router,
         maps_router,
         reports_router,
+        watch_router,
         treatments_router,
         missions_router,
         passport_router,
@@ -101,6 +106,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await store.ensure_bucket()
     llm = build_llm(settings)
     app.state.damage_detector = mapping.build_detector(settings, llm)
+    app.state.scene_source = watch.build_scene_source(settings)
     deps = agents.Dependencies(
         unit_of_work=unit_of_work,
         store=store,
@@ -114,18 +120,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.sadu = AppState(settings=settings, unit_of_work=unit_of_work, store=store, runner=runner)
         await runner.recover()
         dispatcher = asyncio.create_task(dispatch_missions_forever())
+        watcher = asyncio.create_task(scan_sites_forever(settings, store, app.state.scene_source))
         log.info(
             "api_started",
             env=settings.sadu_env,
             demo_mode=settings.sadu_demo_mode,
             damage_detector=app.state.damage_detector.name,
+            scene_source=app.state.scene_source.name,
         )
         try:
             yield
         finally:
-            dispatcher.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await dispatcher
+            for task in (dispatcher, watcher):
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
             await runner.wait()
     await get_engine().dispose()
 
@@ -150,6 +159,23 @@ async def dispatch_missions_forever() -> None:
         except Exception:
             log.exception("mission_dispatch_failed")
         await asyncio.sleep(MISSION_DISPATCH_INTERVAL_S)
+
+
+async def scan_sites_forever(settings: Settings, store: ObjectStore, source: watch.SceneSource) -> None:
+    if settings.sadu_watch_interval_h == 0 or settings.sadu_scene_source is SceneSourceKind.NONE:
+        return
+    interval = timedelta(hours=settings.sadu_watch_interval_h)
+    while True:
+        try:
+            async with unit_of_work() as session:
+                due = await watch.due_sites(session, interval)
+            for site_id in due:
+                async with unit_of_work() as session:
+                    scan = await watch.scan_site(session, store, source, site_id)
+                log.info("site_scanned", site_id=str(site_id), status=scan.status, level=scan.level)
+        except Exception:
+            log.exception("site_scan_failed")
+        await asyncio.sleep(WATCH_POLL_INTERVAL_S)
 
 
 app = create_app()
