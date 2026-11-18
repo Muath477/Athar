@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { classAr, classKindAr, geometryAr } from "@/lib/elements";
 import { severityAr } from "@/lib/labels";
 import type { ElementShape, GlossaryEntry, MapElement } from "@/lib/maps";
@@ -18,6 +19,10 @@ type Props = {
   onDeleteSelected: () => void;
   pendingCount: number;
   busy: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
   onSave: () => void;
   onDiscard: () => void;
 };
@@ -33,9 +38,15 @@ export function ElementTools({
   onDeleteSelected,
   pendingCount,
   busy,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   onSave,
   onDiscard,
 }: Props) {
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  if (confirmingDiscard && pendingCount === 0) setConfirmingDiscard(false);
   const entry = glossary.find((g) => g.damage_type === draft.damage_type);
 
   function pickType(damageType: string) {
@@ -52,7 +63,7 @@ export function ElementTools({
           <select
             value={draft.damage_type}
             onChange={(e) => pickType(e.target.value)}
-            className="min-h-11 rounded-lg border border-clay/50 bg-white px-2"
+            className="min-h-11 rounded-lg border border-mud bg-white px-2"
           >
             <optgroup label="المسرد الموحد">
               {glossary.filter((g) => g.core).map((g) => (
@@ -84,7 +95,7 @@ export function ElementTools({
             type="button"
             aria-pressed={tool === "select"}
             onClick={() => onTool("select")}
-            className={`min-h-9 rounded-full px-3 text-sm ${tool === "select" ? "bg-ink text-sand" : "hover:bg-clay/20"}`}
+            className={`min-h-11 rounded-full px-3 text-sm ${tool === "select" ? "bg-ink text-sand" : "hover:bg-clay/20"}`}
           >
             اختيار
           </button>
@@ -92,7 +103,7 @@ export function ElementTools({
             type="button"
             aria-pressed={tool !== "select"}
             onClick={() => entry && onTool(entry.geometry)}
-            className={`min-h-9 rounded-full px-3 text-sm ${tool !== "select" ? "bg-ink text-sand" : "hover:bg-clay/20"}`}
+            className={`min-h-11 rounded-full px-3 text-sm ${tool !== "select" ? "bg-ink text-sand" : "hover:bg-clay/20"}`}
           >
             ارسم {entry ? geometryAr[entry.geometry] : ""}
           </button>
@@ -113,7 +124,7 @@ export function ElementTools({
                 const next = glossary.find((g) => g.damage_type === e.target.value);
                 onChangeSelected({ ...shapeOf(selected), damage_type: e.target.value, damage_class: next?.classes[0] ?? null });
               }}
-              className="min-h-11 rounded-lg border border-clay/50 bg-white px-2"
+              className="min-h-11 rounded-lg border border-mud bg-white px-2"
             >
               {glossary
                 .filter((g) => g.geometry === selected.geometry)
@@ -159,20 +170,66 @@ export function ElementTools({
       )}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-clay/30 pt-3">
+        <div role="group" aria-label="التراجع والإعادة" className="flex gap-1">
+          <button
+            type="button"
+            onClick={onUndo}
+            disabled={!canUndo}
+            aria-keyshortcuts="Control+Z"
+            className="min-h-11 rounded-full px-4 text-sm hover:bg-clay/20 disabled:opacity-40"
+          >
+            تراجع
+          </button>
+          <button
+            type="button"
+            onClick={onRedo}
+            disabled={!canRedo}
+            aria-keyshortcuts="Control+Shift+Z"
+            className="min-h-11 rounded-full px-4 text-sm hover:bg-clay/20 disabled:opacity-40"
+          >
+            إعادة
+          </button>
+        </div>
         <button
           type="button"
           onClick={onSave}
           disabled={busy || pendingCount === 0}
-          className="min-h-11 rounded-full bg-sadu px-5 text-sm font-bold text-sand disabled:opacity-50"
+          className={`min-h-11 rounded-full px-5 text-sm font-bold disabled:opacity-50 ${
+            pendingCount > 0 ? "bg-sadu text-sand hover:bg-ink" : "border border-ink/30 text-ink"
+          }`}
         >
           {busy ? "يُحفظ…" : `احفظ التعديلات (${pendingCount.toLocaleString("ar-SA")})`}
         </button>
-        {pendingCount > 0 && (
-          <button type="button" onClick={onDiscard} className="text-sm underline">
-            تراجع عن كل التعديلات
-          </button>
-        )}
-        <p className="text-xs text-mud">كل تعديل يُحفظ في سجل التصحيحات باسمك ووقته.</p>
+        {pendingCount > 0 &&
+          (confirmingDiscard ? (
+            <div role="group" aria-label="تأكيد إلغاء التعديلات" className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-bold">تُلغى كل التعديلات غير المحفوظة. متأكد؟</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingDiscard(false);
+                  onDiscard();
+                }}
+                className="min-h-11 rounded-full border border-urgent px-4 text-urgent hover:bg-urgent hover:text-white"
+              >
+                ألغِ التعديلات
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDiscard(false)}
+                className="min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand"
+              >
+                أبقِها
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setConfirmingDiscard(true)} className="min-h-11 text-sm underline">
+              تراجع عن كل التعديلات
+            </button>
+          ))}
+        <p className="text-xs text-mud">
+          كل تعديل يُحفظ في سجل التصحيحات باسمك ووقته. للتراجع <kbd dir="ltr" className="rounded bg-clay/20 px-1">Ctrl+Z</kbd>.
+        </p>
       </div>
     </section>
   );
@@ -191,7 +248,7 @@ function SeverityPicker({ value, onChange }: { value: string; onChange: (value: 
   return (
     <label className="flex flex-col gap-1 text-sm">
       <span className="text-mud">الشدة</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="min-h-11 rounded-lg border border-clay/50 bg-white px-2">
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="min-h-11 rounded-lg border border-mud bg-white px-2">
         {SEVERITIES.map((s) => (
           <option key={s} value={s}>
             {severityAr[s]}
@@ -219,7 +276,7 @@ function ClassPicker({
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
-        className="min-h-11 rounded-lg border border-clay/50 bg-white px-2"
+        className="min-h-11 rounded-lg border border-mud bg-white px-2"
       >
         <option value="">غير محددة</option>
         {classes.map((c) => (

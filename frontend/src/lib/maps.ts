@@ -231,6 +231,7 @@ export type WallCondition = {
   name_ar: string;
   facade_id: string | null;
   map_id: string | null;
+  pending_draft_id: string | null;
   status: "draft" | "approved" | "not_surveyed";
   surveyed_at: string | null;
   approved_at: string | null;

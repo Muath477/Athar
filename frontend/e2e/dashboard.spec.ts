@@ -13,7 +13,7 @@ test("an expert maps a wall, approves it and downloads the PDF report", async ({
   await page.getByLabel("البريد الإلكتروني").fill(EXPERT_EMAIL);
   await page.getByLabel("كلمة المرور").fill(EXPERT_PASSWORD);
   await page.locator("form button").click();
-  await page.waitForURL("**/dashboard");
+  await page.waitForURL("**/dashboard/maps");
 
   await page.goto("/dashboard/maps/new");
   await page.locator("select").first().selectOption({ label: "الواجهة الشمالية" });
@@ -34,13 +34,14 @@ test("an expert maps a wall, approves it and downloads the PDF report", async ({
   }
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: /احفظ التعديلات/ }).click();
-  await expect(page.getByText(/سجل التصحيحات/)).toBeVisible();
+  await expect(page.getByText(/^سجل التصحيحات/)).toBeVisible();
 
-  const approve = page.getByRole("button", { name: "اعتمد الخريطة والمعالجات" });
+  const approve = page.getByRole("button", { name: "اعتمد المخطط والمعالجات" });
   await expect(approve).toBeDisabled();
   await page.getByLabel("ملاحظات الفحص الميداني").fill("فحص من الأرض");
   await page.getByRole("button", { name: "سجّل أني فحصت الجدار ميدانيًا" }).click();
   await approve.click();
+  await page.getByRole("button", { name: "اعتمد", exact: true }).click();
   await expect(approve).toHaveCount(0);
 
   const [download] = await Promise.all([
@@ -59,7 +60,7 @@ test("an expert screens a Riyadh site from space and asks for a ground check", a
   await page.getByLabel("البريد الإلكتروني").fill(EXPERT_EMAIL);
   await page.getByLabel("كلمة المرور").fill(EXPERT_PASSWORD);
   await page.locator("form button").click();
-  await page.waitForURL("**/dashboard");
+  await page.waitForURL("**/dashboard/maps");
 
   await page.goto("/dashboard/watch");
   await expect(page.getByRole("heading", { name: "رصد محيط المواقع من الفضاء" })).toBeVisible();

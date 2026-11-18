@@ -28,7 +28,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
       </header>
 
       {plan.review_status === "draft" && (
-        <p className="max-w-prose border-s-4 border-watch bg-watch/15 p-3 text-sm leading-relaxed">
+        <p className="max-w-prose rounded-xl border border-watch/60 bg-watch/15 p-3 text-sm leading-relaxed">
           كتالوج المعالجات (الإصدار <bdi>{plan.catalog_version}</bdi>) مسودة لم يعتمدها مختص ترميم بعد. راجع كل خطوة قبل
           التنفيذ.
         </p>
@@ -126,7 +126,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
                   </li>
                 ))}
               </ul>
-              <button type="button" onClick={copyList} className="no-print self-start rounded-full bg-sand px-3 py-1 text-sm font-bold text-ink">
+              <button type="button" onClick={copyList} className="no-print min-h-11 self-start rounded-full bg-sand px-4 text-sm font-bold text-ink focus-visible:outline-sand">
                 {copied ? "نُسخت القائمة" : "انسخ القائمة"}
               </button>
               <p className="text-xs leading-relaxed text-sand/70">{plan.quantities_note_ar}</p>
@@ -136,7 +136,7 @@ export function TreatmentPlanView({ plan, pendingCount }: { plan: TreatmentPlan;
       )}
 
       {plan.unmatched.length > 0 && (
-        <p className="border-s-4 border-urgent bg-urgent/10 p-3 text-sm">
+        <p className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
           لا توجد معالجة في الكتالوج لـ:{" "}
           {plan.unmatched.map((u) => `${damageTypeAr[u.damage_type] ?? u.damage_type} (${severityAr[u.severity]})`).join("، ")}.
           يحددها المختص.

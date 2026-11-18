@@ -14,12 +14,12 @@ export function ElementList({ elements, glossary, selectedId, onSelect }: Props)
   return (
     <section aria-labelledby="elements-title" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="elements-title" className="text-lg font-bold">
+        <h2 id="elements-title" tabIndex={-1} className="text-lg font-bold">
           عناصر التلف
         </h2>
         {review > 0 && (
           <p className="text-sm font-bold text-urgent">
-            {review.toLocaleString("ar-SA")} بثقة منخفضة، لا تُعتمد قبل أن يراجعها المختص
+            عناصر بثقة منخفضة: {review.toLocaleString("ar-SA")}. لا تُعتمد قبل أن يراجعها المختص
           </p>
         )}
       </div>
@@ -34,9 +34,9 @@ export function ElementList({ elements, glossary, selectedId, onSelect }: Props)
                 <th className="p-2 text-start font-normal">النوع</th>
                 <th className="p-2 text-start font-normal">الموقع</th>
                 <th className="p-2 text-start font-normal">القياس</th>
-                <th className="p-2 text-start font-normal">الفئة</th>
+                <th className="hidden p-2 text-start font-normal sm:table-cell">الفئة</th>
                 <th className="p-2 text-start font-normal">الشدة</th>
-                <th className="p-2 text-start font-normal">المعد</th>
+                <th className="hidden p-2 text-start font-normal sm:table-cell">المصدر</th>
               </tr>
             </thead>
             <tbody>
@@ -67,9 +67,9 @@ export function ElementList({ elements, glossary, selectedId, onSelect }: Props)
                     <bdi>{e.location}</bdi>
                   </td>
                   <td className="p-2 tabular-nums">{measureAr(e)}</td>
-                  <td className="p-2">{e.damage_class ? (classAr[e.damage_class] ?? e.damage_class) : "—"}</td>
+                  <td className="hidden p-2 sm:table-cell">{e.damage_class ? (classAr[e.damage_class] ?? e.damage_class) : "—"}</td>
                   <td className={`p-2 ${e.severity === "urgent" ? "font-bold text-urgent" : ""}`}>{severityAr[e.severity]}</td>
-                  <td className="p-2">{e.source === "expert" ? "المختص" : "النموذج"}</td>
+                  <td className="hidden p-2 sm:table-cell">{e.source === "expert" ? "المختص" : "النموذج"}</td>
                 </tr>
               ))}
             </tbody>
