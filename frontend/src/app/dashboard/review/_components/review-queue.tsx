@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EvidencePanel } from "@/components/dashboard/evidence-panel";
+import { EvidencePanel } from "@/components/evidence-panel";
 import { ApiError, type Finding, request } from "@/lib/api";
 import { damageTypeAr, severityAr } from "@/lib/labels";
 import { useMe } from "@/lib/use-me";

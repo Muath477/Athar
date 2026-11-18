@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ObservationProgress } from "@/components/observation-progress";
+import { ObservationProgress } from "./_components/observation-progress";
 
 export default function ObservationPage() {
   return (

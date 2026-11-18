@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Camera } from "@/components/camera";
+import { Camera } from "./camera";
 import { ApiError, baselineUrl, ensurePassport, request } from "@/lib/api";
 import { currentPosition, type Heading, watchHeading } from "@/lib/geo";
 

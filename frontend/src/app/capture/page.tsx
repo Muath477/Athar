@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CaptureFlow } from "@/components/capture-flow";
+import { CaptureFlow } from "./_components/capture-flow";
 
 export default function CapturePage() {
   return (

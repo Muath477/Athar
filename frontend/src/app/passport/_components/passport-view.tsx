@@ -29,7 +29,7 @@ export function PassportView() {
 
   return (
     <div className="flex flex-col gap-5 pt-4">
-      <h1 className="text-2xl font-bold">جواز سدو</h1>
+      <h1 className="text-2xl font-bold">جواز أثر</h1>
       {passport.stamps.length === 0 ? (
         <p>لا أختام بعد. صوّر واجهة مبنى تراثي لتحصل على أول ختم.</p>
       ) : (

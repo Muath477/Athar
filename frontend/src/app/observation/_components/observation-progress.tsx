@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { StoryView } from "@/components/story-view";
+import { StoryView } from "./story-view";
 import { type ObservationState, request } from "@/lib/api";
 import { followObservation } from "@/lib/events";
 import { damageTypeAr, findingLabelAr, retakeAr, severityAr, stageAr } from "@/lib/labels";

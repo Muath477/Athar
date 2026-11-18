@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { NearbyMissions } from "@/components/nearby-missions";
+import { NearbyMissions } from "./_components/nearby-missions";
 
 export default function Home() {
   return (
@@ -7,7 +7,7 @@ export default function Home() {
       <section className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold leading-snug">صوّر الواجهة، واسمع حكايتها</h1>
         <p className="text-lg leading-relaxed">
-          كما تُنسج خيوط السدو خيطًا بعد خيط، تُحفظ مبانينا الطينية صورةً بعد صورة. صوّر واجهة المبنى التراثي أمامك،
+          كل صورة تلتقطها تترك أثرًا يساعد في حماية مبانينا الطينية. صوّر واجهة المبنى التراثي أمامك،
           وسنقارنها بصورته المرجعية لنرصد أي ضرر جديد، ونروي لك حكايته من مصادر موثقة.
         </p>
         <Link
