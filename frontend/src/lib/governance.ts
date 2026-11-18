@@ -72,6 +72,20 @@ const ACTION_AR: Record<string, string> = {
   "retention.purge": "حذف صور انتهت مدة حفظها",
   "notice.map_urgent": "إشعار بتلف عاجل",
   "notice.approval_overdue": "تذكير باعتماد متأخر",
+  "device.create": "إضافة كاميرا أو جهاز",
+  "device.update": "تعديل كاميرا أو جهاز",
+  "device.delete": "حذف كاميرا أو جهاز",
+  "device.capture": "التقاط صورة من كاميرا",
+  "ingest.upload": "رفع دفعة صور",
+  "ingest.retry": "إعادة تحليل صورة",
+  "ingest.assign_facade": "تحديد واجهة صورة",
+  "assistant.audit_report": "ملف تدقيق من المساعد",
+  "assistant.report_sent": "إرسال ملف تدقيق للمختصين",
+  "assistant.send_cancelled": "إلغاء إرسال ملف تدقيق",
+  "model.register": "تسجيل إصدار نموذج",
+  "model.activate": "تفعيل إصدار نموذج",
+  "model.retire": "إيقاف إصدار نموذج",
+  "model.training_export": "تصدير بيانات التدريب",
 };
 
 export const ACTION_GROUPS: { prefix: string; label: string }[] = [
@@ -84,6 +98,10 @@ export const ACTION_GROUPS: { prefix: string; label: string }[] = [
   { prefix: "passport.", label: "جوازات الزوار" },
   { prefix: "retention.", label: "حفظ الصور" },
   { prefix: "notice.", label: "الإشعارات" },
+  { prefix: "device.", label: "الكاميرات والأجهزة" },
+  { prefix: "ingest.", label: "رفع الصور" },
+  { prefix: "assistant.", label: "مساعد أثر" },
+  { prefix: "model.", label: "نموذج التحليل" },
 ];
 
 export const TARGET_TYPES: { value: string; label: string }[] = [
@@ -95,6 +113,11 @@ export const TARGET_TYPES: { value: string; label: string }[] = [
   { value: "mission", label: "مهمة تصوير" },
   { value: "passport", label: "جواز زائر" },
   { value: "observation", label: "صورة زائر" },
+  { value: "device", label: "كاميرا أو جهاز" },
+  { value: "ingest", label: "صور مرفوعة" },
+  { value: "assistant_attachment", label: "ملف من المساعد" },
+  { value: "ml_model", label: "إصدار نموذج" },
+  { value: "training_export", label: "تصدير تدريب" },
 ];
 
 export function auditActionAr(action: string): string {
