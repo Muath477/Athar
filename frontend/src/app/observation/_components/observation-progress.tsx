@@ -98,6 +98,11 @@ export function ObservationProgress() {
         </p>
       )}
       <StoryView storyId={detail.story_id ?? null} />
+      {detail.site_id && (
+        <Link href={`/sites/${detail.site_id}`} className="self-start rounded-full border border-ink px-5 py-2">
+          شاهد المكان مجسّمًا وطريق الوصول
+        </Link>
+      )}
     </div>
   );
 }

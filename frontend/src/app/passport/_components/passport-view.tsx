@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApiError, forgetPassportLocally, type Passport, passportToken, request } from "@/lib/api";
 
@@ -36,7 +37,9 @@ export function PassportView() {
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {passport.stamps.map((s) => (
             <li key={s.site_id} className="flex flex-col items-center gap-1 rounded-xl border-2 border-sadu p-4 text-center">
-              <span className="font-bold">{s.site_name_ar}</span>
+              <Link href={`/sites/${s.site_id}`} className="font-bold underline-offset-4 hover:underline">
+                {s.site_name_ar}
+              </Link>
               <time className="text-xs" dateTime={s.stamped_at}>
                 {new Date(s.stamped_at).toLocaleDateString("ar-SA")}
               </time>

@@ -13,6 +13,8 @@ export type Facade = {
   default_camera: { position?: number[]; target?: number[] };
 };
 
+export type LatLon = { lat: number; lon: number };
+
 export type Site = {
   id: string;
   slug: string;
@@ -20,6 +22,8 @@ export type Site = {
   name_en: string;
   building_type: string;
   model_url: string | null;
+  location: LatLon;
+  boundary: LatLon[];
   facades: Facade[];
 };
 
