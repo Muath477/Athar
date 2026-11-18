@@ -10,11 +10,12 @@ from sadu.modules.mapping.application.element_prompt import (
     PROMPT_VERSION,
     InvalidAnswer,
     elements_answer,
+    parse_answer,
     parse_elements,
 )
 from sadu.modules.mapping.application.ports import DetectionInput, DetectorUnavailable, ModelChoice
 from sadu.modules.mapping.domain.grid import Grid
-from sadu.modules.mapping.infrastructure.qwen_detector import QwenEndpoint, QwenVisionDetector, parse_answer
+from sadu.modules.mapping.infrastructure.qwen_detector import QwenEndpoint, QwenVisionDetector
 from sadu.shared.config import DetectorKind, Settings
 from sadu.shared.vocabulary import DamageType, ModelConfidence, Severity
 from tests.fakes import FakeLLM

@@ -1,18 +1,15 @@
-import base64
-import json
-import re
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
 from sadu.modules.mapping.application.element_prompt import (
-    ELEMENTS_SCHEMA,
     PROMPT_VERSION,
-    SYSTEM_PROMPT,
-    USER_TEXT,
     InvalidAnswer,
-    parse_elements,
+    completion_body,
+    parse_answer,
+    repair_messages,
+    wall_messages,
 )
 from sadu.modules.mapping.application.ports import (
     ActiveModelLookup,
@@ -26,13 +23,6 @@ from sadu.modules.mapping.domain.raster import cells_from_elements
 from sadu.shared.resilience import call_with_policy
 
 UNREGISTERED_VERSION = "unregistered"
-MAX_ANSWER_TOKENS = 4096
-REPAIR_TEXT = (
-    "That answer could not be used: {error}. Reply again with the corrected JSON only, "
-    'in the form {{"elements": [...]}}.'
-)
-_THINKING = re.compile(r"<think>.*?</think>", re.DOTALL)
-_FENCE = re.compile(r"^```(?:json)?\s*|\s*```$")
 
 
 @dataclass(frozen=True)
@@ -66,18 +56,13 @@ class QwenVisionDetector:
 
     async def detect(self, request: DetectionInput) -> DetectionOutput:
         choice = await self._model()
-        messages = _messages(request.rectified_jpeg)
+        messages = wall_messages(request.rectified_jpeg)
         async with httpx.AsyncClient(transport=self._transport) as http:
             answer = await self._complete(http, choice.name, messages)
             try:
                 elements = parse_answer(answer)
             except InvalidAnswer as error:
-                retry = [
-                    *messages,
-                    {"role": "assistant", "content": answer},
-                    {"role": "user", "content": REPAIR_TEXT.format(error=error)},
-                ]
-                elements = await self._repaired(http, choice.name, retry)
+                elements = await self._repaired(http, choice.name, repair_messages(messages, answer, error))
         return DetectionOutput(
             cells=cells_from_elements(elements, request.grid),
             elements=elements,
@@ -99,18 +84,7 @@ class QwenVisionDetector:
             raise DetectorUnavailable(f"damage model answer invalid after a repair: {error}") from error
 
     async def _complete(self, http: httpx.AsyncClient, model: str, messages: list[dict[str, Any]]) -> str:
-        body: dict[str, Any] = {
-            "model": model,
-            "messages": messages,
-            "temperature": 0,
-            "max_tokens": MAX_ANSWER_TOKENS,
-            "chat_template_kwargs": {"enable_thinking": False},
-        }
-        if self._endpoint.json_schema:
-            body["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {"name": "wall_elements", "schema": ELEMENTS_SCHEMA},
-            }
+        body = completion_body(model, messages, json_schema=self._endpoint.json_schema)
         headers = {"Authorization": f"Bearer {self._endpoint.token}"} if self._endpoint.token else {}
 
         async def send() -> str:
@@ -124,26 +98,3 @@ class QwenVisionDetector:
             return await call_with_policy("qwen_detector", send, timeout_s=self._endpoint.timeout_s)
         except (httpx.HTTPError, TimeoutError, ValueError, KeyError, IndexError, TypeError) as error:
             raise DetectorUnavailable(f"damage model call failed: {type(error).__name__}") from error
-
-
-def parse_answer(answer: str) -> tuple[Element, ...]:
-    text = _FENCE.sub("", _THINKING.sub("", answer).strip())
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError as error:
-        raise InvalidAnswer(f"not valid JSON ({error.msg})") from error
-    return parse_elements(data)
-
-
-def _messages(jpeg: bytes) -> list[dict[str, Any]]:
-    image_url = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode("ascii")
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": [
-                {"type": "image_url", "image_url": {"url": image_url}},
-                {"type": "text", "text": USER_TEXT},
-            ],
-        },
-    ]

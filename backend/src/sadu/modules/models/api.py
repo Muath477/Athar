@@ -128,6 +128,7 @@ def _record(example: mapping.TrainingExample, image_name: str) -> dict[str, Any]
         "cols": example.grid.cols,
         "elements": [mapping.element_json(e) for e in example.elements],
         "detector": example.detector,
+        "detector_status": example.detector_status.value,
         "detector_cells": [mapping.cell_json(c) for c in example.model_cells],
         "label_quality": example.label_quality.value,
     }

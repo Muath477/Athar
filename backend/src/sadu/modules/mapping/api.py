@@ -217,6 +217,7 @@ class TrainingExample:
     elements: tuple[Element, ...]
     model_cells: tuple[MapCell, ...]
     detector: str
+    detector_status: DetectorStatus
     label_quality: LabelQuality
 
 
@@ -550,6 +551,7 @@ async def _example(session: AsyncSession, row: DamageMapRow, quality: LabelQuali
         elements=view.elements,
         model_cells=view.model_cells,
         detector=view.detector,
+        detector_status=view.detector_status,
         label_quality=quality,
     )
 

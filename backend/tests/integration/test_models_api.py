@@ -86,6 +86,7 @@ async def test_training_export_holds_only_approved_maps_without_people(client, d
     assert archive.read(record["image"]).startswith(b"\xff\xd8")
     assert {e["damage_type"] for e in record["elements"]} == {"crack", "plaster_loss"}
     assert (record["rows"], record["cols"], record["detector"]) == (8, 13, "scripted")
+    assert record["detector_status"] == "ok"
     assert not {"created_by", "approved_by", "field_notes", "wall_name"} & record.keys()
     assert json.loads(archive.read("export.json"))["examples"] == 1
 
