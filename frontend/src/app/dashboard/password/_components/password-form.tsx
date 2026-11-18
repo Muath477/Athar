@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { PageSkeleton, RetryAlert } from "@/app/_components/page-status";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ApiError, homeFor } from "@/lib/api";
 import { MIN_PASSWORD_LENGTH, changeOwnPassword } from "@/lib/governance";
 import { useMeState } from "@/lib/use-me";
 
 const ERROR_ID = "password-error";
-const INPUT_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3";
 
 export function PasswordForm() {
   const router = useRouter();
@@ -43,16 +45,17 @@ export function PasswordForm() {
   const describedBy = invalid ? `${ERROR_ID} password-hint` : "password-hint";
 
   return (
-    <form onSubmit={submit} className="mx-auto mt-10 flex w-full max-w-sm flex-col gap-4">
-      <h1 className="text-3xl font-bold leading-snug">عيّن كلمة مرور جديدة</h1>
+    <form onSubmit={submit} className="mx-auto mt-10 flex w-full max-w-sm flex-col gap-5">
+      <h1 className="text-3xl font-bold">عيّن كلمة مرور جديدة</h1>
       {me.must_change_password && (
-        <p className="rounded-xl bg-white/75 p-3 text-sm leading-relaxed">
+        <p className="rounded-sm border border-line bg-white p-3 text-sm leading-relaxed">
           أنشأ مسؤول النظام كلمة مرور مؤقتة لحسابك. اختر كلمة مرور خاصة بك قبل المتابعة.
         </p>
       )}
-      <label className="flex flex-col gap-1">
-        كلمة المرور الحالية
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="current-password">كلمة المرور الحالية</Label>
+        <Input
+          id="current-password"
           name="current_password"
           type="password"
           required
@@ -60,12 +63,12 @@ export function PasswordForm() {
           dir="ltr"
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? ERROR_ID : undefined}
-          className={INPUT_CLASS}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        كلمة المرور الجديدة
-        <input
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+        <Input
+          id="new-password"
           name="new_password"
           type="password"
           required
@@ -74,15 +77,15 @@ export function PasswordForm() {
           dir="ltr"
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
-          className={INPUT_CLASS}
         />
-        <span id="password-hint" className="text-sm text-mud">
+        <p id="password-hint" className="text-xs text-mud">
           {MIN_PASSWORD_LENGTH.toLocaleString("ar-SA")} حرفًا على الأقل، وعبارة طويلة أسهل في التذكر.
-        </span>
-      </label>
-      <label className="flex flex-col gap-1">
-        أعد كتابة كلمة المرور الجديدة
-        <input
+        </p>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="confirm-password">أعد كتابة كلمة المرور الجديدة</Label>
+        <Input
+          id="confirm-password"
           name="confirm_password"
           type="password"
           required
@@ -91,15 +94,11 @@ export function PasswordForm() {
           dir="ltr"
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? ERROR_ID : undefined}
-          className={INPUT_CLASS}
         />
-      </label>
-      <button
-        disabled={pending}
-        className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
-      >
+      </div>
+      <Button size="lg" disabled={pending}>
         {pending ? "نحفظ كلمة المرور…" : "احفظ كلمة المرور"}
-      </button>
+      </Button>
       {error && (
         <p id={ERROR_ID} role="alert" className="text-urgent">
           {error}

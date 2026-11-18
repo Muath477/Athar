@@ -1,11 +1,26 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ApiError, type Site } from "@/lib/api";
 import { type Device, type DeviceInput, type DeviceKind, createDevice, updateDevice } from "@/lib/ingest";
 import { deviceKindAr } from "@/lib/labels";
+import { cn } from "@/lib/utils";
 
-const INPUT_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3 text-base";
 const KINDS: DeviceKind[] = ["fixed_camera", "drone", "phone", "upload"];
 
 function textOrNull(form: FormData, field: string): string | null {
@@ -13,16 +28,50 @@ function textOrNull(form: FormData, field: string): string | null {
   return value || null;
 }
 
-export function DeviceForm({
+export function DeviceSheet({
+  device,
+  sites,
+  trigger,
+  onSaved,
+}: {
+  device: Device | null;
+  sites: Site[];
+  trigger: ReactNode;
+  onSaved: (device: Device) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>{device ? `عدّل ${device.name_ar}` : "أضف جهازًا"}</SheetTitle>
+          <SheetDescription>
+            الكاميرا الثابتة تلتقط صورة دورية للواجهة، والطائرة والمحطة تُنسب إليهما الصور المرفوعة.
+          </SheetDescription>
+        </SheetHeader>
+        <DeviceForm
+          device={device}
+          sites={sites}
+          onSaved={(saved) => {
+            setOpen(false);
+            onSaved(saved);
+          }}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function DeviceForm({
   device,
   sites,
   onSaved,
-  onCancel,
 }: {
   device: Device | null;
   sites: Site[];
   onSaved: (device: Device) => void;
-  onCancel: () => void;
 }) {
   const [kind, setKind] = useState<DeviceKind>(device?.kind ?? "fixed_camera");
   const [siteId, setSiteId] = useState(device?.site_id ?? sites[0]?.id ?? "");
@@ -65,50 +114,38 @@ export function DeviceForm({
   return (
     <form
       onSubmit={submit}
-      aria-labelledby="device-form-title"
-      className="flex flex-col gap-4 rounded-xl border border-clay/50 bg-white/80 p-4"
+      aria-label={device ? `عدّل ${device.name_ar}` : "أضف جهازًا"}
+      className="flex flex-1 flex-col"
     >
-      <h2 id="device-form-title" className="text-xl font-bold">
-        {device ? `عدّل ${device.name_ar}` : "أضف جهازًا"}
-      </h2>
-      <fieldset disabled={pending} className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span>نوع الجهاز</span>
-          <select value={kind} onChange={(e) => chooseKind(e.target.value as DeviceKind)} className={INPUT_CLASS}>
+      <fieldset disabled={pending} className="grid gap-4 px-4 sm:grid-cols-2">
+        <Field id="device-kind" label="نوع الجهاز">
+          <NativeSelect id="device-kind" value={kind} onChange={(e) => chooseKind(e.target.value as DeviceKind)}>
             {KINDS.map((k) => (
               <option key={k} value={k}>
                 {deviceKindAr[k]}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>الاسم</span>
-          <input name="name_ar" required maxLength={200} defaultValue={device?.name_ar} className={INPUT_CLASS} />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>الموقع</span>
-          <select
-            value={siteId}
-            required={camera}
-            onChange={(e) => setSiteId(e.target.value)}
-            className={INPUT_CLASS}
-          >
+          </NativeSelect>
+        </Field>
+        <Field id="device-name" label="الاسم">
+          <Input id="device-name" name="name_ar" required maxLength={200} defaultValue={device?.name_ar} />
+        </Field>
+        <Field id="device-site" label="الموقع">
+          <NativeSelect id="device-site" value={siteId} required={camera} onChange={(e) => setSiteId(e.target.value)}>
             {!camera && <option value="">بلا موقع محدد</option>}
             {sites.map((site) => (
               <option key={site.id} value={site.id}>
                 {site.name_ar}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>الواجهة التي تصوّرها</span>
-          <select
+          </NativeSelect>
+        </Field>
+        <Field id="device-facade" label="الواجهة التي تصوّرها">
+          <NativeSelect
             key={siteId}
+            id="device-facade"
             name="facade_id"
             defaultValue={device?.site_id === siteId ? (device?.facade_id ?? "") : ""}
-            className={INPUT_CLASS}
           >
             <option value="">حدّد من إحداثيات الصورة أو لاحقًا</option>
             {facades.map((facade) => (
@@ -116,57 +153,66 @@ export function DeviceForm({
                 {facade.name_ar}
               </option>
             ))}
-          </select>
-        </label>
+          </NativeSelect>
+        </Field>
 
         {camera && (
           <>
-            <label className="flex flex-col gap-1 sm:col-span-2">
-              <span>رابط اللقطة (HTTP أو HTTPS)</span>
-              <input
+            <Field
+              id="device-snapshot"
+              label="رابط اللقطة (HTTP أو HTTPS)"
+              hint={
+                <>
+                  معظم الكاميرات ومسجلات الفيديو تعرض صورة ثابتة على رابط كهذا. العناوين الداخلية تحتاج إضافتها إلى
+                  <bdi> SADU_CAMERA_ALLOWED_HOSTS</bdi>.
+                </>
+              }
+              className="sm:col-span-2"
+            >
+              <Input
+                id="device-snapshot"
                 name="snapshot_url"
                 type="url"
                 dir="ltr"
                 maxLength={500}
                 defaultValue={device?.snapshot_url ?? ""}
                 placeholder="http://192.168.1.64/ISAPI/Streaming/channels/101/picture"
-                aria-describedby="snapshot-hint"
-                className={INPUT_CLASS}
+                aria-describedby="device-snapshot-hint"
               />
-              <span id="snapshot-hint" className="text-sm text-mud">
-                معظم الكاميرات ومسجلات الفيديو تعرض صورة ثابتة على رابط كهذا. العناوين الداخلية تحتاج إضافتها إلى
-                <bdi> SADU_CAMERA_ALLOWED_HOSTS</bdi>.
-              </span>
-            </label>
-            <label className="flex flex-col gap-1 sm:col-span-2">
-              <span>رابط البث RTSP (اختياري)</span>
-              <input
+            </Field>
+            <Field
+              id="device-rtsp"
+              label="رابط البث RTSP (اختياري)"
+              hint="يُستخدم إن لم يوجد رابط لقطة، ويحتاج ffmpeg على الخادم."
+              className="sm:col-span-2"
+            >
+              <Input
+                id="device-rtsp"
                 name="rtsp_url"
                 dir="ltr"
                 maxLength={500}
                 defaultValue={device?.rtsp_url ?? ""}
                 placeholder="rtsp://192.168.1.64/Streaming/Channels/101"
-                aria-describedby="rtsp-hint"
-                className={INPUT_CLASS}
+                aria-describedby="device-rtsp-hint"
               />
-              <span id="rtsp-hint" className="text-sm text-mud">
-                يُستخدم إن لم يوجد رابط لقطة، ويحتاج ffmpeg على الخادم.
-              </span>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span>اسم المستخدم للكاميرا</span>
-              <input
+            </Field>
+            <Field id="device-username" label="اسم المستخدم للكاميرا">
+              <Input
+                id="device-username"
                 name="username"
                 dir="ltr"
                 maxLength={100}
                 autoComplete="off"
                 defaultValue={device?.username ?? ""}
-                className={INPUT_CLASS}
               />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span>متغير البيئة لكلمة المرور</span>
-              <input
+            </Field>
+            <Field
+              id="device-secret"
+              label="متغير البيئة لكلمة المرور"
+              hint="لا يحفظ أثر كلمة المرور؛ يقرؤها الخادم من هذا المتغير عند الالتقاط."
+            >
+              <Input
+                id="device-secret"
                 name="secret_env"
                 dir="ltr"
                 maxLength={100}
@@ -174,16 +220,12 @@ export function DeviceForm({
                 autoComplete="off"
                 defaultValue={device?.secret_env ?? ""}
                 placeholder="SADU_CAMERA_SECRET_GATE"
-                aria-describedby="secret-hint"
-                className={INPUT_CLASS}
+                aria-describedby="device-secret-hint"
               />
-              <span id="secret-hint" className="text-sm text-mud">
-                لا يحفظ أثر كلمة المرور؛ يقرؤها الخادم من هذا المتغير عند الالتقاط.
-              </span>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span>الالتقاط كل (ساعة)</span>
-              <input
+            </Field>
+            <Field id="device-interval" label="الالتقاط كل (ساعة)">
+              <Input
+                id="device-interval"
                 name="interval_h"
                 type="number"
                 inputMode="numeric"
@@ -191,39 +233,60 @@ export function DeviceForm({
                 max={720}
                 defaultValue={device?.interval_h ?? ""}
                 placeholder="الافتراضي ٢٤"
-                className={INPUT_CLASS}
               />
-            </label>
+            </Field>
           </>
         )}
 
-        <label className="flex min-h-11 items-center gap-2 self-end">
-          <input name="active" type="checkbox" defaultChecked={device?.active ?? true} className="h-5 w-5" />
-          <span>مفعّل</span>
-        </label>
+        <div className="flex min-h-11 items-center gap-2 self-end">
+          <Checkbox id="device-active" name="active" defaultChecked={device?.active ?? true} />
+          <Label htmlFor="device-active" className="text-base text-ink">
+            مفعّل
+          </Label>
+        </div>
       </fieldset>
 
       {error && (
-        <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
+        <p role="alert" className="mx-4 mt-4 rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm">
           {error}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
-        >
+      <SheetFooter className="flex-row flex-wrap">
+        <Button type="submit" disabled={pending}>
           {pending ? "نحفظ…" : "احفظ الجهاز"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand"
-        >
-          ألغِ
-        </button>
-      </div>
+        </Button>
+        <SheetClose asChild>
+          <Button type="button" variant="outline">
+            ألغِ
+          </Button>
+        </SheetClose>
+      </SheetFooter>
     </form>
+  );
+}
+
+function Field({
+  id,
+  label,
+  hint,
+  className,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Label htmlFor={id}>{label}</Label>
+      {children}
+      {hint && (
+        <p id={`${id}-hint`} className="text-xs leading-relaxed text-mud">
+          {hint}
+        </p>
+      )}
+    </div>
   );
 }

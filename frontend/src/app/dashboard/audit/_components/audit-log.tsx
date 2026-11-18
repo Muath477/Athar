@@ -2,6 +2,11 @@
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { PageSkeleton, RetryAlert } from "@/app/_components/page-status";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ApiError, can } from "@/lib/api";
 import {
   ACTION_GROUPS,
@@ -17,9 +22,6 @@ import {
 } from "@/lib/governance";
 import { countAr } from "@/lib/plural";
 import { useMeState } from "@/lib/use-me";
-
-const FIELD_CLASS = "min-h-11 rounded-lg border border-mud/60 bg-white px-3";
-const SECONDARY = "min-h-11 rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand disabled:opacity-50";
 
 function momentAr(value: string): string {
   return new Date(value).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" });
@@ -71,61 +73,69 @@ export function AuditLog() {
   if (meError) return <RetryAlert message={meError} onRetry={retryMe} />;
   if (!me) return <PageSkeleton />;
   if (!allowed) {
-    return <p className="rounded-xl bg-white/75 p-3">سجل التدقيق متاح لمسؤول النظام وممثل هيئة التراث.</p>;
+    return (
+      <p className="mt-6 rounded-sm border border-line bg-white p-3">
+        سجل التدقيق متاح لمسؤول النظام وممثل هيئة التراث.
+      </p>
+    );
   }
 
   const pages = result ? Math.max(1, Math.ceil(result.total / result.page_size)) : 1;
 
   return (
-    <div className="flex flex-col gap-4 pt-2">
+    <div className="flex flex-col gap-5 pt-2">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold leading-snug">سجل التدقيق</h1>
           <p className="text-sm text-mud">من فعل ماذا ومتى: الدخول، المخططات واعتمادها، الحسابات، وحذف الصور.</p>
         </div>
         {can(me, "export") && (
-          <a href={auditCsvUrl(filters)} download className={`${SECONDARY} inline-flex items-center`}>
+          <a href={auditCsvUrl(filters)} download className={buttonVariants({ variant: "outline" })}>
             نزّل السجل CSV
           </a>
         )}
       </header>
 
-      <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-3 rounded-xl bg-white/60 p-3 text-sm">
-        <label className="flex flex-col gap-1">
-          المنفّذ (البريد)
-          <input name="actor" type="search" dir="ltr" defaultValue={filters.actor} className={FIELD_CLASS} />
-        </label>
-        <label className="flex flex-col gap-1">
-          نوع الإجراء
-          <select name="action" defaultValue={filters.action} className={FIELD_CLASS}>
+      <form
+        onSubmit={applyFilters}
+        aria-label="تصفية السجل"
+        className="grid gap-3 border-y border-line py-4 sm:grid-cols-2 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto] lg:items-end"
+      >
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="audit-actor">المنفّذ (البريد)</Label>
+          <Input id="audit-actor" name="actor" type="search" dir="ltr" defaultValue={filters.actor} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="audit-action">نوع الإجراء</Label>
+          <NativeSelect id="audit-action" name="action" defaultValue={filters.action}>
             <option value="">كل الإجراءات</option>
             {ACTION_GROUPS.map((group) => (
               <option key={group.prefix} value={group.prefix}>
                 {group.label}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          الهدف
-          <select name="target_type" defaultValue={filters.target_type} className={FIELD_CLASS}>
+          </NativeSelect>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="audit-target">الهدف</Label>
+          <NativeSelect id="audit-target" name="target_type" defaultValue={filters.target_type}>
             <option value="">كل الأهداف</option>
             {TARGET_TYPES.map((target) => (
               <option key={target.value} value={target.value}>
                 {target.label}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          من يوم
-          <input name="from" type="date" defaultValue={filters.from} className={FIELD_CLASS} />
-        </label>
-        <label className="flex flex-col gap-1">
-          إلى يوم
-          <input name="to" type="date" defaultValue={filters.to} className={FIELD_CLASS} />
-        </label>
-        <button className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink">طبّق التصفية</button>
+          </NativeSelect>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="audit-from">من يوم</Label>
+          <Input id="audit-from" name="from" type="date" defaultValue={filters.from} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="audit-to">إلى يوم</Label>
+          <Input id="audit-to" name="to" type="date" defaultValue={filters.to} />
+        </div>
+        <Button className="sm:col-span-2 lg:col-span-1">طبّق التصفية</Button>
       </form>
 
       {error && <RetryAlert message={error} onRetry={retry} />}
@@ -138,45 +148,43 @@ export function AuditLog() {
             {pages.toLocaleString("ar-SA")}
           </p>
           {result.entries.length === 0 ? (
-            <p className="rounded-xl bg-white/75 p-3">لا سجلات تطابق التصفية.</p>
+            <p className="rounded-sm border border-line bg-white p-3">
+              لا سجلات تطابق التصفية. وسّع المدة أو أزل أحد الشروط.
+            </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl bg-white/75">
-              <table className="w-full text-sm">
-                <thead className="text-mud">
-                  <tr className="border-b border-clay/30">
-                    <th className="p-2 text-start font-normal">الوقت</th>
-                    <th className="p-2 text-start font-normal">المنفّذ</th>
-                    <th className="p-2 text-start font-normal">الإجراء</th>
-                    <th className="p-2 text-start font-normal">الهدف</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.entries.map((entry) => (
-                    <tr key={entry.id} className="border-b border-clay/20 last:border-0">
-                      <td className="whitespace-nowrap p-2">{momentAr(entry.at)}</td>
-                      <td className="p-2">
-                        {entry.actor_email ? <bdi dir="ltr">{entry.actor_email}</bdi> : "النظام"}
-                      </td>
-                      <td className="p-2">{auditActionAr(entry.action)}</td>
-                      <td className="p-2">
-                        {targetAr(entry)}{" "}
-                        <bdi dir="ltr" className="text-mud">
-                          {entry.target_id.slice(0, 8)}
-                        </bdi>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الوقت</TableHead>
+                  <TableHead>المنفّذ</TableHead>
+                  <TableHead>الإجراء</TableHead>
+                  <TableHead>الهدف</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {result.entries.map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="whitespace-nowrap">{momentAr(entry.at)}</TableCell>
+                    <TableCell>{entry.actor_email ? <bdi dir="ltr">{entry.actor_email}</bdi> : "النظام"}</TableCell>
+                    <TableCell>{auditActionAr(entry.action)}</TableCell>
+                    <TableCell>
+                      {targetAr(entry)}{" "}
+                      <bdi dir="ltr" className="font-latin text-mud">
+                        {entry.target_id.slice(0, 8)}
+                      </bdi>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
-          <nav aria-label="صفحات السجل" className="flex flex-wrap gap-3">
-            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className={SECONDARY}>
+          <nav aria-label="صفحات السجل" className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
               الصفحة السابقة
-            </button>
-            <button type="button" disabled={page >= pages} onClick={() => setPage(page + 1)} className={SECONDARY}>
+            </Button>
+            <Button type="button" variant="outline" disabled={page >= pages} onClick={() => setPage(page + 1)}>
               الصفحة التالية
-            </button>
+            </Button>
           </nav>
         </>
       )}

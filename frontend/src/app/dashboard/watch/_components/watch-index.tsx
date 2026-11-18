@@ -1,7 +1,9 @@
 "use client";
 
+import { TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { ApiError, can } from "@/lib/api";
 import { alerts, countAr } from "@/lib/plural";
 import { useMe } from "@/lib/use-me";
@@ -12,7 +14,6 @@ import {
   areaAr,
   getOverview,
   levelAr,
-  levelClass,
   scanSite,
   statusAr,
   strongestSignal,
@@ -21,6 +22,7 @@ import {
   warningAr,
   zoneAr,
 } from "@/lib/watch";
+import { LevelBadge, SampleBadge } from "./level-badge";
 import { RegionMap } from "./region-map";
 import { CopernicusCredit, IndexSkeleton, LoadError } from "./watch-states";
 
@@ -75,12 +77,8 @@ export function WatchIndex() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold leading-snug">رصد محيط المواقع من الفضاء</h1>
-          {overview.is_sample && (
-            <span className="rounded-full border-2 border-dashed border-clay px-3 py-0.5 text-sm font-bold text-mud">
-              بيانات تجريبية للعرض
-            </span>
-          )}
+          <h1 className="text-3xl font-bold">رصد محيط المواقع من الفضاء</h1>
+          {overview.is_sample && <SampleBadge>بيانات تجريبية للعرض</SampleBadge>}
         </div>
         <p className="max-w-3xl text-mud">
           نقارن صور <bdi dir="ltr">Sentinel-2</bdi> للشهر الأخير بصور السنة التي قبله، داخل حدود كل موقع وفي محيط{" "}
@@ -90,8 +88,10 @@ export function WatchIndex() {
         {counts.length > 0 && (
           <ul className="flex flex-wrap gap-2 pt-1" aria-label="ملخص درجات الخطر">
             {counts.map(({ level, count }) => (
-              <li key={level} className={`rounded-full px-3 py-1 text-sm ${levelClass[level]}`}>
-                {levelAr[level]} <strong className="tabular-nums">{count.toLocaleString("ar-SA")}</strong>
+              <li key={level}>
+                <LevelBadge level={level}>
+                  {levelAr[level]} <span className="tabular-nums">{count.toLocaleString("ar-SA")}</span>
+                </LevelBadge>
               </li>
             ))}
           </ul>
@@ -99,8 +99,9 @@ export function WatchIndex() {
       </header>
 
       {overview.alerts_pending > 0 && (
-        <div role="status" className="flex flex-col gap-1 rounded-xl border border-urgent/40 bg-urgent/10 p-3">
+        <div role="status" className="flex flex-col gap-1 rounded-sm border border-urgent/40 bg-urgent/5 p-3">
           <p>
+            <TriangleAlertIcon className="me-1 inline size-4 align-[-0.125em] text-urgent" aria-hidden="true" />
             <strong>{countAr(overview.alerts_pending, alerts)}</strong> بانتظار مراجعة المختص. التنبيه يصدر عند تغيّر
             عاجل أو تغيّر يتكرر في فحصين متتاليين.
           </p>
@@ -126,14 +127,17 @@ export function WatchIndex() {
       )}
 
       {error && (
-        <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
+        <p role="alert" className="rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm">
           {error}
         </p>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <RegionMap sites={overview.sites} />
-        <ol className="order-first flex flex-col gap-2 lg:order-none" aria-label="المواقع مرتبة حسب الأولوية">
+        <ol
+          className="order-first flex flex-col self-start divide-y divide-line rounded-sm border border-line bg-white lg:order-none"
+          aria-label="المواقع مرتبة حسب الأولوية"
+        >
           {overview.sites.map((site, index) => (
             <SiteRow
               key={site.site_id}
@@ -171,7 +175,7 @@ function SiteRow({
   const prominent = level === "urgent" || level === "moderate" || level === "watch";
 
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-white/75 p-3">
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
       <span className="w-6 text-center text-sm tabular-nums text-mud">{rank.toLocaleString("ar-SA")}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <Link href={`/dashboard/watch/${site.site_id}`} className="font-bold leading-snug hover:text-sadu">
@@ -188,7 +192,12 @@ function SiteRow({
           )}
           {warningAr(site) && (
             <span className="block text-xs">
-              {site.alert && <strong className="text-urgent">تنبيه · </strong>}
+              {site.alert && (
+                <strong className="text-urgent">
+                  <TriangleAlertIcon className="me-0.5 inline size-3.5 align-[-0.125em]" aria-hidden="true" />
+                  تنبيه ·{" "}
+                </strong>
+              )}
               {warningAr(site)}
               {site.trend && site.trend !== "new" && <> · {trendAr[site.trend]}</>}
             </span>
@@ -199,22 +208,20 @@ function SiteRow({
         </p>
       </div>
       <div className="flex basis-full items-center justify-end gap-3 sm:basis-auto">
-        <span className={`rounded-full px-3 py-0.5 text-sm font-bold ${levelClass[level]}`}>{levelAr[level]}</span>
+        <LevelBadge level={level} />
         {onScan && (
-          <button
+          <Button
             type="button"
+            variant={prominent ? "outline" : "ghost"}
+            size="sm"
             onClick={onScan}
             disabled={disabled}
             aria-busy={busy}
             aria-label={busy ? `يُفحص ${site.name_ar}` : prominent ? `افحص ${site.name_ar} الآن` : `افحص ${site.name_ar}`}
-            className={
-              prominent
-                ? "min-h-11 rounded-full border border-ink/30 px-4 text-sm transition-colors hover:bg-ink hover:text-sand disabled:opacity-50"
-                : "min-h-11 px-2 text-sm text-mud underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
-            }
+            className={prominent ? undefined : "text-mud hover:text-ink"}
           >
             {busy ? "يُفحص…" : prominent ? "افحص الآن" : "افحص"}
-          </button>
+          </Button>
         )}
       </div>
     </li>

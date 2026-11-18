@@ -24,7 +24,7 @@ export function DamageLegend({
       <section className="flex flex-col gap-2">
         <h2 className="font-bold">مفتاح الألوان</h2>
         <p className="no-print text-xs text-mud">اضغط على نوع لإخفائه من الطبقة.</p>
-        <div className="flex h-3 overflow-hidden rounded-full bg-clay/25" role="img" aria-label="توزيع المساحة المتضررة حسب النوع">
+        <div className="flex h-3 overflow-hidden rounded-xs bg-clay" role="img" aria-label="توزيع المساحة المتضررة حسب النوع">
           {map.damage_types.map((type) =>
             counts.get(type) ? (
               <span key={type} style={{ inlineSize: `${((counts.get(type) ?? 0) / total) * 100}%`, background: colorFor(type) }} />
@@ -36,7 +36,7 @@ export function DamageLegend({
             const count = counts.get(type) ?? 0;
             const off = hidden.includes(type);
             return (
-              <li key={type} className="flex items-center justify-between gap-2 border-b border-clay/25 py-1.5">
+              <li key={type} className="flex items-center justify-between gap-2 border-b border-line py-1.5">
                 <button
                   type="button"
                   onClick={() => onToggle(type)}
@@ -72,7 +72,7 @@ export function DamageLegend({
         </div>
       </section>
 
-      <p className="border-t border-clay/40 pt-3 text-base">
+      <p className="border-t border-line pt-3 text-base">
         <strong className="tabular-nums">{Math.round((damaged / total) * 100).toLocaleString("ar-SA")}٪</strong> من
         الجدار متضرر ({damaged.toLocaleString("ar-SA")} من {countAr(total, cellForms)})
       </p>

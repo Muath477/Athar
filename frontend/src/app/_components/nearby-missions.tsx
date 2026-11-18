@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { type Mission, request } from "@/lib/api";
 import { currentPosition } from "@/lib/geo";
 
@@ -24,28 +25,23 @@ export function NearbyMissions() {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl bg-white/75 p-4">
+    <section className="flex flex-col gap-3 rounded-sm border border-line bg-white p-4">
       <h2 className="text-xl font-bold">مهام قريبة منك</h2>
       <p className="text-sm">بعض الواجهات تحتاج صورة جديدة. صوّرها لتساعد في التأكد من حالتها.</p>
       {missions === null ? (
-        <button
-          type="button"
-          onClick={look}
-          disabled={loading}
-          className="min-h-11 self-start rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand disabled:opacity-50"
-        >
+        <Button type="button" variant="outline" onClick={look} disabled={loading} className="self-start">
           {loading ? "نبحث…" : "ابحث بموقعي الآن"}
-        </button>
+        </Button>
       ) : missions.length === 0 ? (
         <p>لا مهام قريبة منك الآن. يمكنك تصوير أي واجهة تراثية أمامك.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col divide-y divide-line border-t border-line">
           {missions.map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-3 rounded-xl bg-white/60 p-3">
+            <li key={m.id} className="flex items-center justify-between gap-3 py-2">
               <span>{m.instruction_ar}</span>
               <Link
                 href={`/capture?mission=${m.id}&site=${m.site_id}&facade=${m.facade_id}`}
-                className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-mud px-5 text-sand hover:bg-ink"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 صوّر
               </Link>

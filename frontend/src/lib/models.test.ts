@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type DamageModel, metricLines, sortModels } from "@/lib/models";
+import { type DamageModel, metricColumns, metricLines, sortModels } from "@/lib/models";
 
 function model(id: string, status: DamageModel["status"], created_at: string): DamageModel {
   return {
@@ -21,6 +21,15 @@ describe("model registry helpers", () => {
     expect(lines.map((line) => line.label)).toEqual(["صحة صيغة الإجابة", "مخططات الاختبار", "متوسط F1 للأنواع"]);
     expect(lines[0].value).toBe((0.975).toLocaleString("ar-SA", { style: "percent", maximumFractionDigits: 1 }));
     expect(lines[1].value).toBe("١٢");
+  });
+
+  it("builds one column per numeric metric across all versions, in first-seen order", () => {
+    const first = { ...model("1", "active", "2026-11-01T00:00:00Z"), metrics: { macro_f1: 0.4, note: "x" } };
+    const second = { ...model("2", "candidate", "2026-11-02T00:00:00Z"), metrics: { micro_f1: 0.5, macro_f1: 0.6 } };
+    expect(metricColumns([first, second])).toEqual([
+      { key: "macro_f1", label: "متوسط F1 للأنواع" },
+      { key: "micro_f1", label: "F1 الإجمالي" },
+    ]);
   });
 
   it("lists the active model first, then the newest candidates", () => {

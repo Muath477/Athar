@@ -1,16 +1,16 @@
 "use client";
 
+import { TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PageSkeleton, RetryAlert } from "@/app/_components/page-status";
+import { Button } from "@/components/ui/button";
 import { ApiError, type Site, can, request } from "@/lib/api";
 import { type Device, listDevices } from "@/lib/ingest";
 import { countAr, devices as deviceForms } from "@/lib/plural";
 import { useMeState } from "@/lib/use-me";
-import { DeviceCard } from "./device-card";
-import { DeviceForm } from "./device-form";
-
-type Editing = { device: Device | null } | null;
+import { DeviceSheet } from "./device-form";
+import { DeviceRow } from "./device-row";
 
 function placeAr(device: Device, sites: Site[]): string {
   const site = sites.find((s) => s.id === device.site_id);
@@ -23,7 +23,6 @@ export function DevicesIndex() {
   const { me, error: meError, retry: retryMe } = useMeState();
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
-  const [editing, setEditing] = useState<Editing>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -63,43 +62,27 @@ export function DevicesIndex() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold leading-snug">الكاميرات والأجهزة</h1>
+          <h1 className="text-3xl font-bold">الكاميرات والأجهزة</h1>
           <p className="text-mud">
             <strong className="text-ink">{countAr(devices.length, deviceForms)}</strong>
             {failing > 0 && (
               <>
                 {" · "}
-                <strong className="text-urgent">تعذر آخر التقاط في {failing.toLocaleString("ar-SA")}</strong>
+                <strong className="inline-flex items-center gap-1 text-urgent">
+                  <TriangleAlertIcon className="size-4" aria-hidden="true" />
+                  تعذر آخر التقاط في {failing.toLocaleString("ar-SA")}
+                </strong>
               </>
             )}
           </p>
         </div>
-        {canManage && !editing && (
-          <button
-            type="button"
-            onClick={() => setEditing({ device: null })}
-            className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink"
-          >
-            أضف جهازًا
-          </button>
+        {canManage && (
+          <DeviceSheet device={null} sites={sites} onSaved={load} trigger={<Button type="button">أضف جهازًا</Button>} />
         )}
       </header>
 
-      {editing && (
-        <DeviceForm
-          key={editing.device?.id ?? "new"}
-          device={editing.device}
-          sites={sites}
-          onCancel={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            load();
-          }}
-        />
-      )}
-
       {devices.length === 0 ? (
-        <section className="flex flex-col items-start gap-3 rounded-xl bg-white/75 p-5">
+        <section className="flex flex-col items-start gap-3 rounded-sm border border-line bg-white p-5">
           <h2 className="text-xl font-bold">لا كاميرات مسجلة بعد</h2>
           <p className="max-w-prose leading-relaxed">
             سجّل كاميرات الموقع الثابتة ليلتقط أثر صورة دورية لكل واجهة ويحللها، وسجّل الطائرات المسيّرة لتُنسب إليها
@@ -107,23 +90,22 @@ export function DevicesIndex() {
           </p>
         </section>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="flex flex-col divide-y divide-line rounded-sm border border-line bg-white">
           {devices.map((device) => (
             <li key={device.id}>
-              <DeviceCard
+              <DeviceRow
                 device={device}
                 placeAr={placeAr(device, sites)}
+                sites={sites}
                 canManage={canManage}
-                onEdit={() => setEditing({ device })}
-                onDeleted={load}
-                onCaptured={load}
+                onChanged={load}
               />
             </li>
           ))}
         </ul>
       )}
 
-      <aside className="max-w-prose rounded-xl border border-clay/50 p-4 text-sm leading-relaxed">
+      <aside className="max-w-prose border-t border-line pt-4 text-sm leading-relaxed">
         <h2 className="mb-1 font-bold">صور جوال المساح</h2>
         <p>
           يصوّر المساح الجدار من{" "}

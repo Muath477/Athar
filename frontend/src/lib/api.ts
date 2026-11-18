@@ -212,6 +212,10 @@ export function mapReportUrl(mapId: string): string {
   return `${BASE}/maps/${mapId}/report.pdf`;
 }
 
+export function mapElementsCsvUrl(mapId: string): string {
+  return `${BASE}/maps/${mapId}/elements.csv`;
+}
+
 export function conditionExportUrl(siteId: string, format: "csv" | "pdf"): string {
   return `${BASE}/sites/${siteId}/condition.${format}`;
 }

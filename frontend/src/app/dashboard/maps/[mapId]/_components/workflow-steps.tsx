@@ -59,7 +59,7 @@ export function WorkflowSteps({ steps }: { steps: WorkflowStep[] }) {
         {done.map((step) => (
           <li key={step.key} className={`${collapsible} md:w-auto`}>
             <details className="text-xs text-mud">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-full bg-white/70 pe-3 ps-1.5">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-sm border border-line bg-white pe-3 ps-1.5">
                 <StepNumber step={step} tone="bg-ink text-sand" />
                 <span>{step.title_ar}</span>
               </summary>

@@ -1,15 +1,22 @@
 "use client";
 
-import { type FormEvent, useRef, useState } from "react";
-import { ApiError, type Role, type Site } from "@/lib/api";
+import { type FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
-  MIN_PASSWORD_LENGTH,
-  type ManagedUser,
-  type RoleMatrixRow,
-  createUser,
-  seesEverySite,
-} from "@/lib/governance";
-import { FIELD_CLASS, RolePicker } from "./role-picker";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ApiError, type Role, type Site } from "@/lib/api";
+import { MIN_PASSWORD_LENGTH, type ManagedUser, type RoleMatrixRow, createUser, seesEverySite } from "@/lib/governance";
+import { RolePicker } from "./role-picker";
 import { SiteChecklist } from "./site-checklist";
 
 const ERROR_ID = "new-user-error";
@@ -23,27 +30,20 @@ export function NewUserDialog({
   sites: Site[];
   onCreated: (user: ManagedUser) => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const opener = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
   const [role, setRole] = useState<Role>("inspector");
   const [siteIds, setSiteIds] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function open() {
-    setError(null);
-    dialog.current?.showModal();
-  }
-
-  function close() {
-    dialog.current?.close();
-    opener.current?.focus();
+  function changeOpen(next: boolean) {
+    setOpen(next);
+    if (next) setError(null);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
+    const form = new FormData(event.currentTarget);
     setPending(true);
     setError(null);
     try {
@@ -54,10 +54,9 @@ export function NewUserDialog({
         password: String(form.get("password")),
         site_ids: seesEverySite(role) ? [] : siteIds,
       });
-      formElement.reset();
       setRole("inspector");
       setSiteIds([]);
-      close();
+      setOpen(false);
       onCreated(created);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذر إنشاء الحساب. أعد المحاولة.");
@@ -69,27 +68,20 @@ export function NewUserDialog({
   const invalid = error !== null;
 
   return (
-    <>
-      <button
-        ref={opener}
-        type="button"
-        onClick={open}
-        className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink"
-      >
-        أضف حسابًا
-      </button>
-      <dialog
-        ref={dialog}
-        aria-labelledby="new-user-title"
-        className="m-auto w-full max-w-lg rounded-xl bg-sand p-0 text-ink backdrop:bg-ink/50"
-      >
-        <form onSubmit={submit} className="flex flex-col gap-4 p-5">
-          <h2 id="new-user-title" className="text-xl font-bold">
-            حساب جديد
-          </h2>
-          <label className="flex flex-col gap-1">
-            البريد الإلكتروني
-            <input
+    <Dialog open={open} onOpenChange={changeOpen}>
+      <DialogTrigger asChild>
+        <Button type="button">أضف حسابًا</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          <DialogHeader className="pe-10">
+            <DialogTitle>حساب جديد</DialogTitle>
+            <DialogDescription className="text-sm">يُسجَّل إنشاء الحساب في سجل التدقيق باسمك.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-user-email">البريد الإلكتروني</Label>
+            <Input
+              id="new-user-email"
               name="email"
               type="email"
               required
@@ -97,17 +89,17 @@ export function NewUserDialog({
               autoComplete="off"
               aria-invalid={invalid || undefined}
               aria-describedby={invalid ? ERROR_ID : undefined}
-              className={FIELD_CLASS}
             />
-          </label>
-          <label className="flex flex-col gap-1">
-            الاسم الظاهر
-            <input name="display_name" maxLength={120} autoComplete="off" className={FIELD_CLASS} />
-          </label>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-user-name">الاسم الظاهر</Label>
+            <Input id="new-user-name" name="display_name" maxLength={120} autoComplete="off" />
+          </div>
           <RolePicker matrix={matrix} value={role} onChange={setRole} />
-          <label className="flex flex-col gap-1">
-            كلمة مرور مؤقتة
-            <input
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-user-password">كلمة مرور مؤقتة</Label>
+            <Input
+              id="new-user-password"
               name="password"
               type="password"
               required
@@ -115,38 +107,28 @@ export function NewUserDialog({
               dir="ltr"
               autoComplete="new-password"
               aria-describedby="new-user-password-hint"
-              className={FIELD_CLASS}
             />
-            <span id="new-user-password-hint" className="text-sm text-mud">
+            <p id="new-user-password-hint" className="text-xs leading-relaxed text-mud">
               {MIN_PASSWORD_LENGTH.toLocaleString("ar-SA")} حرفًا على الأقل. سلّمها لصاحب الحساب، وسيُطلب منه تغييرها
               عند أول دخول.
-            </span>
-          </label>
-          {!seesEverySite(role) && (
-            <SiteChecklist sites={sites} selected={siteIds} onChange={setSiteIds} />
-          )}
+            </p>
+          </div>
+          {!seesEverySite(role) && <SiteChecklist sites={sites} selected={siteIds} onChange={setSiteIds} />}
           {error && (
             <p id={ERROR_ID} role="alert" className="text-urgent">
               {error}
             </p>
           )}
-          <div className="flex flex-wrap gap-3">
-            <button
-              disabled={pending}
-              className="min-h-11 rounded-full bg-sadu px-6 font-bold text-sand hover:bg-ink disabled:opacity-50"
-            >
-              {pending ? "ننشئ الحساب…" : "أنشئ الحساب"}
-            </button>
-            <button
-              type="button"
-              onClick={close}
-              className="min-h-11 rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand"
-            >
-              ألغِ
-            </button>
-          </div>
+          <DialogFooter>
+            <Button disabled={pending}>{pending ? "ننشئ الحساب…" : "أنشئ الحساب"}</Button>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                ألغِ
+              </Button>
+            </DialogClose>
+          </DialogFooter>
         </form>
-      </dialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

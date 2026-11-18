@@ -1,6 +1,20 @@
 "use client";
 
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, type MouseEvent, useId, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ApiError, type Role, type Site, roleAr } from "@/lib/api";
 import {
   MIN_PASSWORD_LENGTH,
@@ -12,10 +26,8 @@ import {
   seesEverySite,
   setActive,
 } from "@/lib/governance";
-import { FIELD_CLASS, RolePicker } from "./role-picker";
+import { RolePicker } from "./role-picker";
 import { SiteChecklist } from "./site-checklist";
-
-const SECONDARY = "min-h-11 rounded-full border border-ink/30 px-5 hover:bg-ink hover:text-sand disabled:opacity-50";
 
 type Props = {
   user: ManagedUser;
@@ -31,7 +43,7 @@ export function UserActions({ user, self, matrix, sites, onUpdated }: Props) {
   const [confirmingStatus, setConfirmingStatus] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const statusButton = useRef<HTMLButtonElement>(null);
+  const passwordId = useId();
 
   async function run(action: () => Promise<ManagedUser>, message: string) {
     setPending(true);
@@ -58,21 +70,15 @@ export function UserActions({ user, self, matrix, sites, onUpdated }: Props) {
     if (saved) formElement.reset();
   }
 
-  async function toggleActive() {
-    const message = user.is_active
-      ? `أُوقف حساب ${user.email} وأُنهيت جلساته.`
-      : `أُعيد تفعيل حساب ${user.email}.`;
+  async function toggleActive(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    const message = user.is_active ? `أُوقف حساب ${user.email} وأُنهيت جلساته.` : `أُعيد تفعيل حساب ${user.email}.`;
     await run(() => setActive(user.id, !user.is_active), message);
-    closeConfirm();
-  }
-
-  function closeConfirm() {
     setConfirmingStatus(false);
-    requestAnimationFrame(() => statusButton.current?.focus());
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-x-8 gap-y-5 lg:grid-cols-2">
       {self && (
         <p className="text-sm text-mud lg:col-span-2">
           لا تستطيع تغيير دورك أو إيقاف حسابك بنفسك. اطلب ذلك من مسؤول آخر.
@@ -80,14 +86,15 @@ export function UserActions({ user, self, matrix, sites, onUpdated }: Props) {
       )}
       <section aria-label="الدور" className="flex flex-col items-start gap-2">
         <RolePicker matrix={matrix} value={role} onChange={setRole} disabled={self || pending} />
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           disabled={self || pending || role === user.role}
           onClick={() => run(() => changeRole(user.id, role), `أصبح ${user.email} ${roleAr[role]}.`)}
-          className={SECONDARY}
         >
           احفظ الدور
-        </button>
+        </Button>
       </section>
 
       <section aria-label="المواقع" className="flex flex-col items-start gap-2">
@@ -96,69 +103,77 @@ export function UserActions({ user, self, matrix, sites, onUpdated }: Props) {
         ) : (
           <>
             <SiteChecklist sites={sites} selected={siteIds} onChange={setSiteIds} disabled={pending} />
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={pending}
               onClick={() => run(() => assignSites(user.id, siteIds), `حُدّثت مواقع ${user.email}.`)}
-              className={SECONDARY}
             >
               احفظ المواقع
-            </button>
+            </Button>
           </>
         )}
       </section>
 
       <form onSubmit={submitPassword} className="flex flex-col items-start gap-2">
-        <label className="flex flex-col gap-1">
-          كلمة مرور مؤقتة جديدة
-          <input
+        <div className="flex w-full flex-col gap-1.5">
+          <Label htmlFor={passwordId}>كلمة مرور مؤقتة جديدة</Label>
+          <Input
+            id={passwordId}
             name="temporary_password"
             type="password"
             required
             minLength={MIN_PASSWORD_LENGTH}
             dir="ltr"
             autoComplete="new-password"
-            className={FIELD_CLASS}
+            aria-describedby={`${passwordId}-hint`}
           />
-        </label>
-        <p className="text-sm text-mud">سيُطلب من صاحب الحساب تغييرها عند دخوله التالي.</p>
-        <button disabled={pending} className={SECONDARY}>
+          <p id={`${passwordId}-hint`} className="text-xs text-mud">
+            سيُطلب من صاحب الحساب تغييرها عند دخوله التالي.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" disabled={pending}>
           عيّن كلمة المرور المؤقتة
-        </button>
+        </Button>
       </form>
 
       <section aria-label="حالة الحساب" className="flex flex-col items-start gap-2">
-        <button
-          ref={statusButton}
-          type="button"
-          disabled={self || pending || confirmingStatus}
-          aria-expanded={confirmingStatus}
-          onClick={() => setConfirmingStatus(true)}
-          className={SECONDARY}
-        >
-          {user.is_active ? "أوقف الحساب…" : "أعد تفعيل الحساب…"}
-        </button>
-        {confirmingStatus && (
-          <div role="group" aria-label="تأكيد تغيير الحالة" className="flex flex-wrap items-center gap-3">
-            <span>
-              {user.is_active
-                ? "سيُمنع الحساب من الدخول وتُنهى جلساته المفتوحة فورًا. أتابع؟"
-                : "سيتمكن الحساب من الدخول مجددًا. أتابع؟"}
-            </span>
-            <button
+        <AlertDialog open={confirmingStatus} onOpenChange={setConfirmingStatus}>
+          <AlertDialogTrigger asChild>
+            <Button
               type="button"
-              autoFocus
-              disabled={pending}
-              onClick={toggleActive}
-              className="min-h-11 rounded-full bg-urgent px-5 font-bold text-sand disabled:opacity-50"
+              variant={user.is_active ? "destructive-outline" : "outline"}
+              size="sm"
+              disabled={self || pending}
             >
-              {user.is_active ? "أوقف الحساب" : "فعّل الحساب"}
-            </button>
-            <button type="button" onClick={closeConfirm} className={SECONDARY}>
-              تراجع
-            </button>
-          </div>
-        )}
+              {user.is_active ? "أوقف الحساب…" : "أعد تفعيل الحساب…"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {user.is_active ? "أوقف حساب " : "أعد تفعيل حساب "}
+                <bdi dir="ltr">{user.email}</bdi>؟
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {user.is_active
+                  ? "سيُمنع الحساب من الدخول وتُنهى جلساته المفتوحة فورًا."
+                  : "سيتمكن الحساب من الدخول مجددًا."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                variant={user.is_active ? "destructive" : "default"}
+                disabled={pending}
+                onClick={toggleActive}
+              >
+                {user.is_active ? "أوقف الحساب" : "فعّل الحساب"}
+              </AlertDialogAction>
+              <AlertDialogCancel>تراجع</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
 
       {error && (

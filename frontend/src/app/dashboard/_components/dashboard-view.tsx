@@ -3,15 +3,21 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { PageSkeleton, RetryAlert } from "@/app/_components/page-status";
+import { SeverityLabel } from "@/components/brand/severity-label";
 import { EvidencePanel } from "@/components/evidence-panel";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ApiError, type Coverage, type Finding, request, type Site } from "@/lib/api";
-import { damageTypeAr, findingLabelAr, severityAr } from "@/lib/labels";
+import { damageTypeAr, findingLabelAr } from "@/lib/labels";
 import { countAr, days as dayForms } from "@/lib/plural";
 import { useMeState } from "@/lib/use-me";
 
 const SiteModel = dynamic(() => import("@/components/site-model").then((m) => m.SiteModel), {
   ssr: false,
-  loading: () => <div className="h-full animate-pulse rounded-xl bg-clay/20 motion-reduce:animate-none" />,
+  loading: () => <Skeleton className="h-full" />,
 });
 
 type Failure = { message: string; retry: () => void };
@@ -117,22 +123,18 @@ export function DashboardView() {
   return (
     <div className="flex flex-col gap-6 pt-2">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-3xl font-bold leading-snug">الموقع ثلاثي الأبعاد</h1>
+        <h1 className="text-3xl font-bold">الموقع ثلاثي الأبعاد</h1>
         {sites.length > 0 && (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-mud">الموقع</span>
-            <select
-              value={siteId ?? ""}
-              onChange={(e) => setSiteId(e.target.value)}
-              className="min-h-11 rounded-lg border border-mud/60 bg-white px-3 text-base"
-            >
+          <div className="flex w-56 flex-col gap-1.5">
+            <Label htmlFor="overview-site">الموقع</Label>
+            <NativeSelect id="overview-site" value={siteId ?? ""} onChange={(e) => setSiteId(e.target.value)}>
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name_ar}
                 </option>
               ))}
-            </select>
-          </label>
+            </NativeSelect>
+          </div>
         )}
       </header>
 
@@ -151,18 +153,17 @@ export function DashboardView() {
               لا أضرار منشورة لهذا الموقع. تظهر هنا بعد أن يعتمدها المراجع.
             </p>
           ) : (
-            <ul className="flex max-h-[380px] flex-col gap-2 overflow-y-auto">
+            <ul className="flex max-h-[380px] flex-col divide-y divide-line overflow-y-auto rounded-sm border border-line bg-white">
               {pins.map((f) => (
                 <li key={f.id}>
                   <button
                     type="button"
                     onClick={() => select(f.id)}
                     aria-pressed={selected?.id === f.id}
-                    className={`min-h-11 w-full rounded-xl p-3 text-start text-sm transition-colors hover:bg-white ${
-                      selected?.id === f.id ? "bg-white font-bold" : "bg-white/75"
-                    }`}
+                    className="min-h-11 w-full cursor-pointer p-3 text-start text-sm transition-colors duration-150 hover:bg-accent aria-pressed:bg-sand aria-pressed:font-bold"
                   >
-                    {damageTypeAr[f.damage_type] ?? f.damage_type} · {severityAr[f.severity]} · {findingLabelAr[f.label]}
+                    {damageTypeAr[f.damage_type] ?? f.damage_type} · <SeverityLabel severity={f.severity} /> ·{" "}
+                    {findingLabelAr[f.label]}
                   </button>
                 </li>
               ))}
@@ -179,44 +180,45 @@ export function DashboardView() {
           {missionNotice}
         </p>
         {missionError && (
-          <p role="alert" className="rounded-xl border border-urgent/40 bg-urgent/10 p-3 text-sm">
+          <p role="alert" className="rounded-sm border border-urgent/40 bg-urgent/5 p-3 text-sm">
             {missionError}
           </p>
         )}
         {coverage.length === 0 ? (
           <p className="text-sm text-mud">لا واجهات مسجلة لهذا الموقع بعد.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-mud">
-              <tr>
-                <th className="py-1 text-start font-normal">الواجهة</th>
-                <th className="py-1 text-start font-normal">آخر صورة صالحة</th>
-                <th className="py-1 text-start font-normal">مهمة</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>الواجهة</TableHead>
+                <TableHead>آخر صورة صالحة</TableHead>
+                <TableHead>مهمة</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {coverage.map((c) => (
-                <tr key={c.facade_id} className="border-t border-clay/30">
-                  <td className="py-1.5">{c.name_ar}</td>
-                  <td>{daysAgo(c.days_since_last_photo)}</td>
-                  <td className="py-1.5">
+                <TableRow key={c.facade_id}>
+                  <TableCell className="align-middle">{c.name_ar}</TableCell>
+                  <TableCell className="align-middle">{daysAgo(c.days_since_last_photo)}</TableCell>
+                  <TableCell className="align-middle">
                     {c.open_mission_id ? (
                       "مفتوحة"
                     ) : (
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={() => dispatch(c.facade_id)}
                         disabled={requesting !== null}
-                        className="min-h-11 rounded-full border border-ink/30 px-4 hover:bg-ink hover:text-sand disabled:opacity-50"
                       >
                         {requesting === c.facade_id ? "يُرسل الطلب…" : "اطلب صورة"}
-                      </button>
+                      </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </section>
     </div>
@@ -227,12 +229,12 @@ function OverviewSkeleton() {
   return (
     <PageSkeleton>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="h-9 w-72 max-w-full rounded-xl bg-clay/25" />
-        <div className="h-11 w-48 rounded-xl bg-clay/20" />
+        <Skeleton className="h-9 w-72 max-w-full animate-none" />
+        <Skeleton className="h-11 w-48 animate-none" />
       </div>
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="h-[420px] rounded-xl bg-clay/20" />
-        <div className="h-40 rounded-xl bg-clay/20" />
+        <Skeleton className="h-[420px] animate-none" />
+        <Skeleton className="h-40 animate-none" />
       </div>
     </PageSkeleton>
   );
