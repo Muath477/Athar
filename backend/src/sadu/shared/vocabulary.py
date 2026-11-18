@@ -6,6 +6,7 @@ class DamageType(StrEnum):
     BASAL_EROSION = "basal_erosion"
     SURFACE_EROSION = "surface_erosion"
     MOISTURE = "moisture"
+    PLASTER_LOSS = "plaster_loss"
     PARTIAL_COLLAPSE = "partial_collapse"
     GRAFFITI = "graffiti"
     MISSING_ELEMENT = "missing_element"

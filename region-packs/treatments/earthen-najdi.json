@@ -1,0 +1,273 @@
+{
+  "version": "0.1",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "quantities_note_ar": "الكميات تقديرية لكل متر مربع من سطح الجدار، محسوبة على لياسة طينية بسماكة 2 سم تقريبًا. تختلف حسب نوع التربة وعمق التلف، ويحددها مختص الترميم قبل التنفيذ.",
+  "sources": [
+    {
+      "id": "gci-nonfabric",
+      "title": "Getty Conservation Institute, Earthen Architecture Initiative: Physical strategies, non-structural and non-fabric interventions",
+      "url": "https://getty.edu/conservation/publications_resources/teaching/ea_nonfabric.pdf"
+    },
+    {
+      "id": "gci-structural",
+      "title": "Getty Conservation Institute, Earthen Architecture Initiative: Physical strategies, structural analysis and interventions",
+      "url": "https://www.getty.edu/conservation/publications_resources/teaching/ea_structural.pdf"
+    },
+    {
+      "id": "gci-fabric",
+      "title": "Getty Conservation Institute, Earthen Architecture Initiative: Physical strategies, fabric interventions",
+      "url": "https://getty.edu/conservation/publications_resources/teaching/ea_fabric.pdf"
+    },
+    {
+      "id": "gci-course-2025",
+      "title": "International Course on the Conservation of Earthen Architecture: Accompanying Essays (Getty Conservation Institute and DCT Abu Dhabi, 2025)",
+      "url": "https://www.getty.edu/conservation/publications_resources/pdf_publications/international-course-conservation-of-earthen-architecture-accompanying-essays.html"
+    }
+  ],
+  "treatments": [
+    {
+      "code": "crack-monitor",
+      "damage_type": "crack",
+      "severities": ["watch"],
+      "title_ar": "توثيق الشق ومراقبته",
+      "steps_ar": [
+        "قِس طول الشق وأقصى عرض له، وصوّره بجانب مسطرة مرجعية.",
+        "ضع علامتي مراقبة على طرفي الشق وسجّل تاريخهما.",
+        "أعد الفحص بعد شهر، وارفع الخطورة إذا اتسع الشق أو امتد."
+      ],
+      "materials": [],
+      "tools_ar": ["مسطرة قياس الشقوق", "كاميرا", "قلم تحديد"],
+      "specialist_required": false,
+      "sources": ["gci-structural"]
+    },
+    {
+      "code": "crack-fill",
+      "damage_type": "crack",
+      "severities": ["moderate"],
+      "title_ar": "تنظيف الشق وملؤه بمونة طينية متوافقة",
+      "steps_ar": [
+        "نظّف الشق من الغبار والأجزاء المفككة بفرشاة ناعمة.",
+        "رطّب جوانب الشق برذاذ ماء خفيف حتى لا تمتص المونة بسرعة.",
+        "املأ الشق على طبقات رقيقة بمونة من تربة مشابهة لتربة الجدار مع تبن مقطّع.",
+        "اضغط المونة وسوِّ السطح مع لياسة الجدار المحيطة.",
+        "اترك الإصلاح يجف ببطء بعيدًا عن الشمس المباشرة."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 8},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 0.4},
+        {"name_ar": "ماء", "name_en": "Water", "unit_ar": "لتر", "per_m2": 3}
+      ],
+      "tools_ar": ["فرشاة ناعمة", "بخاخ ماء", "مالج صغير", "دلو خلط"],
+      "specialist_required": false,
+      "sources": ["gci-structural", "gci-fabric"]
+    },
+    {
+      "code": "crack-structural",
+      "damage_type": "crack",
+      "severities": ["urgent"],
+      "title_ar": "تقييم إنشائي وتدعيم قبل أي ملء",
+      "steps_ar": [
+        "أبعد الزوار عن الجدار وحدّد المنطقة بشريط تحذير.",
+        "اطلب تقييمًا إنشائيًا، خاصة إذا كان الشق عموديًا قرب ركن الجدار.",
+        "ركّب سندًا خشبيًا مؤقتًا إذا أوصى المختص بذلك.",
+        "بعد التقييم، يُخاط الشق ببناء لبن جديد عبره بمونة طينية حسب توجيه المختص."
+      ],
+      "materials": [
+        {"name_ar": "لبن (طوب طيني مجفف بالشمس)", "name_en": "Mud bricks", "unit_ar": "قطعة", "per_m2": 12},
+        {"name_ar": "مونة طينية", "name_en": "Earth mortar", "unit_ar": "كغ", "per_m2": 25},
+        {"name_ar": "شريط تحذير", "name_en": "Barrier tape", "unit_ar": "متر", "per_m2": 1}
+      ],
+      "tools_ar": ["سند خشبي مؤقت", "شريط تحذير", "مسطرة قياس الشقوق", "أدوات بناء يدوية"],
+      "specialist_required": true,
+      "sources": ["gci-structural"]
+    },
+    {
+      "code": "plaster-renew",
+      "damage_type": "plaster_loss",
+      "severities": ["watch", "moderate"],
+      "title_ar": "إعادة اللياسة الطينية في المساحة المتساقطة",
+      "steps_ar": [
+        "أزل اللياسة المنفصلة بلطف حتى تصل إلى طبقة متماسكة.",
+        "نظّف السطح ورشّه بالماء قبل التلييس.",
+        "طبّق طبقة لياسة أولى من التربة والتبن بسماكة 1 إلى 1.5 سم.",
+        "طبّق طبقة نهائية أنعم تطابق ملمس اللياسة المحيطة.",
+        "اترك اللياسة تجف تدريجيًا، ورشّها برذاذ خفيف إذا جفت بسرعة."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 30},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 1},
+        {"name_ar": "ماء", "name_en": "Water", "unit_ar": "لتر", "per_m2": 8}
+      ],
+      "tools_ar": ["مالج", "مسطرين", "فرشاة", "بخاخ ماء", "دلو خلط"],
+      "specialist_required": false,
+      "sources": ["gci-nonfabric", "gci-fabric"]
+    },
+    {
+      "code": "plaster-renew-substrate",
+      "damage_type": "plaster_loss",
+      "severities": ["urgent"],
+      "title_ar": "فحص البناء تحت اللياسة ثم إعادة التلييس",
+      "steps_ar": [
+        "افحص اللبن المكشوف تحت اللياسة قبل أي تلييس.",
+        "إذا كان اللبن متفتتًا، يعالجه المختص أولًا ثم يُعاد التلييس.",
+        "أعد اللياسة الطينية على طبقتين كما في المعالجة المعتادة."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 35},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 1.2},
+        {"name_ar": "ماء", "name_en": "Water", "unit_ar": "لتر", "per_m2": 9}
+      ],
+      "tools_ar": ["مالج", "مسطرين", "فرشاة", "بخاخ ماء"],
+      "specialist_required": true,
+      "sources": ["gci-nonfabric", "gci-fabric"]
+    },
+    {
+      "code": "moisture-source",
+      "damage_type": "moisture",
+      "severities": ["watch"],
+      "title_ar": "تحديد مصدر الرطوبة ومراقبته",
+      "steps_ar": [
+        "ابحث عن مصدر الماء: تسرب من السطح، مزراب مكسور، ري قريب، أو تجمع ماء عند القاعدة.",
+        "قِس الرطوبة في المنطقة ووثّق القراءة.",
+        "أبعد مصدر الماء عن الجدار قبل أي إصلاح."
+      ],
+      "materials": [],
+      "tools_ar": ["مقياس رطوبة", "كاميرا"],
+      "specialist_required": false,
+      "sources": ["gci-nonfabric"]
+    },
+    {
+      "code": "moisture-dry-repair",
+      "damage_type": "moisture",
+      "severities": ["moderate", "urgent"],
+      "title_ar": "إيقاف الرطوبة وتجفيف الجدار ثم الإصلاح",
+      "steps_ar": [
+        "أصلح مصدر الماء وحسّن التصريف بعيدًا عن قاعدة الجدار.",
+        "اترك الجدار يجف تمامًا وراقب قراءة الرطوبة حتى تستقر.",
+        "أزل الأجزاء المتفككة بعد الجفاف فقط.",
+        "أعد اللياسة الطينية بمواد متوافقة، وتجنب المواد الإسمنتية لأنها لا تتوافق مع الطين."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 20},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 0.7},
+        {"name_ar": "ماء", "name_en": "Water", "unit_ar": "لتر", "per_m2": 6}
+      ],
+      "tools_ar": ["مقياس رطوبة", "فرشاة", "مالج", "أدوات تصريف"],
+      "specialist_required": true,
+      "sources": ["gci-nonfabric", "gci-course-2025"]
+    },
+    {
+      "code": "basal-protect",
+      "damage_type": "basal_erosion",
+      "severities": ["watch"],
+      "title_ar": "حماية قاعدة الجدار ومراقبتها",
+      "steps_ar": [
+        "أبعد الماء والتربة المتراكمة عن قاعدة الجدار.",
+        "وثّق عمق التآكل عند القاعدة بالقياس والصور.",
+        "أعد الفحص بعد كل موسم أمطار."
+      ],
+      "materials": [],
+      "tools_ar": ["مسطرة قياس", "كاميرا", "مجرفة يدوية"],
+      "specialist_required": false,
+      "sources": ["gci-structural", "gci-nonfabric"]
+    },
+    {
+      "code": "basal-rebuild",
+      "damage_type": "basal_erosion",
+      "severities": ["moderate", "urgent"],
+      "title_ar": "إصلاح الجزء السفلي من الجدار باللبن",
+      "steps_ar": [
+        "عالج تصريف الماء عند القاعدة أولًا.",
+        "أزل المواد المتفككة من المنطقة المتآكلة.",
+        "أعد بناء الجزء المتآكل بلبن جديد ومونة طينية على مقاطع قصيرة متتابعة.",
+        "طبّق لياسة طينية للحماية بعد جفاف البناء."
+      ],
+      "materials": [
+        {"name_ar": "لبن (طوب طيني مجفف بالشمس)", "name_en": "Mud bricks", "unit_ar": "قطعة", "per_m2": 20},
+        {"name_ar": "مونة طينية", "name_en": "Earth mortar", "unit_ar": "كغ", "per_m2": 40},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 1}
+      ],
+      "tools_ar": ["مسطرين", "مالج", "ميزان ماء", "سند خشبي مؤقت"],
+      "specialist_required": true,
+      "sources": ["gci-structural"]
+    },
+    {
+      "code": "surface-replaster",
+      "damage_type": "surface_erosion",
+      "severities": ["watch", "moderate"],
+      "title_ar": "تجديد طبقة الحماية السطحية",
+      "steps_ar": [
+        "نظّف السطح من الأجزاء المفككة بفرشاة ناعمة.",
+        "رطّب السطح برذاذ خفيف.",
+        "طبّق طبقة لياسة طينية رقيقة تحمي السطح المتآكل.",
+        "ضع التجديد ضمن دورة صيانة دورية للجدار."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 15},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 0.5},
+        {"name_ar": "ماء", "name_en": "Water", "unit_ar": "لتر", "per_m2": 4}
+      ],
+      "tools_ar": ["فرشاة ناعمة", "بخاخ ماء", "مالج"],
+      "specialist_required": false,
+      "sources": ["gci-nonfabric"]
+    },
+    {
+      "code": "surface-consolidate",
+      "damage_type": "surface_erosion",
+      "severities": ["urgent"],
+      "title_ar": "تقوية السطح المتآكل بإشراف مختص",
+      "steps_ar": [
+        "يحدد المختص طريقة التقوية المناسبة للسطح بعد فحصه.",
+        "تُزال الأجزاء غير المتماسكة وتُعاد طبقة الحماية بعد التقوية.",
+        "تُغطى قمة الجدار إن كانت مكشوفة لتقليل التآكل بالمطر."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 20},
+        {"name_ar": "تبن مقطّع", "name_en": "Chopped straw", "unit_ar": "كغ", "per_m2": 0.7}
+      ],
+      "tools_ar": ["فرشاة ناعمة", "بخاخ ماء", "مالج"],
+      "specialist_required": true,
+      "sources": ["gci-nonfabric", "gci-fabric"]
+    },
+    {
+      "code": "collapse-emergency",
+      "damage_type": "partial_collapse",
+      "severities": ["watch", "moderate", "urgent"],
+      "title_ar": "تأمين المنطقة وتدخل إنشائي عاجل",
+      "steps_ar": [
+        "أغلق المنطقة أمام الزوار فورًا.",
+        "اجمع الأنقاض الأصلية واحفظها لإعادة استخدامها في الترميم.",
+        "ركّب سندًا مؤقتًا للأجزاء المعرضة للسقوط.",
+        "يضع المختص خطة إعادة البناء بمواد متوافقة."
+      ],
+      "materials": [
+        {"name_ar": "شريط تحذير", "name_en": "Barrier tape", "unit_ar": "متر", "per_m2": 2},
+        {"name_ar": "لبن (طوب طيني مجفف بالشمس)", "name_en": "Mud bricks", "unit_ar": "قطعة", "per_m2": 40},
+        {"name_ar": "مونة طينية", "name_en": "Earth mortar", "unit_ar": "كغ", "per_m2": 60}
+      ],
+      "tools_ar": ["سند خشبي مؤقت", "حواجز", "أدوات بناء يدوية"],
+      "specialist_required": true,
+      "sources": ["gci-structural", "gci-course-2025"]
+    },
+    {
+      "code": "graffiti-removal",
+      "damage_type": "graffiti",
+      "severities": ["watch", "moderate", "urgent"],
+      "title_ar": "إزالة الكتابة بلطف وترميم الخدوش",
+      "steps_ar": [
+        "وثّق الكتابة بالصور قبل إزالتها.",
+        "أزل الكتابة السطحية ميكانيكيًا بفرشاة ناعمة دون مذيبات.",
+        "إذا كانت الكتابة محفورة في اللياسة، املأ الخدوش بطبقة لياسة طينية رقيقة.",
+        "أبلغ فريق الموقع لزيادة المراقبة في هذه المنطقة."
+      ],
+      "materials": [
+        {"name_ar": "تربة طينية مطابقة لتربة الجدار", "name_en": "Matching earth", "unit_ar": "كغ", "per_m2": 6},
+        {"name_ar": "ماء", "name_en": "Water", "unit_ar": "لتر", "per_m2": 2}
+      ],
+      "tools_ar": ["فرشاة ناعمة", "مالج صغير", "كاميرا"],
+      "specialist_required": false,
+      "sources": ["gci-nonfabric"]
+    }
+  ]
+}
