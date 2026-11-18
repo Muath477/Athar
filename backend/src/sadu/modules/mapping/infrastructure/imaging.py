@@ -3,7 +3,9 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
+from sadu.modules.mapping.domain.damage_map import MapCell
 from sadu.modules.mapping.domain.grid import Grid
+from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY, bgr
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.shared.errors import SaduError
 
@@ -60,6 +62,21 @@ def draw_grid(image: np.ndarray, grid: Grid) -> np.ndarray:
             cv2.LINE_AA,
         )
     return image
+
+
+def paint_damage(rectified_jpeg: bytes, grid: Grid, cells: tuple[MapCell, ...]) -> bytes:
+    image = cv2.imdecode(np.frombuffer(rectified_jpeg, np.uint8), cv2.IMREAD_COLOR)
+    if image is None:
+        raise SaduError("unsupported_image", status=415)
+    height, width = image.shape[:2]
+    for cell in cells:
+        x0, x1 = round(cell.ref.col * width / grid.cols), round((cell.ref.col + 1) * width / grid.cols)
+        y0, y1 = round(cell.ref.row * height / grid.rows), round((cell.ref.row + 1) * height / grid.rows)
+        tile = image[y0:y1, x0:x1]
+        fill = np.full_like(tile, bgr(DAMAGE_COLORS[cell.damage_type]))
+        opacity = SEVERITY_OPACITY[cell.severity]
+        image[y0:y1, x0:x1] = cv2.addWeighted(fill, opacity, tile, 1 - opacity, 0)
+    return _encode(draw_grid(image, grid))
 
 
 def crop_cells(rectified_jpeg: bytes, grid: Grid) -> dict[str, bytes]:
