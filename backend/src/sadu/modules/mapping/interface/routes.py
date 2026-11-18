@@ -69,7 +69,13 @@ async def create_map(
 
     async with state.unit_of_work() as session:
         view = await mapping.save_map(
-            session, state.store, wall=wall, prepared=prepared, run=run, created_by=user.id
+            session,
+            state.store,
+            wall=wall,
+            prepared=prepared,
+            run=run,
+            created_by=user.id,
+            provenance=mapping.Provenance(mapping.MapSource.INSPECTOR),
         )
         await admin.audit(
             session,

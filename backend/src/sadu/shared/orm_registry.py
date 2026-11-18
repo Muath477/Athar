@@ -1,5 +1,6 @@
 from sadu.modules.admin.infrastructure import orm as admin_orm
 from sadu.modules.capture.infrastructure import orm as capture_orm
+from sadu.modules.ingest.infrastructure import orm as ingest_orm
 from sadu.modules.inspection.infrastructure import orm as inspection_orm
 from sadu.modules.mapping.infrastructure import orm as mapping_orm
 from sadu.modules.missions.infrastructure import orm as missions_orm
@@ -13,6 +14,7 @@ from sadu.shared.db import Base
 ALL_ORM_MODULES = (
     admin_orm,
     capture_orm,
+    ingest_orm,
     inspection_orm,
     mapping_orm,
     missions_orm,

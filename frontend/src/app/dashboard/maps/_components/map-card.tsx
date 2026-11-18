@@ -1,7 +1,7 @@
 import { TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
+import { detectorStatusAr, mapSourceText, mapStatusAr } from "@/lib/labels";
 import type { MapSummary } from "@/lib/maps";
 import { countAr, urgentCells } from "@/lib/plural";
 
@@ -48,6 +48,7 @@ export function MapCard({ summary }: { summary: MapSummary }) {
         </p>
         <p className="mt-auto text-xs text-mud">
           {new Date(summary.created_at).toLocaleDateString("ar-SA")} · {detectorStatusAr[summary.detector_status]}
+          {summary.source && <> · {mapSourceText(summary.source, summary.source_label)}</>}
         </p>
       </div>
     </Link>

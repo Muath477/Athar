@@ -94,6 +94,10 @@ class Settings(BaseSettings):
     sadu_watch_sample_events: str = ""
     sadu_alert_webhook_url: str = Field(default="", pattern=r"^(https://\S+)?$")
 
+    sadu_camera_interval_h: int = Field(default=24, ge=0)
+    sadu_camera_allowed_hosts: str = ""
+    sadu_ingest_concurrency: int = Field(default=2, ge=1, le=8)
+
     @property
     def watch_sample_events_path(self) -> Path:
         if self.sadu_watch_sample_events:

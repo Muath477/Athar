@@ -5,21 +5,27 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { rememberCsrf, request, roleAr } from "@/lib/api";
+import { type Permission, can, rememberCsrf, request, roleAr } from "@/lib/api";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
 
-const SECTIONS = [
+type Section = { href: string; label: string; short: string | null; exact: boolean; permission?: Permission };
+
+const SECTIONS: Section[] = [
   { href: "/dashboard", label: "الموقع ثلاثي الأبعاد", short: null, exact: true },
   { href: "/dashboard/condition", label: "حالة الموقع", short: null, exact: false },
   { href: "/dashboard/watch", label: "الرصد من الفضاء", short: null, exact: false },
   { href: "/dashboard/maps", label: "مخططات تلف الجدران", short: "المخططات", exact: false },
+  { href: "/dashboard/uploads", label: "رفع الصور", short: null, exact: false, permission: "survey" },
+  { href: "/dashboard/devices", label: "الكاميرات والأجهزة", short: "الأجهزة", exact: false, permission: "read" },
   { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
 ];
 
 export function DashboardNav() {
   const pathname = usePathname();
+  const me = useMe();
   const current = useRef<HTMLAnchorElement>(null);
+  const sections = SECTIONS.filter((section) => !section.permission || can(me, section.permission));
 
   useEffect(() => {
     current.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
@@ -32,7 +38,7 @@ export function DashboardNav() {
       <SignedInUser />
       <nav aria-label="أقسام لوحة المتابعة" className="-mx-4 scroll-px-4 overflow-x-auto border-b border-line px-4">
         <ul className="flex min-w-max gap-1">
-          {SECTIONS.map((section) => {
+          {sections.map((section) => {
             const active = section.exact ? pathname === section.href : pathname.startsWith(section.href);
             return (
               <li key={section.href}>

@@ -42,6 +42,7 @@ from sadu.modules.mapping.domain.elements import (
 from sadu.modules.mapping.domain.glossary import CLASS_VALUES, GLOSSARY, ClassKind, Geometry, GlossaryEntry
 from sadu.modules.mapping.domain.grid import CellRef, Grid, WallSize
 from sadu.modules.mapping.domain.palette import DAMAGE_COLORS, SEVERITY_OPACITY
+from sadu.modules.mapping.domain.provenance import MapSource, Provenance
 from sadu.modules.mapping.domain.quad import Quad
 from sadu.modules.mapping.domain.scoring import MapScore, ScoredPair, TypeScore, score_maps
 from sadu.modules.mapping.domain.workflow import Step, StepState, WorkflowFacts, workflow
@@ -84,9 +85,11 @@ __all__ = [
     "Grid",
     "MapCell",
     "MapScore",
+    "MapSource",
     "MapStatus",
     "Measurement",
     "ModelConfidence",
+    "Provenance",
     "Quad",
     "Step",
     "StepState",
@@ -166,6 +169,8 @@ class MapView:
     correction_log: tuple[dict[str, Any], ...] = ()
     field_inspected_at: datetime | None = None
     field_notes: str = ""
+    source: MapSource | None = None
+    source_label: str | None = None
 
     @property
     def damaged_area_m2(self) -> float:
@@ -189,6 +194,8 @@ class MapSummary:
     total_cells: int
     rectified_key: str
     created_at: datetime
+    source: MapSource | None = None
+    source_label: str | None = None
 
 
 class PhotoUnusable(SaduError):
@@ -240,6 +247,7 @@ async def save_map(
     prepared: PreparedWall,
     run: DetectionRun,
     created_by: UUID | None,
+    provenance: Provenance | None = None,
 ) -> MapView:
     photo_key = new_object_key("maps/photos", "jpg")
     rectified_key = new_object_key("maps/rectified", "jpg")
@@ -268,6 +276,8 @@ async def save_map(
         field_notes="",
         status=MapStatus.DRAFT,
         created_by=created_by,
+        source=provenance.source if provenance else None,
+        source_label=provenance.label if provenance else None,
     )
     session.add(row)
     await session.flush()
@@ -324,6 +334,8 @@ async def list_maps(
             total_cells=row.rows * row.cols,
             rectified_key=row.rectified_key,
             created_at=row.created_at,
+            source=_source(row),
+            source_label=row.source_label,
         )
         for row, count, urgent in (await session.execute(query)).all()
     ]
@@ -559,7 +571,13 @@ def _view(row: DamageMapRow, cells: tuple[MapCell, ...]) -> MapView:
         correction_log=tuple(row.correction_log or ()),
         field_inspected_at=row.field_inspected_at,
         field_notes=row.field_notes or "",
+        source=_source(row),
+        source_label=row.source_label,
     )
+
+
+def _source(row: DamageMapRow) -> MapSource | None:
+    return MapSource(row.source) if row.source else None
 
 
 def _elements(row: DamageMapRow, cells: tuple[MapCell, ...]) -> tuple[Element, ...]:

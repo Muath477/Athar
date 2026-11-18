@@ -76,3 +76,21 @@ export const unsavedEdits: Forms = {
   many: "تعديلًا غير محفوظ",
   hundred: "تعديل غير محفوظ",
 };
+
+export const photos: Forms = {
+  zero: "لا صور",
+  one: "صورة واحدة",
+  two: "صورتان",
+  few: "صور",
+  many: "صورة",
+  hundred: "صورة",
+};
+
+export const devices: Forms = {
+  zero: "لا أجهزة بعد",
+  one: "جهاز واحد",
+  two: "جهازان",
+  few: "أجهزة",
+  many: "جهازًا",
+  hundred: "جهاز",
+};

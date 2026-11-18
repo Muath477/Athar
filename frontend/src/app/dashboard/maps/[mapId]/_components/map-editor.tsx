@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, can, mapReportUrl } from "@/lib/api";
-import { detectorStatusAr, mapStatusAr } from "@/lib/labels";
+import { detectorStatusAr, mapSourceText, mapStatusAr } from "@/lib/labels";
 import { NO_PENDING, buildEdits, pendingCount as countPending, withPending } from "@/lib/elements";
 import {
   type CellCorrection,
@@ -271,6 +271,7 @@ export function MapEditor() {
             <span>
               {detectorStatusAr[map.detector_status]} · {new Date(map.created_at).toLocaleDateString("ar-SA")}
             </span>
+            {map.source && <span>المصدر: {mapSourceText(map.source, map.source_label)}</span>}
           </p>
           <h1 className="text-3xl font-bold">{map.wall_name}</h1>
           <p className="text-mud">

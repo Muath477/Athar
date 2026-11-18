@@ -1,4 +1,5 @@
 import io
+import threading
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -20,6 +21,8 @@ FACE_PADDING = 0.2
 ALLOWED_FORMATS = {"JPEG", "PNG"}
 
 Image.MAX_IMAGE_PIXELS = MAX_PIXELS
+
+_face_detector_lock = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -49,8 +52,9 @@ def process_upload(raw: bytes) -> ProcessedPhoto:
 def blur_faces(bgr: MatLike) -> int:
     height, width = bgr.shape[:2]
     detector = _face_detector()
-    detector.setInputSize((width, height))
-    _, detections = detector.detect(bgr)
+    with _face_detector_lock:
+        detector.setInputSize((width, height))
+        _, detections = detector.detect(bgr)
     if detections is None:
         return 0
     for detection in detections:
