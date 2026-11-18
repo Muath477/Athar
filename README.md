@@ -63,9 +63,21 @@ Built for the agentX Riyadh hackathon, Culture & Heritage track: the Diriyah Gat
 | `claude` (default) | rectified wall with the labelled grid, one structured call | cell labels with type, severity, confidence |
 | `http_detection` | rectified JPEG to `SADU_DETECTOR_URL` | Hugging Face object detection `[{label, score, box: {xmin, ymin, xmax, ymax}}]`, or `{"detections": [{label, score, box: [x0, y0, x1, y1]}]}` |
 | `http_cell_classification` | one crop per grid cell | Hugging Face image classification `[{label, score}]` |
+| `qwen` | rectified JPEG to an OpenAI-compatible server at `SADU_QWEN_URL` (llama-server, Ollama or vLLM) | JSON elements (type, shape, severity, class, confidence) from Athar's own model |
 | `none` | nothing | the expert draws the map |
 
 Model labels map to damage types with `SADU_DETECTOR_LABELS`, for example `{"spalling": "plaster_loss"}`. If the detector fails, the map is still saved empty so the expert can label it by hand. Details in [ADR-018](docs/adr/ADR-018-damage-detector-port.md).
+
+### Athar's own model
+
+Approved maps train Athar's own damage model, so the authority is not tied to a paid API. It is Qwen3.5-4B (Apache-2.0, natively multimodal) fine-tuned with bf16 LoRA on Google Colab. It reads the rectified photo and answers with glossary elements: type, polygon, line or point, severity, width, depth or size class, and confidence.
+
+1. A model engineer downloads approved maps from `GET /api/v1/ml/training-export`. Faces were already blurred at upload, and no user or visitor data is included.
+2. `ml/data/build_dataset.py` adds licence-checked public crack and heritage-surface sets and splits by site, so test scores come from walls the model never saw.
+3. `ml/notebooks/train_qwen35_damage.ipynb` picks the profile from the GPU (4B on a 22 GB L4, 9B on an A100), trains, and scores the model with the same cell matching as the accuracy card. It then exports GGUF files for the 16 GB laptop.
+4. The version is registered with its metrics and activated on `/dashboard/models`. With `SADU_DAMAGE_DETECTOR=qwen`, every new map uses the active version and records it in the audit log.
+
+Details: [ADR-029](docs/adr/ADR-029-own-model.md), [the ML pipeline](docs/ml/architecture.md), [the dataset card](ml/data/README.md) and [serving](ml/serve/README.md).
 
 ### The Diriyah procedure, step by step
 
@@ -596,7 +608,8 @@ For a public demo on a VM, set `SADU_DOMAIN` and `SADU_ENV=prod` in `.env`, then
 | Variable | Needed for | Without it |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Damage judgment, wall maps with `claude`, story drafting, claim checks | Changes go to the expert queue unjudged; maps are saved empty for manual labelling |
-| `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification` or `none` | `claude` |
+| `SADU_DAMAGE_DETECTOR` | `claude` (default), `http_detection`, `http_cell_classification`, `qwen` or `none` | `claude` |
+| `SADU_QWEN_URL`, `SADU_QWEN_MODEL`, `SADU_QWEN_TIMEOUT_S` | Athar's own model behind an OpenAI-compatible server; the model name used until a version is activated; seconds per photo | `http://localhost:8080/v1`, `athar-damage`, 120 |
 | `SADU_DETECTOR_URL`, `SADU_DETECTOR_TOKEN`, `SADU_DETECTOR_LABELS` | A ready model behind HTTP, its token, and a JSON map from model labels to damage types | Required for the two `http_*` detectors |
 | `SADU_SCENE_SOURCE` | `earth_search` (default, Sentinel-2 on AWS), `sample` (labelled synthetic scenes) or `none` | `earth_search`; if it cannot be reached, scans are saved as `source_unavailable` |
 | `SADU_ALERT_WEBHOOK_URL` | HTTPS webhook (Slack, Teams or a ticketing system) that receives satellite alerts, urgent-damage notices and overdue-approval reminders | Alerts only show on the dashboard |
@@ -650,6 +663,12 @@ uv run python -m eval.backtest_watch score watch-backtest/alerts.csv
 
 The score passes at a precision of 0.6 or more with at least three real changes. The same run against live Sentinel-2 can be started by hand from the **Space watch live check** workflow in GitHub Actions; it uploads the table and the evidence images.
 
+The ML scripts' tests need no GPU; from `backend/`:
+
+```bash
+uv run pytest ../ml/tests
+```
+
 Frontend, from `frontend/`:
 
 ```bash
@@ -672,6 +691,7 @@ CI runs all of the above, including the end-to-end tests against the stack in Do
 backend/                   FastAPI modular monolith (Python 3.13, uv)
   src/sadu/modules/        sites, capture, inspection, verification, stories, missions,
                            passport, agents, admin, mapping, treatments, watch, ingest
+                           passport, agents, admin, mapping, treatments, models
     <module>/api.py        the only file other modules import
     <module>/domain/       pure rules, no framework imports
     <module>/application/  use cases and ports (DamageDetector)
@@ -687,6 +707,7 @@ frontend/src/
   components/              shared by two or more pages
   lib/                     API clients, labels, palette, plurals
 infra/                     database image, storage start script, Caddyfile
+ml/                        own damage model: data, Colab notebook, training, evaluation, serving
 region-packs/demo/         synthetic demo building, baselines, test photos, sources
 region-packs/treatments/   treatment catalog for earthen walls (draft)
 docs/                      scope, research, architecture, ADRs, UML, threat model
@@ -708,6 +729,8 @@ docs/                      scope, research, architecture, ADRs, UML, threat mode
 | Diriyah procedure, glossary and roles | [docs/adr/ADR-026-diriyah-agent-workflow.md](docs/adr/ADR-026-diriyah-agent-workflow.md) |
 | Cameras, drones and bulk uploads | [docs/adr/ADR-027-ingestion.md](docs/adr/ADR-027-ingestion.md) |
 | Decisions (ADR-001 to ADR-027) | [docs/adr/](docs/adr/) |
+| Own damage model: data, training, evaluation, serving | [docs/ml/architecture.md](docs/ml/architecture.md), [ADR-029](docs/adr/ADR-029-own-model.md) |
+| Decisions | [docs/adr/](docs/adr/) |
 
 ## Privacy
 

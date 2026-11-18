@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import Any
 
 from sadu.modules.mapping.application.ports import DetectionInput, DetectionOutput, DetectorUnavailable
@@ -94,7 +95,8 @@ class ClaudeGridDetector:
             result = await self._llm.complete_structured(build_request(request))
         except (LLMUnavailable, LLMRefused) as error:
             raise DetectorUnavailable(str(error)) from error
-        return parse_response(result.data, request.grid)
+        output = parse_response(result.data, request.grid)
+        return replace(output, model=result.model, prompt_version=PROMPT_VERSION)
 
 
 def build_request(request: DetectionInput) -> StructuredRequest:

@@ -106,6 +106,16 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "لا يمكن تعديل مخطط معتمد. أنشئ مخططًا جديدًا للجدار.",
         "en": "An approved map cannot be changed. Create a new map for the wall.",
     },
+    "problem.model_version_exists.title": {"ar": "الإصدار مسجل", "en": "Model version exists"},
+    "problem.model_version_exists.detail": {
+        "ar": "هذا الإصدار من النموذج مسجل من قبل. اختر رقم إصدار جديدًا.",
+        "en": "This model version is already registered. Choose a new version number.",
+    },
+    "problem.model_status_unchanged.title": {"ar": "لا يمكن تغيير الحالة", "en": "Status cannot change"},
+    "problem.model_status_unchanged.detail": {
+        "ar": "حالة النموذج الحالية لا تسمح بهذا الإجراء.",
+        "en": "The model's current status does not allow this action.",
+    },
     "problem.photo_unusable.title": {"ar": "الصورة غير صالحة للتحليل", "en": "Photo cannot be analysed"},
     "problem.photo_unusable.detail": {"ar": "{reason_ar}", "en": "{reason_en}"},
     "problem.invalid_corners.title": {"ar": "زوايا الجدار غير صحيحة", "en": "Invalid wall corners"},

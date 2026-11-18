@@ -21,6 +21,7 @@ const SECTIONS: Section[] = [
   { href: "/dashboard/review", label: "قائمة المراجعة", short: "المراجعة", exact: false },
   { href: "/dashboard/users", label: "الحسابات والصلاحيات", short: "الحسابات", exact: false, permission: "administer" },
   { href: "/dashboard/audit", label: "سجل التدقيق", short: "التدقيق", exact: false, permission: "read_audit" },
+  { href: "/dashboard/models", label: "نموذج التحليل", short: "النموذج", exact: false, permission: "manage_models" },
 ];
 
 export function DashboardNav() {

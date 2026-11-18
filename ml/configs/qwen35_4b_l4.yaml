@@ -1,0 +1,31 @@
+name: qwen35-4b-l4
+model_id: unsloth/Qwen3.5-4B
+base_model: Qwen/Qwen3.5-4B
+min_vram_gb: 16
+max_image_side: 896
+max_seq_length: 4096
+lora:
+  r: 16
+  alpha: 16
+  dropout: 0.0
+  finetune_vision_layers: true
+  finetune_language_layers: true
+  finetune_attention_modules: true
+  finetune_mlp_modules: true
+train:
+  epochs: 3
+  learning_rate: 0.0002
+  lr_scheduler: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  per_device_batch: 2
+  grad_accum: 4
+  optim: adamw_8bit
+  seed: 3407
+data:
+  root: ml/data
+  train: ml/data/build/train.jsonl
+  val: ml/data/build/val.jsonl
+  test: ml/data/build/test.jsonl
+output_dir: ml/outputs/qwen35-4b-l4

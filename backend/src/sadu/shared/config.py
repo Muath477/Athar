@@ -16,6 +16,7 @@ class DetectorKind(StrEnum):
     CLAUDE = "claude"
     HTTP_DETECTION = "http_detection"
     HTTP_CELL_CLASSIFICATION = "http_cell_classification"
+    QWEN = "qwen"
     NONE = "none"
 
 
@@ -63,6 +64,11 @@ class Settings(BaseSettings):
     sadu_detector_labels: str = ""
     sadu_detector_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
     sadu_detector_timeout_s: float = Field(default=30.0, gt=0)
+    sadu_qwen_url: str = "http://localhost:8080/v1"
+    sadu_qwen_model: str = "athar-damage"
+    sadu_qwen_token: SecretStr | None = None
+    sadu_qwen_timeout_s: float = Field(default=120.0, gt=0)
+    sadu_qwen_json_schema: bool = True
     sadu_map_rows: int = Field(default=8, ge=2, le=20)
     sadu_treatment_catalog: str | None = None
 
