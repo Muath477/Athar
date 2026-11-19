@@ -50,10 +50,10 @@ Built by team Athar for the agentX Riyadh hackathon, Culture and Heritage track.
 
 ## Success metrics
 
-| Metric | Target | How it is measured | Status on 2026-11-18 |
+| Metric | Target | How it is measured | Status on 2026-11-19 |
 |---|---|---|---|
 | Every report that reaches the dashboard has evidence | 100% | `python -m sadu.cli quality`, `GET /api/v1/reports/quality`, the card on `/dashboard/audit` | Enforced by a database constraint for visitor findings. The demo data shows 13 of 17 approved maps: the other 4 were approved before the field inspection became mandatory, and the report flags them. |
-| Damage recall and precision on real walls | Recall ≥ 0.70 for cracks and plaster loss, precision ≥ 0.60 | `eval.score_maps` on walls a specialist drew first; the accuracy card on approved maps | Not measured on real walls yet |
+| Damage recall and precision on real walls | Recall ≥ 0.70 for cracks and plaster loss, precision ≥ 0.60 | `eval.score_maps` on walls a specialist drew first; the accuracy card on approved maps | Not measured on real walls yet. A first LoRA run on public crack photos (not Athar walls) moved crack F1 from 0.629 to 0.951 — see [ADR-029](docs/adr/ADR-029-own-model.md) — which is evidence the training method works, not a wall-level score. |
 | Photo attributed to the right facade | ≥ 90% | `eval.run` on the demo pack; GPS facade matching tests | 4 of 4 on synthetic photos only |
 | False or unclear reports stopped before the dashboard | ≥ 9 of 10 | `eval.run` (shadows, off-target photos); live share of photos sent back and findings held for a specialist in the quality report | 2 of 2 on synthetic photos only |
 | Story claims without a source | Fewer with the verifier than without | A set of drafted claims checked with and without the claims verifier | Not measured yet |

@@ -70,9 +70,14 @@ accuracy card and change detection keep working unchanged.
   holds an unblurred face; no user, reviewer, field-note or visitor data is exported.
 - Weak labels (`?weak=true`): draft maps nobody edited, marked `weak`, used for training only, never from a
   held-out site and never from the model's own drafts.
-- Public sets with licences checked one by one (CC BY 4.0: SDNET2018, Özgenel classification and
-  segmentation, RFSAT masonry, Kasbah of Algiers heritage walls) as auxiliary instructions; non-commercial or
-  no-derivatives sets (CODEBRIM, IDEA) are excluded. The full table is in `ml/data/README.md`.
+- Public sets as auxiliary instructions: eleven sources with licences checked one by one, nine of them CC
+  BY 4.0 and on by default (historical crack photos from a 1340 Cairo mosque, Kasbah of Algiers heritage
+  walls, Darbhanga Fort brick masonry, Brickwork Cracks, RFSAT masonry, SDNET2018, Özgenel classification
+  and segmentation, the Complex Tunnel Crack Dataset) plus two opt-in sources (Panam City, and BD3 whose
+  licence is unclear, so it is excluded from any published model). Non-commercial or no-derivatives sets
+  (CODEBRIM, IDEA, and others listed as reviewed and left out) are excluded. `python -m ml.data.collect`
+  fetches, extracts and organises them automatically; the full table and every exclusion reason is in
+  `ml/data/README.md`.
 - **Splits by site**: every map of a site is in one split (80/10/10 by examples, deterministic), so test
   scores measure unseen sites, which is how the model is used.
 
@@ -84,6 +89,15 @@ the approved elements onto each map's grid (the same matching as the product's a
 micro F1, damaged-versus-sound accuracy, length and area error in metres and m² per type, and a comparison
 table against the detector that drafted each test map (normally the hosted grid detector) on the same maps. A version is
 activated only when it beats the active detector on that table.
+
+Before that end-task score exists, the notebook runs a cheaper, earlier check on the public auxiliary data:
+`ml/eval/tags.py` scores the base model (a fresh LoRA, which equals the base) and the fine-tuned model on
+the same held-out `public_test.jsonl` rows, never trained on, so the before/after comparison is honest. A
+first Colab run on two of the nine default sources (the others were not yet fetched in that run) moved exact
+match from 16.2% to 95.2% and crack F1 from 0.629 to 0.951 (precision 58.9% → 92.2%, recall 67.6% → 98.1%),
+with 100% JSON validity before and after. This says the model learns the glossary's JSON format and the
+visual concept of a crack; it says nothing yet about the other seven damage types, which had no example in
+that run, or about real walls, since `public_test` is public close-up photos, not Athar's own maps.
 
 ### Serving and selection
 

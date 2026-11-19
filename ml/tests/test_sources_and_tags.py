@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from ml.data.build_dataset import PUBLIC_TEST, build, split_public
-from ml.data.collect import labels_for
+from ml.data.collect import image_paths, labels_for
 from ml.data.fetch import (
     FetchError,
     check_members,
@@ -53,6 +53,16 @@ def test_folder_labels_use_only_the_patch_glossary_and_hub_sources_are_pinned():
 )
 def test_folders_map_to_glossary_tags_and_unknown_classes_are_dropped(key, path, expected):
     assert labels_for(SOURCES_BY_KEY[key], Path(path)) == expected
+
+
+def test_image_paths_skips_macos_archive_junk(tmp_path):
+    (tmp_path / "Positive").mkdir()
+    (tmp_path / "Positive" / "1.jpg").write_bytes(b"data")
+    (tmp_path / "Positive" / "._1.jpg").write_bytes(b"data")
+    junk = tmp_path / "__MACOSX" / "Positive"
+    junk.mkdir(parents=True)
+    (junk / "._1.jpg").write_bytes(b"data")
+    assert [path.name for path in image_paths(tmp_path)] == ["1.jpg"]
 
 
 def test_only_archives_are_taken_from_a_mendeley_listing():

@@ -2,6 +2,7 @@ import argparse
 import json
 import re
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,16 @@ from ml.data.sources import DEFAULT_KEYS, SOURCES, SOURCES_BY_KEY, LabelKind, So
 PUBLIC_DIR = DATA_DIR / "public"
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
 MASK_FOLDER_WORDS = ("mask", "label", "annot", "gt", "bw", "groundtruth")
+
+
+def is_macos_junk(path: Path) -> bool:
+    return "__MACOSX" in path.parts or path.name.startswith("._")
+
+
+def image_paths(root: Path) -> Iterator[Path]:
+    for path in sorted(root.rglob("*")):
+        if path.suffix.lower() in IMAGE_SUFFIXES and not is_macos_junk(path):
+            yield path
 
 
 def organise(source: Source) -> Path:
@@ -40,9 +51,7 @@ def labels_for(source: Source, relative: Path) -> tuple[str, ...] | None:
 
 def _tag_rows(source: Source, root: Path) -> list[dict[str, Any]]:
     rows = []
-    for path in sorted(root.rglob("*")):
-        if path.suffix.lower() not in IMAGE_SUFFIXES:
-            continue
+    for path in image_paths(root):
         relative = path.relative_to(root)
         damage_types = labels_for(source, relative)
         if damage_types is None:
@@ -62,9 +71,7 @@ def _tag_rows(source: Source, root: Path) -> list[dict[str, Any]]:
 def _segmentation_rows(source: Source, root: Path) -> list[dict[str, Any]]:
     images: dict[str, Path] = {}
     masks: dict[str, Path] = {}
-    for path in sorted(root.rglob("*")):
-        if path.suffix.lower() not in IMAGE_SUFFIXES:
-            continue
+    for path in image_paths(root):
         folders = " ".join(part.lower() for part in path.relative_to(root).parts[:-1])
         (masks if any(word in folders for word in MASK_FOLDER_WORDS) else images)[path.stem] = path
     rows = []
