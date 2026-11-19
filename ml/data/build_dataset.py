@@ -196,6 +196,12 @@ def build(
     report = balance_report(splits)
     (out_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
     (out_dir / "report.md").write_text(report_markdown(report))
+    if not splits["train"]:
+        raise SystemExit(
+            f"train.jsonl has 0 rows: {len(records)} Athar records and {len(public_manifests)} public "
+            "manifests went in. Scroll up to the 'collect organise' cell's own output and check each "
+            "source's fetch error, then re-run this cell."
+        )
     return report
 
 
