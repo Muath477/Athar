@@ -374,6 +374,12 @@ region-packs/
   demo/                      sites, facades, baselines, test photos
   riyadh/                    eleven Riyadh-region heritage sites, sample satellite events
   treatments/                treatment catalog (draft)
+ml/
+  data/                      sources.py catalogue, fetch.py, collect.py, build_dataset.py
+  eval/                      evaluate.py (cell-level, Athar maps), tags.py (public before/after)
+  train/                     train.py, profiles.py, configs/
+  serve/                     http_bridge.py (http_detection contract)
+  notebooks/                 train_qwen35_damage.ipynb
 docs/                        scope, research, architecture, ADRs, UML
 ```
 
@@ -407,3 +413,48 @@ sequenceDiagram
     Watch-->>Inspector: inspector visit needed
   end
 ```
+
+## 12. Training the own damage model, from public photo to fine-tuned Qwen
+
+`ml/` is offline and separate from the backend: it builds a dataset, trains a LoRA on Qwen3.5-4B, and
+exports a GGUF the backend's `QwenVisionDetector` can call. See [ADR-029](adr/ADR-029-own-model.md) and
+[`ml/data/README.md`](ml/data/README.md) for the full catalogue, licences and known limits.
+
+```mermaid
+flowchart TB
+  subgraph pipeline[ml/data]
+    sources[sources.py<br/>11 catalogued public sets, licence + fetch recipe each]
+    fetch[fetch.py<br/>download, extract archives, reject paths outside the folder]
+    collect[collect.py<br/>label by folder, skip macOS archive junk, write public/*.jsonl]
+    export_athar[export_athar.py<br/>GET /ml/training-export, manage_models]
+    build[build_dataset.py<br/>split by site; public close-ups by seeded hash of the id]
+  end
+
+  raw[(raw/&lt;key&gt;/extracted)]
+  public_jsonl[(public/&lt;key&gt;.jsonl)]
+  splits[(build/train, val, test, public_test)]
+
+  sources --> fetch --> raw --> collect --> public_jsonl --> build
+  export_athar --> build
+  build --> splits
+
+  subgraph notebook[train_qwen35_damage.ipynb]
+    base[load_untrained<br/>fresh LoRA = the base model's own answer]
+    before[predict + evaluate_tags<br/>on public_test, before training]
+    lora[SFTTrainer LoRA<br/>Unsloth, bf16, r16 a16]
+    after[predict + evaluate_tags<br/>same public_test rows, after training]
+    gguf[GGUF export<br/>Q4_K_M + F16 mmproj]
+  end
+
+  splits --> base --> before
+  before --> lora --> after --> gguf
+
+  registry[(ml_models registry)]
+  bridge[[http_bridge.py<br/>the existing http_detection contract]]
+  gguf --> registry --> bridge
+```
+
+The before/after step on `public_test` never trains on those rows, so it is an honest, cheap check that the
+model learns the glossary's JSON format before the slower end-task score (`ml/eval/evaluate.py`, cell-level
+precision/recall/F1 on approved Athar maps) exists. A version is only activated, through the registry, when
+it beats the active detector on that end-task table.
