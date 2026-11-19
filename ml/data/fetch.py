@@ -19,6 +19,10 @@ RAW_DIR = DATA_DIR / "raw"
 ARCHIVE_SUFFIXES = (".zip", ".rar", ".7z")
 MENDELEY_FILES = "https://data.mendeley.com/public-api/datasets/{id}/files?folder_id=root&version={version}"
 TIMEOUT_S = 300
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+)
 
 
 class FetchError(SystemExit):
@@ -36,7 +40,7 @@ def extracted_dir(source: Source) -> Path:
 def fetch(source: Source) -> Path:
     match source.fetch:
         case DirectFile(url=url, archive=archive):
-            download(url, source_dir(source) / archive)
+            download(url, source_dir(source) / archive, referer=source.page)
         case MendeleyFiles(dataset_id=dataset_id, version=version):
             fetch_mendeley(source, dataset_id, version)
         case HubDataset() as hub:
@@ -50,12 +54,20 @@ def fetch(source: Source) -> Path:
     return extract_all(source)
 
 
-def download(url: str, target: Path) -> Path:
+def browser_request(url: str, referer: str | None = None) -> urllib.request.Request:
+    headers: dict[str, str] = {"User-Agent": USER_AGENT, "Accept": "*/*"}
+    if referer:
+        headers["Referer"] = referer
+    return urllib.request.Request(url, headers=headers)
+
+
+def download(url: str, target: Path, referer: str | None = None) -> Path:
     if target.exists():
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(target.name + ".part")
-    with urllib.request.urlopen(url, timeout=TIMEOUT_S) as response, partial.open("wb") as file:
+    request = browser_request(url, referer)
+    with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response, partial.open("wb") as file:
         shutil.copyfileobj(response, file, length=1 << 20)
     partial.rename(target)
     return target
@@ -71,13 +83,13 @@ def mendeley_archives(listing: list[dict]) -> list[tuple[str, str]]:
 
 def fetch_mendeley(source: Source, dataset_id: str, version: int) -> None:
     url = MENDELEY_FILES.format(id=dataset_id, version=version)
-    with urllib.request.urlopen(url, timeout=60) as response:
+    with urllib.request.urlopen(browser_request(url, referer=source.page), timeout=60) as response:
         listing = json.load(response)
     archives = mendeley_archives(listing)
     if not archives:
         raise FetchError(f"{source.key}: no archive is published at {source.page}")
     for filename, download_url in archives:
-        download(download_url, source_dir(source) / PurePosixPath(filename).name)
+        download(download_url, source_dir(source) / PurePosixPath(filename).name, referer=source.page)
 
 
 def fetch_hub(source: Source, hub: HubDataset) -> Path:
