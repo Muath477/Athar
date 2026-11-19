@@ -92,12 +92,21 @@ activated only when it beats the active detector on that table.
 
 Before that end-task score exists, the notebook runs a cheaper, earlier check on the public auxiliary data:
 `ml/eval/tags.py` scores the base model (a fresh LoRA, which equals the base) and the fine-tuned model on
-the same held-out `public_test.jsonl` rows, never trained on, so the before/after comparison is honest. A
-first Colab run on two of the nine default sources (the others were not yet fetched in that run) moved exact
-match from 16.2% to 95.2% and crack F1 from 0.629 to 0.951 (precision 58.9% → 92.2%, recall 67.6% → 98.1%),
-with 100% JSON validity before and after. This says the model learns the glossary's JSON format and the
-visual concept of a crack; it says nothing yet about the other seven damage types, which had no example in
-that run, or about real walls, since `public_test` is public close-up photos, not Athar's own maps.
+the same held-out `public_test.jsonl` rows, never trained on, so the before/after comparison is honest. Two
+independent Colab runs on the same two reachable sources (`brickwork_cracks`, `rfsat_masonry`; the other
+seven were not yet fetched in either run) agree: exact match moved from 16.2% to 95.2% in the first run and
+from 16.6% to 94.8% in the second, crack F1 from 0.629 to 0.951 in the first and from 0.608 to 0.945 in the
+second (precision 58–58.9% → 92.2–93.6%, recall 63.9–67.6% → 95.4–98.1%), with 100% JSON validity before and
+after in both. The two runs landing within a point of each other says this is the training method working,
+not a lucky seed. It still says nothing about the other seven damage types, which had no example in either
+run, or about real walls, since `public_test` is public close-up photos, not Athar's own maps.
+
+The other seven sources were never actually unreachable: `ml.data.fetch` sent Mendeley and USU requests
+with Python's default user agent, and both hosts return `403 Forbidden` to that, not to a browser. Two of
+the skipped sources (`kasbah_algiers`, `darbhanga_fort`) are already catalogued with `efflorescence` and
+`spall` folder labels mapped to `plaster_loss` and `salt_efflorescence`, so this was a fetch bug, not a
+missing dataset, for those two damage types specifically. The fix is in; a re-run with all nine default
+sources reachable is what would turn that from a claim into a number.
 
 ### Serving and selection
 
