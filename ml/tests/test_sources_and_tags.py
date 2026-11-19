@@ -7,6 +7,7 @@ from ml.data.build_dataset import PUBLIC_TEST, build, split_public
 from ml.data.collect import image_paths, labels_for
 from ml.data.fetch import (
     FetchError,
+    browser_request,
     check_members,
     folder_name,
     mendeley_archives,
@@ -28,6 +29,15 @@ def test_catalogue_keys_are_unique_and_defaults_have_open_licences():
     for key in DEFAULT_KEYS:
         assert SOURCES_BY_KEY[key].licence in OPEN_LICENCES, key
     assert not SOURCES_BY_KEY["bd3_building_defects"].by_default
+
+
+def test_browser_request_carries_a_user_agent_and_optional_referer():
+    plain = browser_request("https://data.mendeley.com/public-api/datasets/x/files")
+    assert plain.get_header("User-agent")
+    assert plain.get_header("Referer") is None
+
+    referred = browser_request("https://example.org/archive.zip", referer="https://example.org/page")
+    assert referred.get_header("Referer") == "https://example.org/page"
 
 
 def test_folder_labels_use_only_the_patch_glossary_and_hub_sources_are_pinned():

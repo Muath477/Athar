@@ -1,56 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 380" width="940" height="380" role="img" aria-label="The DamageDetector port with four adapters: Claude, a ready model over HTTP, a per-cell classifier, or manual labelling">
-<title>The DamageDetector port with four adapters: Claude, a ready model over HTTP, a per-cell classifier, or manual labelling</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 446" width="940" height="446" role="img" aria-label="The DamageDetector port with five adapters: Claude, a ready model over HTTP, a per-cell classifier, Athar's own fine-tuned Qwen model, or manual labelling">
+<title>The DamageDetector port with five adapters: Claude, a ready model over HTTP, a per-cell classifier, Athar's own fine-tuned Qwen model, or manual labelling</title>
 <style>
 text{font-family:'Segoe UI',Tahoma,'Noto Sans','Noto Naskh Arabic',sans-serif}
 text:not([fill]):not(.light):not(.muted){fill:#1f1a16}
 .muted{fill:#7a5434}
 .light{fill:#efe4d2}
-@keyframes hl0{0%{opacity:0} 0.01%{opacity:0} 1.0%{opacity:1} 24.0%{opacity:1} 25.0%{opacity:0} 100%{opacity:0}}
+@keyframes hl0{0%{opacity:0} 0.00%{opacity:0} 0.80%{opacity:1} 19.20%{opacity:1} 20.00%{opacity:0} 100%{opacity:0}}
 .hl0,.env0{animation:hl0 12s linear infinite}
-@keyframes pk0{0%{opacity:0;transform:translate(215px,185px)}0.00%{opacity:0;transform:translate(215px,185px)}1.00%{opacity:1;transform:translate(215px,185px)}8.00%{opacity:1;transform:translate(510px,185px)}15.00%{opacity:1;transform:translate(606px,116px)}17.00%{opacity:0;transform:translate(606px,116px)}100%{opacity:0}}
+@keyframes pk0{0%{opacity:0;transform:translate(215px,248px)}0.00%{opacity:0;transform:translate(215px,248px)}1.00%{opacity:1;transform:translate(215px,248px)}7.00%{opacity:1;transform:translate(510px,248px)}13.00%{opacity:1;transform:translate(606px,116px)}15.00%{opacity:0;transform:translate(606px,116px)}100%{opacity:0}}
 .pk0{animation:pk0 12s linear infinite}
-@keyframes hl1{0%{opacity:0} 25.0%{opacity:0} 26.0%{opacity:1} 49.0%{opacity:1} 50.0%{opacity:0} 100%{opacity:0}}
+@keyframes hl1{0%{opacity:0} 20.00%{opacity:0} 20.80%{opacity:1} 39.20%{opacity:1} 40.00%{opacity:0} 100%{opacity:0}}
 .hl1,.env1{animation:hl1 12s linear infinite}
-@keyframes pk1{0%{opacity:0;transform:translate(215px,185px)}25.00%{opacity:0;transform:translate(215px,185px)}26.00%{opacity:1;transform:translate(215px,185px)}33.00%{opacity:1;transform:translate(510px,185px)}40.00%{opacity:1;transform:translate(606px,182px)}42.00%{opacity:0;transform:translate(606px,182px)}100%{opacity:0}}
+@keyframes pk1{0%{opacity:0;transform:translate(215px,248px)}20.00%{opacity:0;transform:translate(215px,248px)}21.00%{opacity:1;transform:translate(215px,248px)}27.00%{opacity:1;transform:translate(510px,248px)}33.00%{opacity:1;transform:translate(606px,182px)}35.00%{opacity:0;transform:translate(606px,182px)}100%{opacity:0}}
 .pk1{animation:pk1 12s linear infinite}
-@keyframes hl2{0%{opacity:0} 50.0%{opacity:0} 51.0%{opacity:1} 74.0%{opacity:1} 75.0%{opacity:0} 100%{opacity:0}}
+@keyframes hl2{0%{opacity:0} 40.00%{opacity:0} 40.80%{opacity:1} 59.20%{opacity:1} 60.00%{opacity:0} 100%{opacity:0}}
 .hl2,.env2{animation:hl2 12s linear infinite}
-@keyframes pk2{0%{opacity:0;transform:translate(215px,185px)}50.00%{opacity:0;transform:translate(215px,185px)}51.00%{opacity:1;transform:translate(215px,185px)}58.00%{opacity:1;transform:translate(510px,185px)}65.00%{opacity:1;transform:translate(606px,248px)}67.00%{opacity:0;transform:translate(606px,248px)}100%{opacity:0}}
+@keyframes pk2{0%{opacity:0;transform:translate(215px,248px)}40.00%{opacity:0;transform:translate(215px,248px)}41.00%{opacity:1;transform:translate(215px,248px)}47.00%{opacity:1;transform:translate(510px,248px)}53.00%{opacity:1;transform:translate(606px,248px)}55.00%{opacity:0;transform:translate(606px,248px)}100%{opacity:0}}
 .pk2{animation:pk2 12s linear infinite}
-@keyframes hl3{0%{opacity:0} 75.0%{opacity:0} 76.0%{opacity:1} 99.0%{opacity:1} 100.0%{opacity:0} 100%{opacity:0}}
+@keyframes hl3{0%{opacity:0} 60.00%{opacity:0} 60.80%{opacity:1} 79.20%{opacity:1} 80.00%{opacity:0} 100%{opacity:0}}
 .hl3,.env3{animation:hl3 12s linear infinite}
-@keyframes pk3{0%{opacity:0;transform:translate(215px,185px)}75.00%{opacity:0;transform:translate(215px,185px)}76.00%{opacity:1;transform:translate(215px,185px)}83.00%{opacity:1;transform:translate(510px,185px)}90.00%{opacity:1;transform:translate(606px,314px)}92.00%{opacity:0;transform:translate(606px,314px)}100%{opacity:0}}
+@keyframes pk3{0%{opacity:0;transform:translate(215px,248px)}60.00%{opacity:0;transform:translate(215px,248px)}61.00%{opacity:1;transform:translate(215px,248px)}67.00%{opacity:1;transform:translate(510px,248px)}73.00%{opacity:1;transform:translate(606px,314px)}75.00%{opacity:0;transform:translate(606px,314px)}100%{opacity:0}}
 .pk3{animation:pk3 12s linear infinite}
+@keyframes hl4{0%{opacity:0} 80.00%{opacity:0} 80.80%{opacity:1} 99.20%{opacity:1} 100.00%{opacity:0}}
+.hl4,.env4{animation:hl4 12s linear infinite}
+@keyframes pk4{0%{opacity:0;transform:translate(215px,248px)}80.00%{opacity:0;transform:translate(215px,248px)}81.00%{opacity:1;transform:translate(215px,248px)}87.00%{opacity:1;transform:translate(510px,248px)}93.00%{opacity:1;transform:translate(606px,380px)}95.00%{opacity:0;transform:translate(606px,380px)}100%{opacity:0}}
+.pk4{animation:pk4 12s linear infinite}
 @media (prefers-reduced-motion: reduce){*{animation:none!important}}
 </style>
-<rect width="940" height="380" rx="18" fill="#efe4d2"/>
-<text x="40" y="44" font-size="18" font-weight="700">One port, four ways to find damage</text>
+<rect width="940" height="446" rx="18" fill="#efe4d2"/>
+<text x="40" y="44" font-size="18" font-weight="700">One port, five ways to find damage</text>
 <text x="40" y="68" font-size="13" class="muted">Switch with one setting. The map, review and treatment plan stay the same.</text>
-<rect x="40" y="150" width="170" height="70" rx="10" fill="#1f1a16"/><text x="125" y="181" text-anchor="middle" font-size="15" font-weight="700" class="light">mapping</text><text x="125" y="202" text-anchor="middle" font-size="12" fill="#efe4d2" fill-opacity="0.7">rectified wall + grid</text>
-<rect x="300" y="140" width="210" height="90" rx="10" fill="#f8f2e8" stroke="#8f1f1a" stroke-width="2" stroke-dasharray="6 4"/><text x="405" y="178" text-anchor="middle" font-size="15" font-weight="700">DamageDetector</text><text x="405" y="200" text-anchor="middle" font-size="12" class="muted">detect(image, grid) → cells</text>
-<path d="M210 185 h82" stroke="#7a5434" stroke-width="2"/><path d="M292 179 l8 6 l-8 6 z" fill="#7a5434"/>
-<path d="M510 185 C 560 185, 560 116, 610 116" stroke="#b3804f" stroke-width="1.5" fill="none"/>
+<rect x="40" y="213" width="170" height="70" rx="10" fill="#1f1a16"/><text x="125" y="244" text-anchor="middle" font-size="15" font-weight="700" class="light">mapping</text><text x="125" y="265" text-anchor="middle" font-size="12" fill="#efe4d2" fill-opacity="0.7">rectified wall + grid</text>
+<rect x="300" y="203" width="210" height="90" rx="10" fill="#f8f2e8" stroke="#8f1f1a" stroke-width="2" stroke-dasharray="6 4"/><text x="405" y="241" text-anchor="middle" font-size="15" font-weight="700">DamageDetector</text><text x="405" y="263" text-anchor="middle" font-size="12" class="muted">detect(image, grid) → cells</text>
+<path d="M210 248 h82" stroke="#7a5434" stroke-width="2"/><path d="M292 242 l8 6 l-8 6 z" fill="#7a5434"/>
+<path d="M510 248 C 560 248, 560 116, 610 116" stroke="#b3804f" stroke-width="1.5" fill="none"/>
 <rect class="hl0" x="606" y="88" width="300" height="56" rx="10" fill="#8f1f1a"/>
 <rect x="610" y="92" width="292" height="48" rx="8" fill="#f8f2e8"/>
 <text x="626" y="113" font-size="14" font-weight="700">Claude</text><text x="626" y="131" font-size="12" class="muted">vision API, labelled grid</text>
-<text class="env0" x="40" y="350" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=claude</text>
+<text class="env0" x="40" y="416" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=claude</text>
 <circle class="pk0" cx="0" cy="0" r="6" fill="#8f1f1a"/>
-<path d="M510 185 C 560 185, 560 182, 610 182" stroke="#b3804f" stroke-width="1.5" fill="none"/>
+<path d="M510 248 C 560 248, 560 182, 610 182" stroke="#b3804f" stroke-width="1.5" fill="none"/>
 <rect class="hl1" x="606" y="154" width="300" height="56" rx="10" fill="#8f1f1a"/>
 <rect x="610" y="158" width="292" height="48" rx="8" fill="#f8f2e8"/>
 <text x="626" y="179" font-size="14" font-weight="700">Ready model</text><text x="626" y="197" font-size="12" class="muted">Hugging Face or own server</text>
-<text class="env1" x="40" y="350" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=http_detection</text>
+<text class="env1" x="40" y="416" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=http_detection</text>
 <circle class="pk1" cx="0" cy="0" r="6" fill="#8f1f1a"/>
-<path d="M510 185 C 560 185, 560 248, 610 248" stroke="#b3804f" stroke-width="1.5" fill="none"/>
+<path d="M510 248 C 560 248, 560 248, 610 248" stroke="#b3804f" stroke-width="1.5" fill="none"/>
 <rect class="hl2" x="606" y="220" width="300" height="56" rx="10" fill="#8f1f1a"/>
 <rect x="610" y="224" width="292" height="48" rx="8" fill="#f8f2e8"/>
 <text x="626" y="245" font-size="14" font-weight="700">Cell classifier</text><text x="626" y="263" font-size="12" class="muted">one request per cell</text>
-<text class="env2" x="40" y="350" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=http_cell_classification</text>
+<text class="env2" x="40" y="416" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=http_cell_classification</text>
 <circle class="pk2" cx="0" cy="0" r="6" fill="#8f1f1a"/>
-<path d="M510 185 C 560 185, 560 314, 610 314" stroke="#b3804f" stroke-width="1.5" fill="none"/>
+<path d="M510 248 C 560 248, 560 314, 610 314" stroke="#b3804f" stroke-width="1.5" fill="none"/>
 <rect class="hl3" x="606" y="286" width="300" height="56" rx="10" fill="#8f1f1a"/>
 <rect x="610" y="290" width="292" height="48" rx="8" fill="#f8f2e8"/>
-<text x="626" y="311" font-size="14" font-weight="700">Manual</text><text x="626" y="329" font-size="12" class="muted">expert draws the map</text>
-<text class="env3" x="40" y="350" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=none</text>
+<text x="626" y="311" font-size="14" font-weight="700">Own model</text><text x="626" y="329" font-size="12" class="muted">Qwen3.5-4B, LoRA fine-tuned</text>
+<text class="env3" x="40" y="416" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=qwen</text>
 <circle class="pk3" cx="0" cy="0" r="6" fill="#8f1f1a"/>
+<path d="M510 248 C 560 248, 560 380, 610 380" stroke="#b3804f" stroke-width="1.5" fill="none"/>
+<rect class="hl4" x="606" y="352" width="300" height="56" rx="10" fill="#8f1f1a"/>
+<rect x="610" y="356" width="292" height="48" rx="8" fill="#f8f2e8"/>
+<text x="626" y="377" font-size="14" font-weight="700">Manual</text><text x="626" y="395" font-size="12" class="muted">expert draws the map</text>
+<text class="env4" x="40" y="416" font-size="14" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#8f1f1a">SADU_DAMAGE_DETECTOR=none</text>
+<circle class="pk4" cx="0" cy="0" r="6" fill="#8f1f1a"/>
 </svg>
