@@ -53,6 +53,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="jadwal" aria-hidden />
           </header>
           <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pt-4 pb-10">{children}</main>
+          <footer className="bg-white">
+            <div className="jadwal" aria-hidden />
+            <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-1 px-4 py-6 text-center text-sm text-mud">
+              <AtharWordmark />
+              <p>رصد وتوثيق الواجهات التراثية، حاشية بحاشية.</p>
+            </div>
+          </footer>
         </Providers>
       </body>
     </html>
